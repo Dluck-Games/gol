@@ -33,3 +33,9 @@ var spawned: Array[Entity] = []
 
 ## 条件激活状态 (用于条件切换时立即刷一波)
 var condition_activated: bool = false
+
+## Enrage state (activated after damage, faster spawning)
+var enraged: bool = false
+
+## Spawn interval when enraged (seconds)
+@export var enraged_spawn_interval: float = 2.0

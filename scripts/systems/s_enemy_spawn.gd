@@ -96,8 +96,9 @@ func _calculate_spawn_position(center: Vector2, radius: float, index: int, total
 
 
 func _reset_timer(spawner: CSpawner) -> void:
+	var base_interval := spawner.enraged_spawn_interval if spawner.enraged else spawner.spawn_interval
 	var variance := randf_range(-spawner.spawn_interval_variance, spawner.spawn_interval_variance)
-	spawner.spawn_timer = spawner.spawn_interval + variance
+	spawner.spawn_timer = base_interval + variance
 
 
 func _check_active_condition(spawner: CSpawner) -> bool:
