@@ -41,8 +41,47 @@ func _initialize(entity: Entity, dead: CDead) -> void:
 		_initialize_player_death(entity, dead, sprite)
 		return
 	
+	# Building death (spawner) - flash + dissolve, no rotation collapse
+	if entity.has_component(CSpawner):
+		_initialize_building_death(entity, dead, sprite)
+		return
+	
 	# Non-player death: flash + collapse
 	_initialize_generic_death(entity, dead, sprite)
+
+
+func _initialize_building_death(entity: Entity, dead: CDead, sprite: CanvasItem) -> void:
+	# Setup shader
+	if not sprite.material or not sprite.material is ShaderMaterial:
+		sprite.material = _hit_flash_material.duplicate()
+	var mat := sprite.material as ShaderMaterial
+	
+	# Create death tween sequence
+	dead._tween = entity.create_tween()
+	dead._tween.set_parallel(false)
+	
+	# Phase 1: Flash red
+	dead._tween.tween_method(
+		func(v: float): mat.set_shader_parameter("flash_intensity", v),
+		0.0, 0.9, FLASH_DURATION * 0.5
+	)
+	dead._tween.tween_method(
+		func(v: float): mat.set_shader_parameter("flash_intensity", v),
+		0.9, 0.0, FLASH_DURATION * 0.5
+	)
+	
+	# Phase 2: Dissolve (no rotation!)
+	dead._tween.tween_method(
+		func(v: float): mat.set_shader_parameter("dissolve_amount", v),
+		0.0, 1.0, 0.5
+	)
+	
+	# Spawn debris
+	_spawn_debris(entity)
+	
+	# On complete
+	dead._tween.chain()
+	dead._tween.tween_callback(_complete_death.bind(entity, dead))
 
 
 func _initialize_player_death(entity: Entity, dead: CDead, sprite: CanvasItem) -> void:

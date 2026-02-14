@@ -188,6 +188,24 @@ func _spawn_enemy_spawner_at_position(pos: Vector2, index: int) -> void:
 		sprite.texture = texture
 	spawner_entity.add_component(sprite)
 
+	# Add HP component
+	var hp_comp := CHP.new()
+	hp_comp.max_hp = 400.0
+	hp_comp.hp = 400.0
+	spawner_entity.add_component(hp_comp)
+
+	# Add camp component (enemy faction)
+	var camp_comp := CCamp.new()
+	camp_comp.camp = CCamp.CampType.ENEMY
+	spawner_entity.add_component(camp_comp)
+
+	# Add collision component for hit detection
+	var collision := CCollision.new()
+	var collision_shape := CircleShape2D.new()
+	collision_shape.radius = 20.0
+	collision.collision_shape = collision_shape
+	spawner_entity.add_component(collision)
+
 	# Add to world
 	add_entity(spawner_entity)
 

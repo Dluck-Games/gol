@@ -38,4 +38,5 @@ static var DEATH_REMOVE_COMPONENTS: Array = [
 	CMelee,
 	CTracker,
 	CAim,
+	CSpawner,  # Stop spawning during death animation
 ]

@@ -118,6 +118,12 @@ func _take_damage(target_entity: Entity, amount: float, knockback_direction: Vec
 	
 	hp.hp = max(0, hp.hp - amount)
 	
+	# Trigger spawner enrage on any damage
+	if target_entity.has_component(CSpawner):
+		var spawner := target_entity.get_component(CSpawner) as CSpawner
+		if spawner and not spawner.enraged:
+			spawner.enraged = true
+	
 	# Play hit blink effect
 	_play_hit_blink(target_entity)
 	
@@ -138,16 +144,87 @@ func _on_no_hp(target_entity: Entity) -> void:
 		_start_death(target_entity, Vector2.ZERO)
 		return
 	
+	# Spawner death - skip component loss, trigger burst and loot
+	if target_entity.has_component(CSpawner):
+		_handle_spawner_death(target_entity)
+		_start_death(target_entity, Vector2.ZERO)
+		return
+	
 	# Try to lose a component first
 	var comps_to_lose: Component = _get_random_component(target_entity)
 	if comps_to_lose:
 		print("Lose Component: ", target_entity, ' -> ', comps_to_lose.get_script().resource_path)
-		target_entity.remove_component(comps_to_lose.get_script())
+		target_entity.remove_component(comps_to_lose)
 	else:
 		# No components left to lose - trigger death
 		var movement: CMovement = target_entity.get_component(CMovement)
 		var last_knockback := movement.velocity.normalized() if movement else Vector2.ZERO
 		_start_death(target_entity, last_knockback)
+
+
+func _handle_spawner_death(target_entity: Entity) -> void:
+	var spawner := target_entity.get_component(CSpawner) as CSpawner
+	var transform := target_entity.get_component(CTransform) as CTransform
+	if not spawner or not transform:
+		return
+	
+	# Death burst - spawn final wave (3 enemies)
+	_spawner_death_burst(spawner, transform)
+	
+	# Drop loot
+	_spawner_drop_loot(transform)
+
+
+func _spawner_death_burst(spawner: CSpawner, transform: CTransform) -> void:
+	if spawner.spawn_recipe_id.is_empty():
+		return
+	
+	# Spawn 3 enemies as death burst
+	for i in range(3):
+		var new_entity := ServiceContext.recipe().create_entity_by_id(spawner.spawn_recipe_id)
+		if not new_entity:
+			continue
+		
+		var new_transform := new_entity.get_component(CTransform) as CTransform
+		if new_transform:
+			# Spawn around the spawner position
+			var angle := (float(i) / 3.0) * TAU + randf_range(-0.3, 0.3)
+			var distance := randf_range(30.0, 60.0)
+			new_transform.position = transform.position + Vector2(cos(angle), sin(angle)) * distance
+
+
+func _spawner_drop_loot(transform: CTransform) -> void:
+	# Create loot entity at spawner position
+	var loot_entity := Entity.new()
+	loot_entity.name = "SpawnerLoot"
+	
+	# Add transform
+	var loot_transform := CTransform.new()
+	loot_transform.position = transform.position
+	loot_entity.add_component(loot_transform)
+	
+	# Add sprite
+	var sprite := CSprite.new()
+	var texture := load("res://assets/sprite_sheets/boxes/box_re_texture.png") as Texture2D
+	if texture:
+		sprite.texture = texture
+	loot_entity.add_component(sprite)
+	
+	# Add collision
+	var collision := CCollision.new()
+	var collision_shape := CircleShape2D.new()
+	collision_shape.radius = 16.0
+	collision.collision_shape = collision_shape
+	loot_entity.add_component(collision)
+	
+	# Add container with random weapon
+	var container := CContainer.new()
+	var recipes: Array[String] = ["weapon_rifle", "weapon_pistol", "tracker"]
+	container.stored_recipe_id = recipes[randi() % recipes.size()]
+	loot_entity.add_component(container)
+	
+	# Add to world
+	ECS.world.add_entity(loot_entity)
 
 
 func _get_random_component(entity: Entity) -> Component:

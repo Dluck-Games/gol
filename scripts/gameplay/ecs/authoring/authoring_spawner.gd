@@ -32,6 +32,12 @@ var _texture: Texture2D = preload("res://assets/sprites/items/zombie_basement_01
 ## 激活条件
 @export var active_condition: CSpawner.ActiveCondition = CSpawner.ActiveCondition.ALWAYS
 
+## 最大生命值
+@export var max_hp: float = 400.0
+
+## 碰撞半径
+@export var collision_radius: float = 20.0
+
 
 func _enter_tree() -> void:
 	super._enter_tree()
@@ -46,6 +52,9 @@ func bake(entity: Entity) -> void:
 	super.bake(entity)
 	_bake_view(entity)
 	_bake_spawner(entity)
+	_bake_hp(entity)
+	_bake_camp(entity)
+	_bake_collision(entity)
 
 
 func _bake_view(entity: Entity) -> void:
@@ -63,3 +72,21 @@ func _bake_spawner(entity: Entity) -> void:
 	spawner_comp.spawn_radius = spawn_radius
 	spawner_comp.max_spawn_count = max_spawn_count
 	spawner_comp.active_condition = active_condition
+
+
+func _bake_hp(entity: Entity) -> void:
+	var hp_comp: CHP = get_or_add_component(entity, CHP)
+	hp_comp.max_hp = max_hp
+	hp_comp.hp = max_hp
+
+
+func _bake_camp(entity: Entity) -> void:
+	var camp_comp: CCamp = get_or_add_component(entity, CCamp)
+	camp_comp.camp = CCamp.CampType.ENEMY
+
+
+func _bake_collision(entity: Entity) -> void:
+	var collision_comp: CCollision = get_or_add_component(entity, CCollision)
+	var circle_shape := CircleShape2D.new()
+	circle_shape.radius = collision_radius
+	collision_comp.collision_shape = circle_shape
