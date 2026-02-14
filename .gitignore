@@ -1,0 +1,23 @@
+# Project directories to ignore (1234号项目)
+gol-proj-01/
+gol-proj-02/
+gol-proj-03/
+gol-proj-04/
+
+# Sisyphus directory (西西弗斯目录)
+.sisyphus/
+
+# Editor settings
+.vscode/
+
+# Node modules
+node_modules/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

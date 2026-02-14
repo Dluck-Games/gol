@@ -1,0 +1,6 @@
+[submodule "gol-tools"]
+	path = gol-tools
+	url = git@github.com:Dluck-Games/gol-tools.git
+[submodule "gol-proj-main"]
+	path = gol-proj-main
+	url = https://github.com/Dluck-Games/god-of-lego.git

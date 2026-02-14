@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "rules": {
+    "code_style": {
+      "language": "gdscript",
+      "formatter": "gdformat",
+      "linter": "gdlint"
+    },
+    "project_structure": {
+      "scripts": "scripts/",
+      "scenes": "scenes/",
+      "assets": "assets/",
+      "resources": "resources/"
+    }
+  }
+}
