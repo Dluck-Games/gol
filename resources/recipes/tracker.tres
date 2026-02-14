@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="EntityRecipe" load_steps=9 format=3 uid="uid://cjq4vx0m8ufn3"]
+
+[ext_resource type="Script" uid="uid://2klkbre7bx43" path="res://scripts/gameplay/ecs/recipes/entity_recipe.gd" id="1"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/component.gd" id="1_component"]
+[ext_resource type="Script" uid="uid://blbhw4b66nbtq" path="res://scripts/components/c_transform.gd" id="2"]
+[ext_resource type="Script" uid="uid://yr86cd0ohol6" path="res://scripts/components/c_collision.gd" id="3"]
+[ext_resource type="Script" uid="uid://b2ek0if2g0y2x" path="res://scripts/components/c_tracker.gd" id="4"]
+
+[sub_resource type="Resource" id="transform"]
+script = ExtResource("2")
+
+[sub_resource type="Resource" id="collision"]
+script = ExtResource("3")
+
+[sub_resource type="Resource" id="tracker"]
+script = ExtResource("4")
+
+[resource]
+script = ExtResource("1")
+recipe_id = "tracker"
+display_name = "Tracker"
+components = Array[ExtResource("1_component")]([SubResource("transform"), SubResource("collision"), SubResource("tracker")])

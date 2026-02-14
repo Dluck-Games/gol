@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="GoapGoal" load_steps=2 format=3 uid="uid://cp3occ1kvu56p"]
+
+[ext_resource type="Script" uid="uid://bhl18hlmldpuq" path="res://scripts/gameplay/goap/goap_goal.gd" id="1_5wa2x"]
+
+[resource]
+script = ExtResource("1_5wa2x")
+goal_name = "ClearThreat"
+priority = 10
+desired_state = {
+"has_threat": false
+}

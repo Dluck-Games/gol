@@ -1,0 +1,83 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build Release
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\Users\runneradmin\AppData\Roaming\Godot
+            C:\godot
+          key: godot-4.5.1-export-${{ runner.os }}
+
+      - name: Download and Setup Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        shell: cmd
+        run: |
+          curl -L -o godot.zip https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_win64.exe.zip
+          tar -xf godot.zip -C C:\
+          ren "C:\Godot_v4.5.1-stable_win64.exe" godot.exe
+          mkdir C:\godot
+          move C:\godot.exe C:\godot\godot.exe
+          curl -L -o templates.zip https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_export_templates.tpz
+          mkdir "%APPDATA%\Godot\export_templates\4.5.1.stable"
+          tar -xf templates.zip
+          move templates\* "%APPDATA%\Godot\export_templates\4.5.1.stable\"
+
+      - name: Import Project Assets
+        shell: cmd
+        run: C:\godot\godot.exe --headless --import --quit
+        timeout-minutes: 5
+
+      - name: Export Windows Release Build
+        shell: cmd
+        run: |
+          mkdir build
+          C:\godot\godot.exe --headless --export-release "gol-release" build/gol.exe
+          dir build
+        timeout-minutes: 10
+
+      - name: Package Release Build
+        shell: cmd
+        run: |
+          ren build gol
+          tar -a -cf gol.zip gol
+
+      - name: Upload Release Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gol-release
+          path: gol
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: gol.zip
+          generate_release_notes: true
+          name: "God of Lego ${{ github.ref_name }}"
+          body: |
+            ## God of Lego ${{ github.ref_name }}
+
+            ### 下载
+            - **Windows Release**: `gol.zip` - 正式版
+
+            ### 更新日志
+            详见下方自动生成的更新日志。

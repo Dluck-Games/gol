@@ -1,0 +1,58 @@
+[gd_resource type="SpriteFrames" load_steps=8 format=3 uid="uid://br4x0pf1wl2bf"]
+
+[ext_resource type="Texture2D" uid="uid://dqvfvodhs06jf" path="res://assets/sprite_sheets/enemies/enemy_movement_01.png" id="1_6hd15"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_u6on0"]
+atlas = ExtResource("1_6hd15")
+region = Rect2(0, 32, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ikd5g"]
+atlas = ExtResource("1_6hd15")
+region = Rect2(32, 32, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_geowp"]
+atlas = ExtResource("1_6hd15")
+region = Rect2(0, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_rnd4m"]
+atlas = ExtResource("1_6hd15")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_xkwav"]
+atlas = ExtResource("1_6hd15")
+region = Rect2(64, 0, 32, 32)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_8drnm"]
+atlas = ExtResource("1_6hd15")
+region = Rect2(96, 0, 32, 32)
+
+[resource]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_u6on0")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_ikd5g")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 2.0
+}, {
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_geowp")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_rnd4m")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_xkwav")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_8drnm")
+}],
+"loop": true,
+"name": &"walk",
+"speed": 7.0
+}]

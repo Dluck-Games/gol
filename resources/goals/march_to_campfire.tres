@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="GoapGoal" load_steps=2 format=3 uid="uid://dmarch_to_campfire"]
+
+[ext_resource type="Script" uid="uid://bhl18hlmldpuq" path="res://scripts/gameplay/goap/goap_goal.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+goal_name = "MarchToCampfire"
+priority = 1
+desired_state = {
+"reached_campfire": true
+}

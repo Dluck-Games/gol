@@ -1,0 +1,28 @@
+# Godot 4+ specific ignores
+.godot/
+/android/
+
+# VS Code specific ignores
+.vscode/
+
+# JetBrains
+.idea/
+
+# GdUnit4 Test Reports
+reports/
+*.log
+
+addons/imgui-godot/bin/~*
+build/
+
+# OpenCode skill symbolic link
+.opencode/skill
+nul
+
+# AI
+.sisyphus/
+.codebuddy
+
+# Node.js / npm
+node_modules/
+package-lock.json

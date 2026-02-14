@@ -1,0 +1,97 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
+[application]
+
+config/name="God of Lego"
+config/version="0.1.5"
+run/main_scene="uid://b77xhx6howxfp"
+config/features=PackedStringArray("4.5", "Forward Plus")
+boot_splash/image="uid://bm7v24t7705m1"
+config/icon="uid://cbwydatfdsag5"
+
+[autoload]
+
+DebugPanel="*res://scripts/debug/debug_panel.gd"
+ECS="*res://addons/gecs/ecs.gd"
+GOL="*res://scripts/gol.gd"
+ImGuiRoot="*res://addons/imgui-godot/data/ImGuiRoot.tscn"
+
+[display]
+
+window/size/viewport_width=960
+window/size/viewport_height=540
+window/size/mode=4
+window/stretch/mode="canvas_items"
+
+[editor_plugins]
+
+enabled=PackedStringArray("res://addons/gdUnit4/plugin.cfg", "res://addons/gecs/plugin.cfg", "res://addons/imgui-godot/plugin.cfg")
+
+[file_customization]
+
+folder_colors={
+"res://assets/": "pink",
+"res://reports/": "green",
+"res://resources/": "orange",
+"res://scenes/": "purple",
+"res://scenes/prefabs/": "yellow",
+"res://scenes/ui/": "teal",
+"res://scripts/": "blue",
+"res://shaders/": "yellow",
+"res://tests/": "green"
+}
+
+[gdunit4]
+
+settings/test/test_lookup_folder="tests"
+settings/test/test_discovery=true
+
+[gecs]
+
+log_level=3
+
+[input]
+
+player_left={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":65,"key_label":0,"unicode":97,"location":0,"echo":false,"script":null)
+]
+}
+player_up={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":87,"key_label":0,"unicode":119,"location":0,"echo":false,"script":null)
+]
+}
+player_down={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":83,"key_label":0,"unicode":115,"location":0,"echo":false,"script":null)
+]
+}
+player_right={
+"deadzone": 0.2,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":0,"physical_keycode":68,"key_label":0,"unicode":100,"location":0,"echo":false,"script":null)
+]
+}
+player_fire={
+"deadzone": 0.2,
+"events": [Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"button_mask":1,"position":Vector2(0, 0),"global_position":Vector2(0, 0),"factor":1.0,"button_index":1,"canceled":false,"pressed":true,"double_click":false,"script":null)
+]
+}
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=3
+anti_aliasing/quality/use_taa=true
+anti_aliasing/quality/use_debanding=true

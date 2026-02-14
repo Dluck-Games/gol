@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="EntityRecipe" load_steps=13 format=3 uid="uid://bdnmck7fbm8vg"]
+
+[ext_resource type="Script" uid="uid://2klkbre7bx43" path="res://scripts/gameplay/ecs/recipes/entity_recipe.gd" id="1"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/component.gd" id="1_component"]
+[ext_resource type="Resource" uid="uid://cwxqv8jhg5srq" path="res://resources/recipes/enemy_basic.tres" id="2_base"]
+[ext_resource type="Script" uid="uid://c8ajqoi8wvl4w" path="res://scripts/components/ai/c_goap_agent.gd" id="3_goap"]
+[ext_resource type="Script" uid="uid://bhl18hlmldpuq" path="res://scripts/gameplay/goap/goap_goal.gd" id="4_goal"]
+[ext_resource type="Resource" uid="uid://cp3occ1kvu56p" path="res://resources/goals/clear_threat.tres" id="5_clear_threat"]
+[ext_resource type="Resource" path="res://resources/goals/march_to_campfire.tres" id="6_march"]
+[ext_resource type="Script" uid="uid://dkqvacht67lnj" path="res://scripts/components/c_movement.gd" id="7_movement"]
+[ext_resource type="Script" uid="uid://51tp4iyjnhkb" path="res://scripts/components/c_animation.gd" id="8_animation"]
+[ext_resource type="SpriteFrames" uid="uid://br4x0pf1wl2bf" path="res://resources/sprite_frames/enemy.tres" id="9_frames"]
+
+[sub_resource type="Resource" id="goap_agent"]
+script = ExtResource("3_goap")
+goals = Array[ExtResource("4_goal")]([ExtResource("5_clear_threat"), ExtResource("6_march")])
+
+[sub_resource type="Resource" id="movement"]
+script = ExtResource("7_movement")
+max_speed = 70.0
+
+[sub_resource type="Resource" id="animation"]
+script = ExtResource("8_animation")
+frames = ExtResource("9_frames")
+modulate = Color(1.0, 0.6, 0.6, 1.0)
+visual_scale = Vector2(1.2, 1.2)
+
+[resource]
+script = ExtResource("1")
+recipe_id = "enemy_raider"
+display_name = "Raider Enemy"
+base_recipe = ExtResource("2_base")
+components = Array[ExtResource("1_component")]([SubResource("goap_agent"), SubResource("movement"), SubResource("animation")])

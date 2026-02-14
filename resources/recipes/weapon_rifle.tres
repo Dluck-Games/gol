@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EntityRecipe" load_steps=5 format=3 uid="uid://bvh2k8ndmx2xl"]
+
+[ext_resource type="Script" uid="uid://2klkbre7bx43" path="res://scripts/gameplay/ecs/recipes/entity_recipe.gd" id="1"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/component.gd" id="1_component"]
+[ext_resource type="Script" uid="uid://bunjoiskwm3qf" path="res://scripts/components/c_weapon.gd" id="4"]
+
+[sub_resource type="Resource" id="weapon"]
+script = ExtResource("4")
+interval = 0.5
+bullet_recipe_id = "bullet_normal"
+
+[resource]
+script = ExtResource("1")
+recipe_id = "weapon_rifle"
+display_name = "Rifle"
+components = Array[ExtResource("1_component")]([SubResource("weapon")])

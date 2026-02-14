@@ -1,0 +1,75 @@
+name: Run GdUnit4 Tests
+
+permissions:
+  contents: read
+  checks: write
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.local/share/godot
+            ~/godot
+          key: godot-4.5.1-${{ runner.os }}
+
+      - name: Download and Setup Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        run: |
+          wget https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_linux.x86_64.zip
+          unzip Godot_v4.5.1-stable_linux.x86_64.zip
+          mkdir -p ~/godot
+          mv Godot_v4.5.1-stable_linux.x86_64 ~/godot/godot
+          chmod +x ~/godot/godot
+
+      - name: Verify Godot Installation
+        run: |
+          ~/godot/godot --version
+
+      - name: Import Project Assets
+        run: |
+          ~/godot/godot --headless --import --quit
+        timeout-minutes: 5
+
+      - name: Run GdUnit4 Tests
+        run: |
+          ~/godot/godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd \
+            --add res://tests/ \
+            --ignoreHeadlessMode \
+            --verbose
+        timeout-minutes: 10
+
+      - name: Publish Test Report to GitHub UI
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: GdUnit4 Tests
+          path: reports/**/results.xml
+          reporter: java-junit
+          fail-on-error: true
+
+      - name: Upload Raw Test Reports as Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: reports/
+          retention-days: 30

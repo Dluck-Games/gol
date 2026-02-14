@@ -1,0 +1,167 @@
+[gd_scene load_steps=18 format=3 uid="uid://bq5a81rd0mu21"]
+
+[ext_resource type="Script" uid="uid://ckt2mvvlug2lc" path="res://scripts/gameplay/ecs/gol_world.gd" id="1_hgh3w"]
+[ext_resource type="Texture2D" uid="uid://dp22dkho5ufmb" path="res://assets/backgrounds/street_01.png" id="2_7fr1c"]
+[ext_resource type="Script" uid="uid://dcl4yo0at3e3l" path="res://scripts/gameplay/ecs/authoring/authoring_player.gd" id="3_f7nqx"]
+[ext_resource type="SpriteFrames" uid="uid://bli7nwgra1obu" path="res://resources/sprite_frames/player.tres" id="5_ntrhd"]
+[ext_resource type="Script" uid="uid://cclnglevxhiyf" path="res://scripts/gameplay/ecs/authoring/authoring_spawner.gd" id="6_8y5nl"]
+[ext_resource type="Texture2D" uid="uid://dt0xfmhbgvsgr" path="res://assets/sprites/items/zombie_basement_01.png" id="7_8e532"]
+[ext_resource type="Script" uid="uid://b1km8eiyeo7k0" path="res://scripts/gameplay/ecs/authoring/authoring_box.gd" id="8_l44va"]
+[ext_resource type="Texture2D" uid="uid://cw8yxdkf5mb2r" path="res://assets/sprite_sheets/boxes/box_re_texture.png" id="10_ngtjw"]
+[ext_resource type="Script" uid="uid://bunjoiskwm3qf" path="res://scripts/components/c_weapon.gd" id="12_jaor8"]
+[ext_resource type="Script" uid="uid://dujr5kvwjdvik" path="res://scripts/gameplay/ecs/authoring/authoring_daynight_cycle.gd" id="12_ngtjw"]
+[ext_resource type="Script" uid="uid://bmqw23or37e1b" path="res://scripts/gameplay/ecs/authoring/authoring_campfire.gd" id="26_campfire"]
+[ext_resource type="Script" uid="uid://3h468wtfgtc4" path="res://scripts/gameplay/ecs/authoring/authoring_survivor.gd" id="29_survivor"]
+[ext_resource type="Script" uid="uid://d2yxaiquyn5am" path="res://scripts/ui/crosshair.gd" id="crosshair_script"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_whkvs"]
+radius = 16.0
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_7rukt"]
+radius = 16.0
+
+[sub_resource type="Resource" id="Resource_hgh3w"]
+script = ExtResource("12_jaor8")
+metadata/_custom_type_script = "uid://bunjoiskwm3qf"
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_8y5nl"]
+radius = 16.0
+
+[node name="GOLWorld" type="Node"]
+script = ExtResource("1_hgh3w")
+entity_nodes_root = NodePath("Entities")
+system_nodes_root = NodePath("Systems")
+
+[node name="Maps" type="Node" parent="."]
+
+[node name="Street1" type="Sprite2D" parent="Maps"]
+position = Vector2(1099, 801)
+texture = ExtResource("2_7fr1c")
+metadata/_edit_lock_ = true
+
+[node name="Entities" type="Node" parent="."]
+
+[node name="Player" type="Node2D" parent="Entities"]
+position = Vector2(173, 548)
+script = ExtResource("3_f7nqx")
+animation_frames = ExtResource("5_ntrhd")
+collision_shape = SubResource("CircleShape2D_whkvs")
+
+[node name="Spawner4" type="Node2D" parent="Entities"]
+position = Vector2(1176, 195)
+script = ExtResource("6_8y5nl")
+texture = ExtResource("7_8e532")
+spawn_recipe_id = "enemy_basic"
+spawn_interval = 6.0
+spawn_interval_variance = null
+spawn_count = null
+spawn_radius = null
+max_spawn_count = 6
+active_condition = null
+
+[node name="Spawner5" type="Node2D" parent="Entities"]
+position = Vector2(1023, 922)
+script = ExtResource("6_8y5nl")
+texture = ExtResource("7_8e532")
+spawn_recipe_id = "enemy_basic"
+spawn_interval = 6.0
+spawn_interval_variance = null
+spawn_count = null
+spawn_radius = null
+max_spawn_count = 6
+active_condition = null
+
+[node name="Spawner6" type="Node2D" parent="Entities"]
+position = Vector2(1438, 739)
+script = ExtResource("6_8y5nl")
+texture = ExtResource("7_8e532")
+spawn_recipe_id = "enemy_basic"
+spawn_interval = 6.0
+spawn_interval_variance = null
+spawn_count = null
+spawn_radius = null
+max_spawn_count = 6
+active_condition = null
+
+[node name="Box_Rifle" type="Node2D" parent="Entities"]
+position = Vector2(233, 507)
+script = ExtResource("8_l44va")
+stored_recipe_id = "weapon_rifle"
+texture = ExtResource("10_ngtjw")
+collision_shape = SubResource("CircleShape2D_7rukt")
+
+[node name="Box_Pistal" type="Node2D" parent="Entities"]
+position = Vector2(1327, 538)
+script = ExtResource("8_l44va")
+stored_recipe_id = "weapon_pistol"
+required_component = SubResource("Resource_hgh3w")
+texture = ExtResource("10_ngtjw")
+collision_shape = SubResource("CircleShape2D_7rukt")
+
+[node name="Box_Tracker" type="Node2D" parent="Entities"]
+position = Vector2(296, 505)
+script = ExtResource("8_l44va")
+stored_recipe_id = "tracker"
+texture = ExtResource("10_ngtjw")
+collision_shape = SubResource("CircleShape2D_7rukt")
+
+[node name="Campfire" type="Node2D" parent="Entities"]
+position = Vector2(282, 696)
+script = ExtResource("26_campfire")
+
+[node name="Guard" type="Node2D" parent="Entities"]
+position = Vector2(76, 570)
+script = ExtResource("29_survivor")
+max_distance_from_camp = 500.0
+animation_frames = ExtResource("5_ntrhd")
+collision_shape = SubResource("CircleShape2D_8y5nl")
+metadata/_custom_type_script = "uid://3h468wtfgtc4"
+
+[node name="Guard2" type="Node2D" parent="Entities"]
+position = Vector2(117, 499)
+script = ExtResource("29_survivor")
+max_distance_from_camp = 500.0
+animation_frames = ExtResource("5_ntrhd")
+collision_shape = SubResource("CircleShape2D_8y5nl")
+metadata/_custom_type_script = "uid://3h468wtfgtc4"
+
+[node name="Guard3" type="Node2D" parent="Entities"]
+position = Vector2(39, 503)
+script = ExtResource("29_survivor")
+max_distance_from_camp = 500.0
+animation_frames = ExtResource("5_ntrhd")
+collision_shape = SubResource("CircleShape2D_8y5nl")
+metadata/_custom_type_script = "uid://3h468wtfgtc4"
+
+[node name="DaynightCycle" type="Node2D" parent="Entities"]
+script = ExtResource("12_ngtjw")
+current_time = 12.0
+day_weight = 7.0
+metadata/_custom_type_script = "uid://dujr5kvwjdvik"
+
+[node name="Spawner_Nightly" type="Node2D" parent="Entities"]
+position = Vector2(420, -490)
+script = ExtResource("6_8y5nl")
+texture = ExtResource("7_8e532")
+spawn_recipe_id = "enemy_raider"
+spawn_interval = 8.0
+spawn_count = 3
+max_spawn_count = 6
+active_condition = 2
+metadata/_custom_type_script = "uid://cclnglevxhiyf"
+
+[node name="Spawner_Nightly2" type="Node2D" parent="Entities"]
+position = Vector2(-580, 530)
+script = ExtResource("6_8y5nl")
+texture = ExtResource("7_8e532")
+spawn_recipe_id = "enemy_raider"
+spawn_interval = 8.0
+spawn_count = 3
+max_spawn_count = 6
+active_condition = 2
+metadata/_custom_type_script = "uid://cclnglevxhiyf"
+
+[node name="Systems" type="Node" parent="."]
+
+[node name="Crosshair" type="CanvasLayer" parent="."]
+script = ExtResource("crosshair_script")

@@ -1,0 +1,10 @@
+[gd_scene format=3 uid="uid://cxvk3h5m7n8qa"]
+
+[ext_resource type="Script" uid="uid://difk6cje0gcgv" path="res://scripts/debug/pcg_phase_debug_controller.gd" id="1_controller"]
+
+[node name="PCGPhaseDebug" type="Node2D" unique_id=1588366042]
+script = ExtResource("1_controller")
+
+[node name="Camera2D" type="Camera2D" parent="." unique_id=629154879]
+position = Vector2(480, 270)
+zoom = Vector2(0.5, 0.5)

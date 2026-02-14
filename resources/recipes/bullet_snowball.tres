@@ -1,0 +1,32 @@
+[gd_resource type="Resource" script_class="EntityRecipe" load_steps=12 format=3 uid="uid://c8yqv2jhf4tcp"]
+
+[ext_resource type="Script" uid="uid://2klkbre7bx43" path="res://scripts/gameplay/ecs/recipes/entity_recipe.gd" id="1"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/component.gd" id="1_component"]
+[ext_resource type="Resource" uid="uid://b2xr4qv8nhg5p" path="res://resources/recipes/bullet_normal.tres" id="2"]
+[ext_resource type="Script" uid="uid://bpttqlt705jgd" path="res://scripts/components/c_bullet.gd" id="3"]
+[ext_resource type="Script" uid="uid://ca2ulxgkvlg27" path="res://scripts/components/c_sprite.gd" id="4"]
+[ext_resource type="Texture2D" uid="uid://bdn0vjwwshsc" path="res://assets/sprites/bullets/bullet_snowball_16x.png" id="5"]
+[ext_resource type="Script" uid="uid://yr86cd0ohol6" path="res://scripts/components/c_collision.gd" id="6_wn6s3"]
+
+[sub_resource type="Resource" id="bullet"]
+script = ExtResource("3")
+type = 1
+
+[sub_resource type="Resource" id="sprite"]
+script = ExtResource("4")
+texture = ExtResource("5")
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_n1tok"]
+radius = 6.0
+
+[sub_resource type="Resource" id="Resource_til0v"]
+script = ExtResource("6_wn6s3")
+collision_shape = SubResource("CircleShape2D_n1tok")
+metadata/_custom_type_script = "uid://yr86cd0ohol6"
+
+[resource]
+script = ExtResource("1")
+recipe_id = "bullet_snowball"
+display_name = "Snowball Bullet"
+base_recipe = ExtResource("2")
+components = Array[ExtResource("1_component")]([SubResource("bullet"), SubResource("sprite"), SubResource("Resource_til0v")])

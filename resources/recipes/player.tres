@@ -1,0 +1,62 @@
+[gd_resource type="Resource" script_class="EntityRecipe" load_steps=28 format=3 uid="uid://bk7yf3pqr8gvn"]
+
+[ext_resource type="Script" uid="uid://2klkbre7bx43" path="res://scripts/gameplay/ecs/recipes/entity_recipe.gd" id="1"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/component.gd" id="1_component"]
+[ext_resource type="Script" uid="uid://dkqvacht67lnj" path="res://scripts/components/c_movement.gd" id="2"]
+[ext_resource type="Script" uid="uid://blbhw4b66nbtq" path="res://scripts/components/c_transform.gd" id="3"]
+[ext_resource type="Script" uid="uid://ca2ulxgkvlg27" path="res://scripts/components/c_sprite.gd" id="4"]
+[ext_resource type="Script" uid="uid://yr86cd0ohol6" path="res://scripts/components/c_collision.gd" id="5"]
+[ext_resource type="Script" uid="uid://b7akxyd2xrvep" path="res://scripts/components/c_hp.gd" id="6"]
+[ext_resource type="Script" path="res://scripts/components/c_player.gd" id="8"]
+[ext_resource type="Script" uid="uid://d27pqcmhmtjhc" path="res://scripts/components/c_pickup.gd" id="9"]
+[ext_resource type="Script" uid="uid://51tp4iyjnhkb" path="res://scripts/components/c_animation.gd" id="10"]
+[ext_resource type="SpriteFrames" uid="uid://bli7nwgra1obu" path="res://resources/sprite_frames/player.tres" id="10_xitqn"]
+[ext_resource type="Script" uid="uid://vbsr44gvp6tj" path="res://scripts/components/c_camp.gd" id="11_xitqn"]
+[ext_resource type="Script" uid="uid://bi0m07owhxki8" path="res://scripts/components/c_camera.gd" id="12_camera"]
+[ext_resource type="Script" uid="uid://cml33att4ck01" path="res://scripts/components/c_melee.gd" id="13_melee"]
+[ext_resource type="Script" path="res://scripts/components/c_aim.gd" id="14_aim"]
+
+[sub_resource type="Resource" id="movement"]
+script = ExtResource("2")
+
+[sub_resource type="Resource" id="transform"]
+script = ExtResource("3")
+
+[sub_resource type="Resource" id="sprite"]
+script = ExtResource("4")
+
+[sub_resource type="Resource" id="collision"]
+script = ExtResource("5")
+
+[sub_resource type="Resource" id="hp"]
+script = ExtResource("6")
+hp = null
+
+[sub_resource type="Resource" id="player"]
+script = ExtResource("8")
+
+[sub_resource type="Resource" id="pickup"]
+script = ExtResource("9")
+
+[sub_resource type="Resource" id="animation"]
+script = ExtResource("10")
+frames = ExtResource("10_xitqn")
+
+[sub_resource type="Resource" id="Resource_i4edh"]
+script = ExtResource("11_xitqn")
+metadata/_custom_type_script = "uid://vbsr44gvp6tj"
+
+[sub_resource type="Resource" id="camera"]
+script = ExtResource("12_camera")
+
+[sub_resource type="Resource" id="melee"]
+script = ExtResource("13_melee")
+
+[sub_resource type="Resource" id="aim"]
+script = ExtResource("14_aim")
+
+[resource]
+script = ExtResource("1")
+recipe_id = "player"
+display_name = "Player"
+components = Array[ExtResource("1_component")]([SubResource("movement"), SubResource("transform"), SubResource("sprite"), SubResource("collision"), SubResource("hp"), SubResource("player"), SubResource("pickup"), SubResource("animation"), SubResource("Resource_i4edh"), SubResource("camera"), SubResource("melee"), SubResource("aim")])

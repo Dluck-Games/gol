@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="GoapGoal" load_steps=2 format=3 uid="uid://bqtrtfoeqd2gd"]
+
+[ext_resource type="Script" uid="uid://bhl18hlmldpuq" path="res://scripts/gameplay/goap/goap_goal.gd" id="1_h532y"]
+
+[resource]
+script = ExtResource("1_h532y")
+goal_name = "Wander"
+priority = 1
+desired_state = {
+"has_threat": true
+}
+metadata/_custom_type_script = "uid://bhl18hlmldpuq"

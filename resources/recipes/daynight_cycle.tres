@@ -1,0 +1,16 @@
+[gd_resource type="Resource" script_class="EntityRecipe" load_steps=5 format=3 uid="uid://rmtih5qy8alt"]
+
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/component.gd" id="1_g6vww"]
+[ext_resource type="Script" uid="uid://bqbopv88sucfq" path="res://scripts/components/c_daynight_cycle.gd" id="2_21fua"]
+[ext_resource type="Script" uid="uid://2klkbre7bx43" path="res://scripts/gameplay/ecs/recipes/entity_recipe.gd" id="2_jsqtw"]
+
+[sub_resource type="Resource" id="Resource_wya82"]
+script = ExtResource("2_21fua")
+metadata/_custom_type_script = "uid://bqbopv88sucfq"
+
+[resource]
+script = ExtResource("2_jsqtw")
+recipe_id = "daynight_cycle"
+display_name = "DayNight Cycle"
+components = Array[ExtResource("1_g6vww")]([SubResource("Resource_wya82")])
+metadata/_custom_type_script = "uid://2klkbre7bx43"

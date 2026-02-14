@@ -1,0 +1,54 @@
+[gd_scene load_steps=3 format=3 uid="uid://dflyy0cd1a1ae"]
+
+[ext_resource type="Script" uid="uid://bgqkxhd7ei1mc" path="res://scripts/ui/views/menu/view_game_over.gd" id="1_vdn5i"]
+
+[sub_resource type="LabelSettings" id="LabelSettings_vdn5i"]
+font_size = 80
+font_color = Color(1, 0, 0, 1)
+
+[node name="GameOver" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_vdn5i")
+metadata/_custom_type_script = "uid://bgqkxhd7ei1mc"
+
+[node name="Panel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+metadata/_edit_use_anchors_ = true
+
+[node name="Label_Title" type="Label" parent="Panel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -199.0
+offset_top = 117.0
+offset_right = 200.0
+offset_bottom = 227.0
+grow_horizontal = 2
+text = "YOU DIED!"
+label_settings = SubResource("LabelSettings_vdn5i")
+horizontal_alignment = 1
+
+[node name="Button_Exit" type="Button" parent="Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 394.0
+offset_top = 331.0
+offset_right = -380.0
+offset_bottom = -156.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 32
+text = "Exit"

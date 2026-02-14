@@ -1,0 +1,64 @@
+[gd_resource type="Resource" script_class="EntityRecipe" load_steps=29 format=3 uid="uid://cwxqv8jhg5srq"]
+
+[ext_resource type="Script" uid="uid://2klkbre7bx43" path="res://scripts/gameplay/ecs/recipes/entity_recipe.gd" id="1"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/component.gd" id="1_component"]
+[ext_resource type="Script" uid="uid://dkqvacht67lnj" path="res://scripts/components/c_movement.gd" id="2"]
+[ext_resource type="Script" uid="uid://blbhw4b66nbtq" path="res://scripts/components/c_transform.gd" id="3"]
+[ext_resource type="Script" uid="uid://ca2ulxgkvlg27" path="res://scripts/components/c_sprite.gd" id="4"]
+[ext_resource type="Script" uid="uid://yr86cd0ohol6" path="res://scripts/components/c_collision.gd" id="5"]
+[ext_resource type="Script" uid="uid://b7akxyd2xrvep" path="res://scripts/components/c_hp.gd" id="6"]
+[ext_resource type="Script" uid="uid://vbsr44gvp6tj" path="res://scripts/components/c_camp.gd" id="7"]
+[ext_resource type="Script" uid="uid://c8ajqoi8wvl4w" path="res://scripts/components/ai/c_goap_agent.gd" id="8"]
+[ext_resource type="Script" uid="uid://bhl18hlmldpuq" path="res://scripts/gameplay/goap/goap_goal.gd" id="8_6tool"]
+[ext_resource type="Script" uid="uid://51tp4iyjnhkb" path="res://scripts/components/c_animation.gd" id="9"]
+[ext_resource type="Resource" uid="uid://cp3occ1kvu56p" path="res://resources/goals/clear_threat.tres" id="9_o5qtf"]
+[ext_resource type="Resource" uid="uid://bqtrtfoeqd2gd" path="res://resources/goals/wander.tres" id="10_33p1b"]
+[ext_resource type="SpriteFrames" uid="uid://br4x0pf1wl2bf" path="res://resources/sprite_frames/enemy.tres" id="11_lj0iu"]
+[ext_resource type="Script" uid="uid://crwf7m3ypqn4k" path="res://scripts/components/c_perception.gd" id="14_perception"]
+[ext_resource type="Script" uid="uid://xxie1xnmhvcf" path="res://scripts/components/c_semantic_translation.gd" id="15_semantic"]
+[ext_resource type="Script" uid="uid://cml33att4ck01" path="res://scripts/components/c_melee.gd" id="16_melee"]
+
+[sub_resource type="Resource" id="movement"]
+script = ExtResource("2")
+max_speed = 100.0
+
+[sub_resource type="Resource" id="transform"]
+script = ExtResource("3")
+
+[sub_resource type="Resource" id="sprite"]
+script = ExtResource("4")
+
+[sub_resource type="Resource" id="collision"]
+script = ExtResource("5")
+
+[sub_resource type="Resource" id="hp"]
+script = ExtResource("6")
+max_hp = 30.0
+hp = 30.0
+
+[sub_resource type="Resource" id="pawn"]
+script = ExtResource("7")
+camp = 1
+
+[sub_resource type="Resource" id="goap_agent"]
+script = ExtResource("8")
+goals = Array[ExtResource("8_6tool")]([ExtResource("9_o5qtf"), ExtResource("10_33p1b")])
+
+[sub_resource type="Resource" id="animation"]
+script = ExtResource("9")
+frames = ExtResource("11_lj0iu")
+
+[sub_resource type="Resource" id="perception"]
+script = ExtResource("14_perception")
+
+[sub_resource type="Resource" id="semantic_translation"]
+script = ExtResource("15_semantic")
+
+[sub_resource type="Resource" id="melee"]
+script = ExtResource("16_melee")
+
+[resource]
+script = ExtResource("1")
+recipe_id = "enemy_basic"
+display_name = "Basic Enemy"
+components = Array[ExtResource("1_component")]([SubResource("movement"), SubResource("transform"), SubResource("sprite"), SubResource("collision"), SubResource("hp"), SubResource("pawn"), SubResource("goap_agent"), SubResource("animation"), SubResource("perception"), SubResource("semantic_translation"), SubResource("melee")])

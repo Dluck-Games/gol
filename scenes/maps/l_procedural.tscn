@@ -1,0 +1,24 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" uid="uid://ckt2mvvlug2lc" path="res://scripts/gameplay/ecs/gol_world.gd" id="1_hgh3w"]
+[ext_resource type="Script" uid="uid://dcl4yo0at3e3l" path="res://scripts/gameplay/ecs/authoring/authoring_player.gd" id="3_f7nqx"]
+[ext_resource type="Script" uid="uid://dujr5kvwjdvik" path="res://scripts/gameplay/ecs/authoring/authoring_daynight_cycle.gd" id="12_ngtjw"]
+[ext_resource type="Script" uid="uid://d2yxaiquyn5am" path="res://scripts/ui/crosshair.gd" id="crosshair_script"]
+
+[node name="GOLWorld" type="Node"]
+script = ExtResource("1_hgh3w")
+entity_nodes_root = NodePath("Entities")
+system_nodes_root = NodePath("Systems")
+
+[node name="Entities" type="Node" parent="."]
+
+[node name="DaynightCycle" type="Node2D" parent="Entities"]
+script = ExtResource("12_ngtjw")
+current_time = 12.0
+day_weight = 7.0
+metadata/_custom_type_script = "uid://dujr5kvwjdvik"
+
+[node name="Systems" type="Node" parent="."]
+
+[node name="Crosshair" type="CanvasLayer" parent="."]
+script = ExtResource("crosshair_script")

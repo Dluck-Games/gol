@@ -1,0 +1,63 @@
+name: Debug Build
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-debug:
+    name: Build Debug
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Godot
+        id: cache-godot
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\Users\runneradmin\AppData\Roaming\Godot
+            C:\godot
+          key: godot-4.5.1-export-${{ runner.os }}
+
+      - name: Download and Setup Godot
+        if: steps.cache-godot.outputs.cache-hit != 'true'
+        shell: cmd
+        run: |
+          curl -L -o godot.zip https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_win64.exe.zip
+          tar -xf godot.zip -C C:\
+          ren "C:\Godot_v4.5.1-stable_win64.exe" godot.exe
+          mkdir C:\godot
+          move C:\godot.exe C:\godot\godot.exe
+          curl -L -o templates.zip https://github.com/godotengine/godot/releases/download/4.5.1-stable/Godot_v4.5.1-stable_export_templates.tpz
+          mkdir "%APPDATA%\Godot\export_templates\4.5.1.stable"
+          tar -xf templates.zip
+          move templates\* "%APPDATA%\Godot\export_templates\4.5.1.stable\"
+
+      - name: Import Project Assets
+        shell: cmd
+        run: C:\godot\godot.exe --headless --import --quit
+        timeout-minutes: 5
+
+      - name: Export Windows Debug Build
+        shell: cmd
+        run: |
+          mkdir build
+          C:\godot\godot.exe --headless --export-debug "gol-debug" build/gol-debug.exe
+          dir build
+        timeout-minutes: 10
+
+      - name: Package Debug Build
+        shell: cmd
+        run: ren build gol-debug
+
+      - name: Upload Debug Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gol-debug
+          path: gol-debug

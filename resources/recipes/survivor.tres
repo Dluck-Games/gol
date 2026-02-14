@@ -1,0 +1,85 @@
+[gd_resource type="Resource" script_class="EntityRecipe" load_steps=39 format=3 uid="uid://cx6cogm3ha0je"]
+
+[ext_resource type="Script" uid="uid://2klkbre7bx43" path="res://scripts/gameplay/ecs/recipes/entity_recipe.gd" id="1"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/component.gd" id="1_component"]
+[ext_resource type="Script" uid="uid://dkqvacht67lnj" path="res://scripts/components/c_movement.gd" id="2"]
+[ext_resource type="Script" uid="uid://blbhw4b66nbtq" path="res://scripts/components/c_transform.gd" id="3"]
+[ext_resource type="Script" uid="uid://ca2ulxgkvlg27" path="res://scripts/components/c_sprite.gd" id="4"]
+[ext_resource type="Script" uid="uid://yr86cd0ohol6" path="res://scripts/components/c_collision.gd" id="5"]
+[ext_resource type="Script" uid="uid://b7akxyd2xrvep" path="res://scripts/components/c_hp.gd" id="6"]
+[ext_resource type="Script" uid="uid://vbsr44gvp6tj" path="res://scripts/components/c_camp.gd" id="7"]
+[ext_resource type="Script" uid="uid://c8ajqoi8wvl4w" path="res://scripts/components/ai/c_goap_agent.gd" id="8"]
+[ext_resource type="Script" uid="uid://bhl18hlmldpuq" path="res://scripts/gameplay/goap/goap_goal.gd" id="8_goal"]
+[ext_resource type="Script" uid="uid://51tp4iyjnhkb" path="res://scripts/components/c_animation.gd" id="9"]
+[ext_resource type="Script" uid="uid://crwf7m3ypqn4k" path="res://scripts/components/c_perception.gd" id="10"]
+[ext_resource type="Script" uid="uid://xxie1xnmhvcf" path="res://scripts/components/c_semantic_translation.gd" id="11"]
+[ext_resource type="Script" uid="uid://cw8oa0pyr0wob" path="res://scripts/components/c_guard.gd" id="12"]
+[ext_resource type="Script" uid="uid://b2ek0if2g0y2x" path="res://scripts/components/c_tracker.gd" id="14"]
+[ext_resource type="Script" uid="uid://bunjoiskwm3qf" path="res://scripts/components/c_weapon.gd" id="15"]
+[ext_resource type="Script" uid="uid://cml33att4ck01" path="res://scripts/components/c_melee.gd" id="16_melee"]
+[ext_resource type="SpriteFrames" uid="uid://bli7nwgra1obu" path="res://resources/sprite_frames/player.tres" id="17_frames"]
+[ext_resource type="Resource" path="res://resources/goals/survive.tres" id="20_survive"]
+[ext_resource type="Resource" path="res://resources/goals/guard_duty.tres" id="21_guard_duty"]
+[ext_resource type="Resource" path="res://resources/goals/eliminate_threat.tres" id="22_eliminate"]
+[ext_resource type="Resource" path="res://resources/goals/patrol_camp.tres" id="23_patrol"]
+[ext_resource type="Script" uid="uid://t773omsoptp" path="res://scripts/components/c_aim.gd" id="24_aim"]
+
+[sub_resource type="Resource" id="movement"]
+script = ExtResource("2")
+max_speed = 100.0
+
+[sub_resource type="Resource" id="transform"]
+script = ExtResource("3")
+
+[sub_resource type="Resource" id="sprite"]
+script = ExtResource("4")
+
+[sub_resource type="Resource" id="collision"]
+script = ExtResource("5")
+
+[sub_resource type="Resource" id="hp"]
+script = ExtResource("6")
+max_hp = 50.0
+hp = 50.0
+
+[sub_resource type="Resource" id="camp"]
+script = ExtResource("7")
+
+[sub_resource type="Resource" id="goap_agent"]
+script = ExtResource("8")
+goals = Array[ExtResource("8_goal")]([ExtResource("20_survive"), ExtResource("21_guard_duty"), ExtResource("22_eliminate"), ExtResource("23_patrol")])
+
+[sub_resource type="Resource" id="animation"]
+script = ExtResource("9")
+frames = ExtResource("17_frames")
+
+[sub_resource type="Resource" id="perception"]
+script = ExtResource("10")
+
+[sub_resource type="Resource" id="semantic_translation"]
+script = ExtResource("11")
+
+[sub_resource type="Resource" id="guard"]
+script = ExtResource("12")
+camp_leash_distance = 800.0
+guard_post_threshold = 150.0
+
+[sub_resource type="Resource" id="tracker"]
+script = ExtResource("14")
+
+[sub_resource type="Resource" id="weapon"]
+script = ExtResource("15")
+bullet_recipe_id = "bullet_normal"
+can_fire = false
+
+[sub_resource type="Resource" id="melee"]
+script = ExtResource("16_melee")
+
+[sub_resource type="Resource" id="aim"]
+script = ExtResource("24_aim")
+
+[resource]
+script = ExtResource("1")
+recipe_id = "survivor"
+display_name = "Survivor Guard"
+components = Array[ExtResource("1_component")]([SubResource("movement"), SubResource("transform"), SubResource("sprite"), SubResource("collision"), SubResource("hp"), SubResource("camp"), SubResource("goap_agent"), SubResource("animation"), SubResource("perception"), SubResource("semantic_translation"), SubResource("guard"), SubResource("tracker"), SubResource("weapon"), SubResource("melee"), SubResource("aim")])

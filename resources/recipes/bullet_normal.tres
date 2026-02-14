@@ -1,0 +1,42 @@
+[gd_resource type="Resource" script_class="EntityRecipe" load_steps=17 format=3 uid="uid://b2xr4qv8nhg5p"]
+
+[ext_resource type="Script" uid="uid://2klkbre7bx43" path="res://scripts/gameplay/ecs/recipes/entity_recipe.gd" id="1"]
+[ext_resource type="Script" uid="uid://b6k13gc2m4e5s" path="res://addons/gecs/component.gd" id="1_component"]
+[ext_resource type="Script" uid="uid://dkqvacht67lnj" path="res://scripts/components/c_movement.gd" id="2"]
+[ext_resource type="Script" uid="uid://blbhw4b66nbtq" path="res://scripts/components/c_transform.gd" id="3"]
+[ext_resource type="Script" uid="uid://ca2ulxgkvlg27" path="res://scripts/components/c_sprite.gd" id="4"]
+[ext_resource type="Script" uid="uid://bpttqlt705jgd" path="res://scripts/components/c_bullet.gd" id="5"]
+[ext_resource type="Script" uid="uid://yr86cd0ohol6" path="res://scripts/components/c_collision.gd" id="6"]
+[ext_resource type="Script" uid="uid://bc0noglhec31e" path="res://scripts/components/c_lifetime.gd" id="7"]
+[ext_resource type="Texture2D" uid="uid://dlj1xw2g5yef" path="res://assets/sprites/bullets/bullet_normal_12x.png" id="8"]
+
+[sub_resource type="Resource" id="movement"]
+script = ExtResource("2")
+max_speed = 2000.0
+
+[sub_resource type="Resource" id="transform"]
+script = ExtResource("3")
+
+[sub_resource type="Resource" id="sprite"]
+script = ExtResource("4")
+texture = ExtResource("8")
+
+[sub_resource type="Resource" id="bullet"]
+script = ExtResource("5")
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_c875k"]
+radius = 4.0
+
+[sub_resource type="Resource" id="collision"]
+script = ExtResource("6")
+collision_shape = SubResource("CircleShape2D_c875k")
+
+[sub_resource type="Resource" id="lifetime"]
+script = ExtResource("7")
+lifetime = 3.0
+
+[resource]
+script = ExtResource("1")
+recipe_id = "bullet_normal"
+display_name = "Normal Bullet"
+components = Array[ExtResource("1_component")]([SubResource("movement"), SubResource("transform"), SubResource("sprite"), SubResource("bullet"), SubResource("collision"), SubResource("lifetime")])
