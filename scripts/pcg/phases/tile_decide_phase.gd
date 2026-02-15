@@ -185,19 +185,19 @@ func _is_crosswalk_position(pos: Vector2i, junction_pos: Vector2i, radius: int) 
 	var abs_dx := absi(dx)
 	var abs_dy := absi(dy)
 	
+	# Match road width: if radius=2, half_width=1, road is 3 cells wide (offsets -1, 0, 1)
 	var half_width := maxi(1, radius / 2)
-	var min_edge := maxi(1, radius - 1)
+	var min_edge := radius
 	var max_edge := radius
 	
+	# Approaches are cells on the road axes at exactly 'radius' distance from center
 	var on_vertical_approach := (abs_dy >= min_edge and abs_dy <= max_edge) and (abs_dx <= half_width)
 	var on_horizontal_approach := (abs_dx >= min_edge and abs_dx <= max_edge) and (abs_dy <= half_width)
 	
 	if abs_dx == 0 and abs_dy == 0:
 		return false
 	
-	if on_vertical_approach and abs_dx == 0:
-		return true
-	if on_horizontal_approach and abs_dy == 0:
+	if on_vertical_approach or on_horizontal_approach:
 		return true
 	
 	return false
@@ -323,6 +323,10 @@ func _apply_ground_preconditions(pos: Vector2i, cell: PCGCell, solver: _WFCSolve
 			if crosswalk_variant in candidates and _has_crosswalk_neighbor_at(pos, context):
 				solver.set_precondition(pos, crosswalk_variant)
 				return
+			# Fallback: if we detected it's near a crosswalk but specific variant doesn't exist,
+			# still prioritize the base edge variant over 'basic'
+			solver.set_precondition(pos, variant)
+			return
 		
 		solver.set_precondition(pos, variant)
 		return
