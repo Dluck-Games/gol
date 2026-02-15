@@ -7,6 +7,9 @@ gol-proj-04/
 # Sisyphus directory (西西弗斯目录)
 .sisyphus/
 
+# Shiori directory
+.shiori/
+
 # Editor settings
 .vscode/
 
