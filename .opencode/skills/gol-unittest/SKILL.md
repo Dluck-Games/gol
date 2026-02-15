@@ -1,5 +1,5 @@
 ---
-name: gdunit4-test
+name: gol-unittest
 description: Run GdUnit4 unit tests for Godot 4 GDScript projects
 license: MIT
 compatibility: opencode
