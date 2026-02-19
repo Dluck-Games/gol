@@ -1,33 +1,24 @@
 # PROJECT KNOWLEDGE BASE
 
-**Generated:** 2026-02-15 | **Commit:** 4d392d0 | **Branch:** main
+**Generated:** 2026-02-19 | **Branch:** main
 
 ## OVERVIEW
 
-God of Lego (GOL) -- 2D survival game, Godot 4.5. ECS (GECS addon) + MVVM UI + GOAP AI + PCG map generation.
-Monorepo with `gol-proj-main/` (READ-ONLY reference) and numbered work directories.
-
-## CRITICAL: Directory Permissions
-
-| Directory | Permission | Purpose |
-|-----------|------------|---------|
-| `gol-proj-main/` | **READ-ONLY** | Reference implementation. NEVER modify. |
-| `gol-proj-01/` | Read/Write | Active work directory (mirrors main) |
-| `gol-proj-02/` - `gol-proj-04/` | Read/Write | Reserved (currently empty) |
-| `gol-tools/` | Read/Write | Dev tools (LSP bridge, tile generators) |
+God of Lego (GOL) -- 2D survival game, Godot 4.6. ECS (GECS addon) + MVVM UI + GOAP AI + PCG map generation.
+Monorepo with `gol-project/` (game submodule) and `gol-tools/` (dev tools submodule).
 
 ## STRUCTURE
 
 ```
 gol/
-├── AGENTS.md                    # This file
-├── gol-proj-main/               # READ-ONLY reference (git submodule)
+├── AGENTS.md                    # This file (symlinked as CLAUDE.md)
+├── gol-project/                 # Game project (git submodule: god-of-lego)
 │   ├── project.godot            # Godot config, autoloads, input maps
 │   ├── scripts/                 # All game code (~180 GDScript files)
 │   │   ├── gol.gd              # GOL autoload -- game manager entry point
 │   │   ├── main.gd             # Scene entry -- calls GOL.setup() + start_game()
 │   │   ├── components/         # ECS Components (29 files, c_*.gd)
-│   │   ├── systems/            # ECS Systems (25 files, s_*.gd)
+│   │   ├── systems/            # ECS Systems (23 files, s_*.gd)
 │   │   ├── gameplay/           # GOAP AI + ECS authoring + game state
 │   │   ├── pcg/                # Procedural Content Generation (pipeline + WFC)
 │   │   ├── services/           # ServiceContext + 7 service implementations
@@ -43,8 +34,9 @@ gol/
 │   ├── assets/                  # Sprites, tiles, backgrounds, UI art
 │   ├── addons/                  # gecs, gdUnit4, imgui-godot
 │   └── .github/workflows/       # CI: run-tests, debug build, release build
-├── gol-proj-01/                 # Work copy (identical scripts to main)
-└── gol-tools/                   # LSP bridge (Node.js), tile gen (Python)
+└── gol-tools/                   # Dev tools (git submodule: gol-tools)
+    ├── foreman/                 # AI worker management daemon (Node.js)
+    └── gds-lsp/                 # GDScript LSP bridge (npm: godot-lsp-stdio-bridge)
 ```
 
 ## WHERE TO LOOK
@@ -140,7 +132,6 @@ extends ParentClass
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
-- **DO NOT** modify `gol-proj-main/`. Work in numbered directories only.
 - **DO NOT** create singletons beyond `ServiceContext` and `ECS`.
 - **DO NOT** put logic in Components -- they are pure data containers.
 - **DO NOT** access services directly -- always go through `ServiceContext.thing()`.
@@ -157,7 +148,12 @@ Godot --path "." -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd --run-tests
 # Run single test file
 Godot --path "." -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd --run-tests=res://tests/ai/test_enemy_ai.gd
 
-# No build/lint commands -- use Godot editor
+# GDS LSP bridge (for AI coding agents)
+npx godot-lsp-stdio-bridge
+
+# Foreman daemon (AI worker automation)
+node gol-tools/foreman/foreman-daemon.mjs
+node gol-tools/foreman/bin/foreman-ctl.mjs status
 ```
 
 ## CI/CD
@@ -169,7 +165,6 @@ Godot --path "." -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd --run-tests=res://
 
 ## NOTES
 
-- `gol-proj-01/` has `.godot/` cache + `reports/` (test reports) that `gol-proj-main/` doesn't
 - Chinese comments exist in some files (Config.gd, SMove, ECSUtils) -- this is normal
 - GoapGoal uses untyped Dictionary to avoid Godot 4.x StringName leak bug with typed dicts in .tres
 - `Config.BASE_COMPONENTS` defines which components survive death (non-droppable)
@@ -180,13 +175,14 @@ Godot --path "." -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd --run-tests=res://
 ## SUBDIRECTORY AGENTS.md
 
 Detailed domain knowledge in child files:
-- `gol-proj-main/scripts/components/AGENTS.md` -- Component catalog & patterns
-- `gol-proj-main/scripts/systems/AGENTS.md` -- System catalog & group assignments
-- `gol-proj-main/scripts/gameplay/AGENTS.md` -- GOAP AI + ECS authoring + recipes
-- `gol-proj-main/scripts/pcg/AGENTS.md` -- PCG pipeline, WFC, phases
-- `gol-proj-main/scripts/services/AGENTS.md` -- Service layer patterns
-- `gol-proj-main/scripts/ui/AGENTS.md` -- MVVM bindings & view lifecycle
-- `gol-proj-main/tests/AGENTS.md` -- Test patterns & gdUnit4 conventions
+- `gol-project/scripts/components/AGENTS.md` -- Component catalog & patterns
+- `gol-project/scripts/systems/AGENTS.md` -- System catalog & group assignments
+- `gol-project/scripts/gameplay/AGENTS.md` -- GOAP AI + ECS authoring + recipes
+- `gol-project/scripts/pcg/AGENTS.md` -- PCG pipeline, WFC, phases
+- `gol-project/scripts/services/AGENTS.md` -- Service layer patterns
+- `gol-project/scripts/ui/AGENTS.md` -- MVVM bindings & view lifecycle
+- `gol-project/tests/AGENTS.md` -- Test patterns & gdUnit4 conventions
+- `gol-tools/AGENTS.md` -- Foreman daemon & GDS LSP bridge
 
 ## AI ASSISTANT TOOLS
 
