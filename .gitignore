@@ -1,5 +1,6 @@
 # AI tool local state
-.claude/
+.claude/*
+!.claude/skills/
 .codebuddy/
 .foreman/
 .opencode/
