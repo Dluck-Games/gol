@@ -5,38 +5,33 @@
 ## OVERVIEW
 
 God of Lego (GOL) -- 2D survival game, Godot 4.6. ECS (GECS addon) + MVVM UI + GOAP AI + PCG map generation.
-Monorepo with `gol-project/` (game submodule) and `gol-tools/` (dev tools submodule).
 
 ## STRUCTURE
 
 ```
-gol/
-├── AGENTS.md                    # This file (symlinked as CLAUDE.md)
-├── gol-project/                 # Game project (git submodule: god-of-lego)
-│   ├── project.godot            # Godot config, autoloads, input maps
-│   ├── scripts/                 # All game code (~180 GDScript files)
-│   │   ├── gol.gd              # GOL autoload -- game manager entry point
-│   │   ├── main.gd             # Scene entry -- calls GOL.setup() + start_game()
-│   │   ├── components/         # ECS Components (29 files, c_*.gd)
-│   │   ├── systems/            # ECS Systems (23 files, s_*.gd)
-│   │   ├── gameplay/           # GOAP AI + ECS authoring + game state
-│   │   ├── pcg/                # Procedural Content Generation (pipeline + WFC)
-│   │   ├── services/           # ServiceContext + 7 service implementations
-│   │   ├── ui/                 # MVVM: ObservableProperty + ViewModels + Views
-│   │   ├── debug/              # ImGui debuggers (ECS, GOAP, PCG)
-│   │   ├── configs/            # Config.gd -- game constants
-│   │   ├── utils/              # ECSUtils helper
-│   │   └── actions/            # Action base class (non-GOAP)
-│   ├── scenes/                  # .tscn files (main, maps, UI, tests)
-│   ├── resources/               # .tres data (recipes, goals, sprite_frames)
-│   ├── tests/                   # gdUnit4 tests (ai, flow, pcg, system, unit)
-│   ├── shaders/                 # daynight_lighting, hit_flash
-│   ├── assets/                  # Sprites, tiles, backgrounds, UI art
-│   ├── addons/                  # gecs, gdUnit4, imgui-godot
-│   └── .github/workflows/       # CI: run-tests, debug build, release build
-└── gol-tools/                   # Dev tools (git submodule: gol-tools)
-    ├── foreman/                 # AI worker management daemon (Node.js)
-    └── gds-lsp/                 # GDScript LSP bridge (npm: godot-lsp-stdio-bridge)
+project-root/                  # Game project (god-of-lego repo)
+├── AGENTS.md                  # This file (symlinked as CLAUDE.md)
+├── project.godot              # Godot config, autoloads, input maps
+├── scripts/                   # All game code (~180 GDScript files)
+│   ├── gol.gd                 # GOL autoload -- game manager entry point
+│   ├── main.gd                # Scene entry -- calls GOL.setup() + start_game()
+│   ├── components/            # ECS Components (29 files, c_*.gd)
+│   ├── systems/               # ECS Systems (23 files, s_*.gd)
+│   ├── gameplay/              # GOAP AI + ECS authoring + game state
+│   ├── pcg/                   # Procedural Content Generation (pipeline + WFC)
+│   ├── services/              # ServiceContext + 7 service implementations
+│   ├── ui/                    # MVVM: ObservableProperty + ViewModels + Views
+│   ├── debug/                 # ImGui debuggers (ECS, GOAP, PCG)
+│   ├── configs/               # Config.gd -- game constants
+│   ├── utils/                 # ECSUtils helper
+│   └── actions/               # Action base class (non-GOAP)
+├── scenes/                    # .tscn files (main, maps, UI, tests)
+├── resources/                 # .tres data (recipes, goals, sprite_frames)
+├── tests/                     # gdUnit4 tests (ai, flow, pcg, system, unit)
+├── shaders/                   # daynight_lighting, hit_flash
+├── assets/                    # Sprites, tiles, backgrounds, UI art
+├── addons/                    # gecs, gdUnit4, imgui-godot
+└── .github/workflows/         # CI: run-tests, debug build, release build
 ```
 
 ## WHERE TO LOOK
@@ -175,14 +170,13 @@ node gol-tools/foreman/bin/foreman-ctl.mjs status
 ## SUBDIRECTORY AGENTS.md
 
 Detailed domain knowledge in child files:
-- `gol-project/scripts/components/AGENTS.md` -- Component catalog & patterns
-- `gol-project/scripts/systems/AGENTS.md` -- System catalog & group assignments
-- `gol-project/scripts/gameplay/AGENTS.md` -- GOAP AI + ECS authoring + recipes
-- `gol-project/scripts/pcg/AGENTS.md` -- PCG pipeline, WFC, phases
-- `gol-project/scripts/services/AGENTS.md` -- Service layer patterns
-- `gol-project/scripts/ui/AGENTS.md` -- MVVM bindings & view lifecycle
-- `gol-project/tests/AGENTS.md` -- Test patterns & gdUnit4 conventions
-- `gol-tools/AGENTS.md` -- Foreman daemon & GDS LSP bridge
+- `scripts/components/AGENTS.md` -- Component catalog & patterns
+- `scripts/systems/AGENTS.md` -- System catalog & group assignments
+- `scripts/gameplay/AGENTS.md` -- GOAP AI + ECS authoring + recipes
+- `scripts/pcg/AGENTS.md` -- PCG pipeline, WFC, phases
+- `scripts/services/AGENTS.md` -- Service layer patterns
+- `scripts/ui/AGENTS.md` -- MVVM bindings & view lifecycle
+- `tests/AGENTS.md` -- Test patterns & gdUnit4 conventions
 
 ## AI ASSISTANT TOOLS
 
