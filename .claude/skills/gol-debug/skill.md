@@ -1,28 +1,30 @@
 ---
-name: gol-screenshot
-description: Capture game screenshots, execute debug commands, run GDScript for testing, and control game state remotely
+name: gol-debug
+description: AI Debug Bridge for God of Lego - Execute debug commands, capture screenshots, run GDScript, and refresh game assets
 ---
 
-# gol-screenshot
+# gol-debug
 
-AI 调试工具集 - 截图、执行命令、运行脚本、控制游戏状态。
+AI 调试工具集 - 截图、执行命令、运行脚本、控制游戏状态、刷新资源。
 
 ## 功能
 
 | 功能 | 命令 |
 |------|------|
-| 截图 | `node gol-tools/screenshot/gol-screenshot.mjs` |
+| 截图 | `node gol-tools/screenshot/ai-debug.mjs screenshot` |
 | 执行命令 | `node gol-tools/screenshot/ai-debug.mjs console <cmd>` |
 | 表达式求值 | `node gol-tools/screenshot/ai-debug.mjs eval <expr>` |
 | 获取状态 | `node gol-tools/screenshot/ai-debug.mjs get <property>` |
 | 设置状态 | `node gol-tools/screenshot/ai-debug.mjs set <prop> <val>` |
 | 运行脚本 | `node gol-tools/screenshot/ai-debug.mjs script <file.gd>` |
+| 刷新资源 | `node gol-tools/screenshot/ai-debug.mjs refresh [what]` |
+| 重新导入 | `node gol-tools/screenshot/ai-debug.mjs reimport` |
 
 ## 截图
 
 ```bash
 cd /Users/dluckdu/Documents/Github/gol
-node gol-tools/screenshot/gol-screenshot.mjs
+node gol-tools/screenshot/ai-debug.mjs screenshot
 ```
 
 ## Debug 命令
@@ -117,6 +119,32 @@ node gol-tools/screenshot/ai-debug.mjs script test_enemy_count.gd
 - 必须 `extends Node`
 - 必须实现 `func run()` 方法
 - 返回值会被转为字符串输出
+
+## 资源刷新
+
+### 刷新游戏数据
+
+```bash
+# 重新加载实体配方
+node gol-tools/screenshot/ai-debug.mjs refresh recipes
+
+# 刷新配置
+node gol-tools/screenshot/ai-debug.mjs refresh config
+
+# 刷新 UI
+node gol-tools/screenshot/ai-debug.mjs refresh ui
+
+# 刷新所有
+node gol-tools/screenshot/ai-debug.mjs refresh all
+```
+
+### 重新导入资源
+
+用于解决 uid 文件更新问题或资源变更后的重新导入：
+
+```bash
+node gol-tools/screenshot/ai-debug.mjs reimport
+```
 
 ## 工作原理
 
