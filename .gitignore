@@ -1,3 +1,17 @@
+# ============================================
+# This is a MANAGEMENT repo (gol).
+# Game code lives in gol-project/ submodule.
+# Block game directories from being created here by mistake.
+# ============================================
+addons/
+assets/
+scenes/
+scripts/
+tests/
+resources/
+shaders/
+external/
+
 # AI tool local state
 .claude/*
 !.claude/skills/

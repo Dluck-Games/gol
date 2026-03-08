@@ -2,6 +2,11 @@
 
 **Generated:** 2026-02-19 | **Branch:** main
 
+> **WARNING — THIS IS A MANAGEMENT REPO, NOT THE GAME PROJECT.**
+> Game code, assets, scenes, scripts, tests all live in the `gol-project/` submodule.
+> **DO NOT** create or copy game files (scripts/, assets/, scenes/, etc.) into this root directory.
+> **DO NOT** run Godot commands from this directory. Always `cd gol-project/` first.
+
 ## OVERVIEW
 
 God of Lego (GOL) -- 2D survival game, Godot 4.6. ECS (GECS addon) + MVVM UI + GOAP AI + PCG map generation.
