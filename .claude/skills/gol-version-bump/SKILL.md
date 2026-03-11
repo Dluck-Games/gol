@@ -4,59 +4,142 @@ description: Automated version updates for Godot projects (god-of-lego). Trigger
 allowed-tools: Bash, Read, Edit
 ---
 
+## ⚠️ CRITICAL: Submodule-Only Operation
+
+**gol** is a parent repo that aggregates submodules. The actual Godot project with `project.godot` is in the **`gol-project/` submodule**.
+
+### Common Mistake to Avoid
+- ❌ DO NOT look for `project.godot` in `gol/` root
+- ❌ DO NOT commit version changes to `gol/` parent repo
+- ✅ ALWAYS operate inside `gol-project/` submodule
+
+### Directory Structure Awareness
+```
+gol/                      ← Parent repo (NO project.godot here)
+├── .claude/
+├── gol-project/          ← SUBMODULE: Actual Godot project
+│   ├── project.godot     ← TARGET FILE IS HERE
+│   └── ...
+└── gol-tools/            ← Another submodule
+```
+
 ## Standard Operating Procedure
 
-Before executing a version update, you must strictly adhere to the following steps:
+### 1. Location Verification (MANDATORY FIRST STEP)
+Before anything else, verify your location:
+```bash
+pwd                              # Check current directory
+ls project.godot 2>/dev/null     # Should FAIL if in gol/ root
+ls gol-project/project.godot     # Should SUCCEED if in gol/ root
+```
 
-### 1. Environment Check and Cleanup
-- **Branch restriction**: Must be executed on the `main` branch. If not currently on the `main` branch, switch and pull the latest code.
-- **Status cleanup**: Before updating, you must forcibly clean the workspace to ensure there are no uncommitted changes.
+**If you are in `gol/` root (not in `gol-project/`):**
+- Change into the submodule: `cd gol-project`
+- All subsequent operations happen INSIDE `gol-project/`
+
+### 2. Environment Check and Cleanup
+- **Branch restriction**: Must be executed on the `main` branch of the **submodule**.
+- **Status cleanup**: Clean the submodule workspace before updating.
   ```bash
+  cd gol-project  # Ensure you're in the submodule
   git checkout main
   git pull origin main
   git reset --hard HEAD
   git clean -fd
   ```
 
-### 2. Version Number Identification and Modification
-- **Target file**: `project.godot`
+### 3. Version Number Identification and Modification
+- **Target file**: `gol-project/project.godot` (inside the submodule)
 - **Operation logic**:
   1. Read `config/version="x.x.x"` from `project.godot`.
   2. Calculate the new version number based on the update requirement (patch/minor/major).
   3. Use `sed` or file read/write tools to update that line.
 
-### 3. Commit and Archaeological Standards
+### 4. Commit, Tag, and Push (Submodule)
 - **Commit Message**: Must strictly follow the format `chore: bump version to x.x.x`.
 - **Tag format**: Must use a pure numeric version number (e.g., `0.1.5`), do not use the `v` prefix.
-- **Operational history reference**: Always confirm previous formats via `git log` and `git tag`.
-
-### 4. Push
-- After completing local commit and tag, automatically push to the remote:
   ```bash
+  # Inside gol-project/ submodule
+  git add project.godot
+  git commit -m "chore: bump version to $NEW_VERSION"
+  git tag $NEW_VERSION
   git push origin main
   git push origin --tags
   ```
 
-## Automated Script Example
-
-You can use the following logic for operations:
+### 5. CRITICAL: Update Parent Repo Submodule Pointer
+**After pushing the submodule, you MUST update the parent repo:**
 
 ```bash
-# Assuming current version is 0.1.4 and you want to update to 0.1.5
+cd ..  # Go back to gol/ parent directory
+git add gol-project
+git commit -m "chore: update gol-project submodule (bump version to $NEW_VERSION)"
+git push origin main
+```
+
+**⚠️ DO NOT SKIP THIS STEP.** The parent repo tracks a specific submodule commit. Without this step, other developers will not see the version bump.
+
+## Automated Script Example
+
+Complete workflow including submodule and parent repo updates:
+
+```bash
+# ============ PHASE 1: Submodule (gol-project) ============
+cd gol-project  # CRITICAL: Must operate in submodule
+
 NEW_VERSION="0.1.5"
+
+# Verify location
+current_dir=$(pwd)
+if [[ "$current_dir" != *"gol-project"* ]]; then
+    echo "ERROR: Must run inside gol-project submodule!"
+    exit 1
+fi
 
 # Modify file
 sed -i '' "s/config\/version=\".*\"/config\/version=\"$NEW_VERSION\"/" project.godot
 
-# Commit and tag
+# Commit and tag in submodule
 git add project.godot
 git commit -m "chore: bump version to $NEW_VERSION"
 git tag $NEW_VERSION
+git push origin main
+git push origin --tags
 
-# Push
-git push origin main && git push origin --tags
+# ============ PHASE 2: Parent Repo (gol) ============
+cd ..  # Back to parent repo
+git add gol-project
+git commit -m "chore: update gol-project submodule (bump version to $NEW_VERSION)"
+git push origin main
+```
+
+## Verification Checklist
+
+Before declaring success, verify:
+- [ ] `pwd` shows you're in `gol-project/` when modifying files
+- [ ] `project.godot` was found and modified inside `gol-project/`
+- [ ] Commit and tag were pushed from `gol-project/` submodule
+- [ ] Parent repo `gol/` has an updated submodule pointer commit
+- [ ] Parent repo push includes `gol-project @ <new-commit-hash>`
+
+## Error Prevention
+
+### If you get "project.godot not found":
+```bash
+# You're probably in wrong directory
+cd gol-project  # Fix it
+```
+
+### If parent repo shows "modified: gol-project (new commits)":
+```bash
+# You forgot Phase 2 - update parent repo
+cd ..  # Go to gol/ root
+git add gol-project
+git commit -m "chore: update gol-project submodule (bump version to X.X.X)"
+git push origin main
 ```
 
 ## Notes
-- After modifying `project.godot`, it is recommended to briefly check file integrity.
-- Ensure you have push permissions.
+- After modifying `project.godot`, verify the version line is correct.
+- Ensure you have push permissions to both `gol-project` and `gol` repos.
+- The submodule (`gol-project`) and parent repo (`gol`) are **separate git repositories** with separate remotes.
