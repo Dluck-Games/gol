@@ -1,194 +1,152 @@
-# PROJECT KNOWLEDGE BASE
+# GOL — Management Repo Knowledge Base
 
-**Generated:** 2026-02-19 | **Branch:** main
+> **THIS IS A MANAGEMENT REPO.** Game code lives in `gol-project/` submodule.
+> **NEVER** create game files (scripts/, assets/, scenes/) at this root.
+> **NEVER** run Godot from this directory — always work inside `gol-project/`.
 
-> **WARNING — THIS IS A MANAGEMENT REPO, NOT THE GAME PROJECT.**
-> Game code, assets, scenes, scripts, tests all live in the `gol-project/` submodule.
-> **DO NOT** create or copy game files (scripts/, assets/, scenes/, etc.) into this root directory.
-> **DO NOT** run Godot commands from this directory. Always `cd gol-project/` first.
+## Project
 
-## OVERVIEW
+God of Lego (GOL) — 2D survival game, Godot 4.6, GDScript.
+Architecture: ECS ([GECS](addons/gecs)) + MVVM UI + GOAP AI + PCG map generation.
 
-God of Lego (GOL) -- 2D survival game, Godot 4.6. ECS (GECS addon) + MVVM UI + GOAP AI + PCG map generation.
-
-## STRUCTURE
+## Repo Structure
 
 ```
-project-root/                  # Game project (god-of-lego repo)
-├── AGENTS.md                  # This file (symlinked as CLAUDE.md)
-├── project.godot              # Godot config, autoloads, input maps
-├── scripts/                   # All game code (~180 GDScript files)
-│   ├── gol.gd                 # GOL autoload -- game manager entry point
-│   ├── main.gd                # Scene entry -- calls GOL.setup() + start_game()
-│   ├── components/            # ECS Components (29 files, c_*.gd)
-│   ├── systems/               # ECS Systems (23 files, s_*.gd)
-│   ├── gameplay/              # GOAP AI + ECS authoring + game state
-│   ├── pcg/                   # Procedural Content Generation (pipeline + WFC)
-│   ├── services/              # ServiceContext + 7 service implementations
-│   ├── ui/                    # MVVM: ObservableProperty + ViewModels + Views
-│   ├── debug/                 # ImGui debuggers (ECS, GOAP, PCG)
-│   ├── configs/               # Config.gd -- game constants
-│   ├── utils/                 # ECSUtils helper
-│   └── actions/               # Action base class (non-GOAP)
-├── scenes/                    # .tscn files (main, maps, UI, tests)
-├── resources/                 # .tres data (recipes, goals, sprite_frames)
-├── tests/                     # gdUnit4 tests (ai, flow, pcg, system, unit)
-├── shaders/                   # daynight_lighting, hit_flash
-├── assets/                    # Sprites, tiles, backgrounds, UI art
-├── addons/                    # gecs, gdUnit4, imgui-godot
-└── .github/workflows/         # CI: run-tests, debug build, release build
+gol/                           # Management repo (YOU ARE HERE)
+├── AGENTS.md / CLAUDE.md      # This file (CLAUDE.md is symlink)
+├── gol-project/               # Game code submodule (god-of-lego repo)
+│   ├── scripts/               # ~180 GDScript files
+│   │   ├── components/        # ECS Components (c_*.gd)
+│   │   ├── systems/           # ECS Systems (s_*.gd, auto-discovered)
+│   │   ├── gameplay/          # GOAP AI + ECS authoring + game state
+│   │   ├── pcg/               # PCG pipeline + WFC
+│   │   ├── services/          # ServiceContext + 7 service impls
+│   │   ├── ui/                # MVVM: ViewModels + Views
+│   │   ├── debug/             # ImGui debuggers
+│   │   └── configs/           # Config.gd — game constants
+│   ├── scenes/                # .tscn files
+│   ├── resources/             # .tres (recipes, goals, sprite_frames)
+│   ├── tests/                 # gdUnit4 tests (ai/, flow/, pcg/, system/, unit/)
+│   └── addons/                # gecs, gdUnit4, imgui-godot
+└── gol-tools/                 # Tooling submodule (foreman, gds-lsp)
 ```
 
-## WHERE TO LOOK
+## Where to Look
 
-| Task | Location | Notes |
-|------|----------|-------|
-| Add new entity type | `scripts/gameplay/ecs/authoring/` + `resources/recipes/` | Create authoring + recipe .tres |
-| Add ECS component | `scripts/components/c_*.gd` | Extend Component, data only |
-| Add ECS system | `scripts/systems/s_*.gd` | Extend System, set group in `_ready()` |
-| Add GOAP action | `scripts/gameplay/goap/actions/` | Extend GoapAction, set preconditions/effects |
-| Add GOAP goal | `resources/goals/*.tres` | GoapGoal resource, assign to recipe |
-| Add UI element | `scripts/ui/viewmodels/` + `scripts/ui/views/` + `scenes/ui/` | ViewModel + View + .tscn |
-| Add service | `scripts/services/impl/service_*.gd` | Extend ServiceBase, register in ServiceContext |
-| Add PCG phase | `scripts/pcg/phases/` | Extend PCGPhase, add to pipeline |
-| Add test | `tests/{category}/test_*.gd` | gdUnit4 format |
-| Debug AI | `scripts/debug/goap_debugger.gd` | ImGui-based GOAP inspector |
-| Debug ECS | `scripts/debug/ecs_debugger.gd` | ImGui-based entity inspector |
-| Game constants | `scripts/configs/config.gd` | Speeds, GOAP distances, base components |
+| Task | Location (inside gol-project/) | Notes |
+|------|-------------------------------|-------|
+| New entity type | `scripts/gameplay/ecs/authoring/` + `resources/recipes/` | Authoring + recipe .tres |
+| ECS component | `scripts/components/c_*.gd` | Data only, extend Component |
+| ECS system | `scripts/systems/s_*.gd` | Extend System, set group in `_ready()` |
+| GOAP action | `scripts/gameplay/goap/actions/` | Extend GoapAction |
+| GOAP goal | `resources/goals/*.tres` | GoapGoal resource |
+| UI element | `scripts/ui/viewmodels/` + `views/` + `scenes/ui/` | ViewModel + View + .tscn |
+| Service | `scripts/services/impl/service_*.gd` | Extend ServiceBase |
+| PCG phase | `scripts/pcg/phases/` | Extend PCGPhase |
+| Tests | `tests/{category}/test_*.gd` | gdUnit4, use skill `gol-unittest` |
+| Game constants | `scripts/configs/config.gd` | Speeds, distances, base components |
 
-## ARCHITECTURE
+## Architecture
 
-### Data Flow (one-way)
+**Data flow (one-way):** `System → Component → ViewModel → View`
 
-```
-System -> Component -> ViewModel -> View
-```
-
-### System Processing Order (GOLWorld)
+**System groups (GOLWorld processing order):**
 
 | Order | Group | Frame | Purpose |
 |-------|-------|-------|---------|
 | 1 | `gameplay` | `_process` | Movement, combat, AI, spawning, day/night |
 | 2 | `ui` | `_process` | HUD, HP bars |
 | 3 | `render` | `_process` | Sprite sync, map render, lighting |
-| 4 | `physics` | `_physics_process` | Collision detection (Area2D) |
+| 4 | `physics` | `_physics_process` | Collision detection |
 
-### Autoloads
+**Autoloads:** `ECS` (framework), `GOL` (game manager, `GOL.Game` for state), `DebugPanel`, `ImGuiRoot`
 
-| Name | Path | Purpose |
-|------|------|---------|
-| `ECS` | `addons/gecs/ecs.gd` | ECS framework singleton |
-| `GOL` | `scripts/gol.gd` | Game manager (GOL.Game for state) |
-| `DebugPanel` | `scripts/debug/debug_panel.gd` | Debug UI toggle |
-| `ImGuiRoot` | `addons/imgui-godot/data/ImGuiRoot.tscn` | ImGui rendering |
+**Boot:** `main.tscn → GOL.setup() → ServiceContext.static_setup() → GOL.start_game() → PCG generate → GOLWorld.initialize() → auto-discover systems → bake entities → spawn`
 
-### Boot Sequence
+## Naming Conventions (STRICT)
 
-```
-main.tscn -> main.gd._ready()
-  -> GOL.setup()
-    -> ServiceContext.static_setup(root)  # Registers all 7 services
-  -> GOL.start_game()
-    -> ServiceContext.pcg().generate()    # PCG map generation
-    -> ServiceContext.scene().switch_scene("procedural")
-      -> GOLWorld.initialize()
-        -> _load_all_systems()            # Auto-discovers s_*.gd
-        -> EntityBaker.bake_world()       # Bakes authoring nodes
-        -> _spawn_player/campfire/guards/spawners/loot
-```
+| Type | Class | File | Example |
+|------|-------|------|---------|
+| Component | `CThing` | `c_thing.gd` | `CTransform` / `c_transform.gd` |
+| System | `SThing` | `s_thing.gd` | `SMove` / `s_move.gd` |
+| Service | `Service_Thing` | `service_thing.gd` | `Service_PCG` / `service_pcg.gd` |
+| ViewModel | `ViewModelThing` | `viewmodel_thing.gd` | `ViewModelHud` / `viewmodel_hud.gd` |
+| View | `View_Thing` | `view_thing.gd` | `View_HPBar` / `view_hp_bar.gd` |
+| GOAP Action | `GoapAction_Thing` | `thing.gd` | `GoapAction_ChaseTarget` / `chase_target.gd` |
 
-## CONVENTIONS
-
-### Naming (STRICT)
-
-| Type | Class Pattern | File Pattern | Example |
-|------|---------------|--------------|---------|
-| Component | `CThing` | `c_thing.gd` | `CTransform` in `c_transform.gd` |
-| System | `SThing` | `s_thing.gd` | `SMove` in `s_move.gd` |
-| Service | `Service_Thing` | `service_thing.gd` | `Service_PCG` in `service_pcg.gd` |
-| ViewModel | `ViewModelThing` | `viewmodel_thing.gd` | `ViewModelHud` in `viewmodel_hud.gd` |
-| View | `ViewThing` / `View_Thing` | `view_thing.gd` | `View_HPBar` in `view_hp_bar.gd` |
-| GOAP Action | `GoapAction_Thing` | `thing.gd` (snake_case) | `GoapAction_ChaseTarget` in `chase_target.gd` |
-| GOAP Goal | -- | `thing.tres` | `eliminate_threat.tres` |
-| Entity Recipe | -- | `thing.tres` | `enemy_basic.tres` |
-
-### File Structure (every .gd file)
+## Code Style
 
 ```gdscript
-class_name MyClass
+class_name MyClass          # ALWAYS declare class_name
 extends ParentClass
 
-# Order: Constants -> Signals -> Enums -> @export -> Public vars -> Private vars
-# Then: Lifecycle -> Public funcs -> Private funcs
+# Order: Constants → Signals → Enums → @export → Public vars → Private vars
+# Then:  Lifecycle → Public funcs → Private funcs
 ```
 
-### Code Style
+- **Tabs** for indentation
+- **Static typing everywhere**: `: int`, `-> void`, `Array[Entity]`
+- **Short functions**, early returns
+- **Entity creation**: `ServiceContext.recipe().create_entity_by_id("id")`
+- **Service access**: `ServiceContext.thing()` — never direct
 
-- **Indentation**: Tabs
-- **Types**: Static typing everywhere (`: int`, `-> void`)
-- **Functions**: Short, early returns
-- **Singletons**: Only `ServiceContext` and `ECS`. Access services via `ServiceContext.thing()`
-- **Entity creation**: Prefer `ServiceContext.recipe().create_entity_by_id("id")` over manual assembly
+## Anti-Patterns
 
-## ANTI-PATTERNS (THIS PROJECT)
+- Components with logic — they are **pure data**
+- New singletons — only `ServiceContext` and `ECS` exist
+- Direct service access — always `ServiceContext.thing()`
+- Manual system instantiation — `GOLWorld._load_all_systems()` auto-discovers
+- Using `GoapAction_MoveTo` directly — it's abstract, extend it
+- Omitting `class_name` — every `.gd` file must have one
 
-- **DO NOT** create singletons beyond `ServiceContext` and `ECS`.
-- **DO NOT** put logic in Components -- they are pure data containers.
-- **DO NOT** access services directly -- always go through `ServiceContext.thing()`.
-- **DO NOT** manually instantiate systems -- `GOLWorld._load_all_systems()` auto-discovers them.
-- **DO NOT** use `GoapAction_MoveTo` directly -- it's abstract. Extend it.
-- **DO NOT** skip `class_name` declaration at top of any .gd file.
+## Submodule Workflow (CRITICAL)
 
-## COMMANDS
+All code changes happen inside `gol-project/`. Push order matters:
 
 ```bash
-# Run tests (gdUnit4) -- from project directory
-Godot --path "." -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd --run-tests
-
-# Run single test file
-Godot --path "." -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd --run-tests=res://tests/ai/test_enemy_ai.gd
-
-# GDS LSP bridge (for AI coding agents)
-npx godot-lsp-stdio-bridge
-
-# Foreman daemon (AI worker automation)
-node gol-tools/foreman/foreman-daemon.mjs
-node gol-tools/foreman/bin/foreman-ctl.mjs status
+# 1. Commit in submodule
+cd gol-project && git add . && git commit -m "feat: ..."
+# 2. Push submodule FIRST
+git push
+# 3. Update management repo reference
+cd .. && git add gol-project && git commit -m "chore: update submodule" && git push
 ```
+
+**NEVER** run `git checkout` / Godot commands from the `gol/` root.
+
+## Gotchas
+
+- Chinese comments in some files (Config.gd, SMove, ECSUtils) — normal
+- `GoapGoal` uses untyped Dictionary — Godot 4.x StringName leak bug workaround
+- `Config.BASE_COMPONENTS` — components that survive death
+- PCG uses seeded RNG — same seed = same map
+- Entity recipes support inheritance via `base_recipe`
+
+## Domain Knowledge (subdirectory AGENTS.md)
+
+Detailed domain docs live alongside the code:
+- `scripts/components/AGENTS.md` — Component catalog
+- `scripts/systems/AGENTS.md` — System catalog & groups
+- `scripts/gameplay/AGENTS.md` — GOAP AI + ECS authoring + recipes
+- `scripts/pcg/AGENTS.md` — PCG pipeline & WFC
+- `scripts/services/AGENTS.md` — Service layer
+- `scripts/ui/AGENTS.md` — MVVM bindings
+- `tests/AGENTS.md` — Test patterns & gdUnit4
+
+## Available Skills (load via tools, NOT injected here)
+
+| Skill | Purpose |
+|-------|---------|
+| `gol-unittest` | Run gdUnit4 tests (all, single file, directory) |
+| `gol-debug` | AI Debug Bridge — screenshots, console, scripts, state |
+| `gol-e2e` | E2E acceptance tests against live game |
+| `gol-run` | Launch game for playtesting |
+| `gol-clean` | Reset repo to clean state |
+| `gol-version-bump` | Bump version in project.godot |
+| `git-master` | Git operations — commits, rebase, history search |
 
 ## CI/CD
 
-- **run-tests.yml**: Runs gdUnit4 on push to main/develop and PRs
-- **debug.yml**: Debug build on push to main (Windows)
-- **release.yml**: Release build on version tags (`X.Y.Z`)
-- All use Godot 4.5.1, Ubuntu (tests) / Windows (builds)
-
-## NOTES
-
-- Chinese comments exist in some files (Config.gd, SMove, ECSUtils) -- this is normal
-- GoapGoal uses untyped Dictionary to avoid Godot 4.x StringName leak bug with typed dicts in .tres
-- `Config.BASE_COMPONENTS` defines which components survive death (non-droppable)
-- `Config.DEATH_REMOVE_COMPONENTS` defines components stripped on death animation
-- PCG uses seeded RNG -- same seed = same map
-- Entity recipes support inheritance via `base_recipe` field
-
-## SUBDIRECTORY AGENTS.md
-
-Detailed domain knowledge in child files:
-- `scripts/components/AGENTS.md` -- Component catalog & patterns
-- `scripts/systems/AGENTS.md` -- System catalog & group assignments
-- `scripts/gameplay/AGENTS.md` -- GOAP AI + ECS authoring + recipes
-- `scripts/pcg/AGENTS.md` -- PCG pipeline, WFC, phases
-- `scripts/services/AGENTS.md` -- Service layer patterns
-- `scripts/ui/AGENTS.md` -- MVVM bindings & view lifecycle
-- `tests/AGENTS.md` -- Test patterns & gdUnit4 conventions
-
-## AI ASSISTANT TOOLS
-
-```bash
-# Claude Code Internal (preferred)
-claude-internal -p --output-format stream-json --verbose "task"
-
-# CodeBuddy CLI (fallback)
-codebuddy -p --model claude-4.5 --verbose "task"
-```
+- **run-tests.yml**: gdUnit4 on push to main/develop + PRs
+- **release.yml**: Build on version tags (`X.Y.Z`, no `v` prefix)
+- Godot 4.5.1, Ubuntu (tests) / Windows (builds)
