@@ -204,15 +204,47 @@ status=FAIL
 Error: failed to compile script (error 43)
 ```
 
-### Step 6: Screenshot (Optional)
+### Step 6: Screenshot & Upload (Optional)
 
-For visual features, capture a screenshot:
+For visual features, capture a screenshot and upload to share in GitHub Issue/PR:
+
+#### 6.1 Capture Screenshot
 
 ```bash
 node gol-tools/ai-debug/ai-debug.mjs screenshot
 ```
 
-Then read the screenshot file to visually verify.
+Screenshot saved to: `~/Library/Application Support/Godot/app_userdata/God of Lego/ai_screenshot.png`
+
+#### 6.2 Upload to Litterbox (Recommended)
+
+Use Litterbox (Catbox temporary storage) — **no registration required**, supports up to 1GB files.
+
+**Upload command:**
+
+```bash
+curl -F "fileToUpload=@/Users/dluckdu/Library/Application Support/Godot/app_userdata/God of Lego/ai_screenshot.png" \
+  -F "reqtype=fileupload" \
+  -F "time=72h" \
+  https://litterbox.catbox.moe/resources/internals/api.php
+```
+
+**Parameters:**
+- `time`: Expiration time — `1h`, `12h`, `24h`, or `72h` (default: 72h for maximum retention)
+
+**Response:** Returns direct image URL (e.g., `https://litter.catbox.moe/xxxxx.png`)
+
+#### 6.3 Add to GitHub Issue/PR
+
+```bash
+cd gol-project && gh issue comment <ISSUE_NUMBER> --body "![E2E Screenshot](<URL_FROM_STEP_6_2>)"
+```
+
+**Why Litterbox:**
+- ✅ No registration or API key needed
+- ✅ No daily upload limits
+- ✅ 72-hour retention (sufficient for issue comments)
+- ✅ Supports files up to 1GB
 
 ### Step 7: Report Results
 
