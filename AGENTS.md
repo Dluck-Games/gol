@@ -11,21 +11,21 @@ Architecture: ECS ([GECS](addons/gecs)) + MVVM UI + GOAP AI + PCG map generation
 
 ```
 gol/                               # Management repo (YOU ARE HERE)
-├── AGENTS.md                      # 管理仓库知识（工作流程、CI/CD）
+├── AGENTS.md                      # Workflow, CI/CD, agent preferences
 ├── gol-project/                   # Game code submodule
-│   ├── AGENTS.md                  # 代码总览 — 首次进入时阅读
+│   ├── AGENTS.md                  # Code overview — read on first entry
 │   ├── scripts/
-│   │   ├── components/AGENTS.md   # 组件开发 → 查阅组件目录
-│   │   ├── systems/AGENTS.md      # 系统开发 → 查阅系统目录
-│   │   ├── gameplay/AGENTS.md     # GOAP AI / ECS Authoring → 查阅此处
-│   │   ├── pcg/AGENTS.md          # 地图生成 → 查阅此处
-│   │   ├── services/AGENTS.md     # 服务层 → 查阅此处
-│   │   └── ui/AGENTS.md           # UI/MVVM → 查阅此处
-│   └── tests/AGENTS.md            # 测试 → 查阅此处
+│   │   ├── components/AGENTS.md   # Component catalog
+│   │   ├── systems/AGENTS.md      # System catalog
+│   │   ├── gameplay/AGENTS.md     # GOAP AI / ECS Authoring
+│   │   ├── pcg/AGENTS.md          # Map generation pipeline
+│   │   ├── services/AGENTS.md     # Service layer
+│   │   └── ui/AGENTS.md           # UI / MVVM
+│   └── tests/AGENTS.md            # Testing patterns
 └── gol-tools/                     # Tooling submodule
-    ├── foreman/                   # AI daemon: GitHub issue → PR 自动化流水线
-    ├── gds-lsp/                   # GDScript LSP stdio-TCP bridge（npm: godot-lsp-stdio-bridge）
-    └── ai-debug/                  # AI Debug Bridge: 游戏运行时截图、命令、脚本注入
+    ├── foreman/                   # AI daemon: GitHub issue → PR automation pipeline
+    ├── gds-lsp/                   # GDScript LSP stdio-TCP bridge (npm: godot-lsp-stdio-bridge)
+    └── ai-debug/                  # AI Debug Bridge: runtime screenshots, commands, script injection
 ```
 
 ## CI/CD
