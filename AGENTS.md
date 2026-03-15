@@ -14,36 +14,27 @@ Architecture: ECS ([GECS](addons/gecs)) + MVVM UI + GOAP AI + PCG map generation
 渐进式披露 — 按需阅读：
 
 ```
-gol/
-└── AGENTS.md                    # YOU ARE HERE — 管理仓库知识（工作流程、CI/CD）
-    
-gol-project/
-├── AGENTS.md                    # 代码总览 — 首次进入子模块时阅读
-│                               #   • Repo Structure, Where to Look
-│                               #   • Architecture, Naming Conventions
-│                               #   • Code Style, Anti-Patterns
-├── scripts/
-│   ├── components/AGENTS.md     # 组件开发 → 查阅组件目录
-│   ├── systems/AGENTS.md        # 系统开发 → 查阅系统目录
-│   ├── gameplay/AGENTS.md       # GOAP AI / ECS Authoring → 查阅此处
-│   ├── pcg/AGENTS.md            # 地图生成 → 查阅此处
-│   ├── services/AGENTS.md       # 服务层 → 查阅此处
-│   └── ui/AGENTS.md             # UI/MVVM → 查阅此处
-└── tests/AGENTS.md              # 测试 → 查阅此处
+gol/                               # Management repo (YOU ARE HERE)
+├── AGENTS.md                      # 管理仓库知识（工作流程、CI/CD）
+├── gol-project/                   # Game code submodule
+│   ├── AGENTS.md                  # 代码总览 — 首次进入时阅读
+│   │                             #   • Repo Structure, Where to Look
+│   │                             #   • Architecture, Naming Conventions
+│   │                             #   • Code Style, Anti-Patterns
+│   ├── scripts/
+│   │   ├── components/AGENTS.md   # 组件开发 → 查阅组件目录
+│   │   ├── systems/AGENTS.md      # 系统开发 → 查阅系统目录
+│   │   ├── gameplay/AGENTS.md     # GOAP AI / ECS Authoring → 查阅此处
+│   │   ├── pcg/AGENTS.md          # 地图生成 → 查阅此处
+│   │   ├── services/AGENTS.md     # 服务层 → 查阅此处
+│   │   └── ui/AGENTS.md           # UI/MVVM → 查阅此处
+│   └── tests/AGENTS.md            # 测试 → 查阅此处
+└── gol-tools/                     # Tooling submodule (foreman, gds-lsp)
 ```
 
 ## Submodule Workflow (CRITICAL)
 
-All code changes happen inside `gol-project/`. Push order matters:
-
-```bash
-# 1. Commit in submodule
-cd gol-project && git add . && git commit -m "feat: ..."
-# 2. Push submodule FIRST
-git push
-# 3. Update management repo reference
-cd .. && git add gol-project && git commit -m "chore: update submodule" && git push
-```
+All code changes happen inside `gol-project/`. Push order: submodule first, then update main repo reference.
 
 **NEVER** run `git checkout` / Godot commands from the `gol/` root.
 
