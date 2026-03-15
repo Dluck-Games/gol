@@ -9,8 +9,6 @@
 God of Lego (GOL) — 2D survival game, Godot 4.6, GDScript.
 Architecture: ECS ([GECS](addons/gecs)) + MVVM UI + GOAP AI + PCG map generation.
 
-## AGENTS.md Map
-
 渐进式披露 — 按需阅读：
 
 ```
@@ -18,9 +16,6 @@ gol/                               # Management repo (YOU ARE HERE)
 ├── AGENTS.md                      # 管理仓库知识（工作流程、CI/CD）
 ├── gol-project/                   # Game code submodule
 │   ├── AGENTS.md                  # 代码总览 — 首次进入时阅读
-│   │                             #   • Repo Structure, Where to Look
-│   │                             #   • Architecture, Naming Conventions
-│   │                             #   • Code Style, Anti-Patterns
 │   ├── scripts/
 │   │   ├── components/AGENTS.md   # 组件开发 → 查阅组件目录
 │   │   ├── systems/AGENTS.md      # 系统开发 → 查阅系统目录
@@ -29,7 +24,10 @@ gol/                               # Management repo (YOU ARE HERE)
 │   │   ├── services/AGENTS.md     # 服务层 → 查阅此处
 │   │   └── ui/AGENTS.md           # UI/MVVM → 查阅此处
 │   └── tests/AGENTS.md            # 测试 → 查阅此处
-└── gol-tools/                     # Tooling submodule (foreman, gds-lsp)
+└── gol-tools/                     # Tooling submodule
+    ├── foreman/                   # AI daemon: GitHub issue → PR 自动化流水线
+    ├── gds-lsp/                   # GDScript LSP stdio-TCP bridge（npm: godot-lsp-stdio-bridge）
+    └── ai-debug/                  # AI Debug Bridge: 游戏运行时截图、命令、脚本注入
 ```
 
 ## CI/CD
