@@ -9,8 +9,6 @@
 God of Lego (GOL) — 2D survival game, Godot 4.6, GDScript.
 Architecture: ECS ([GECS](addons/gecs)) + MVVM UI + GOAP AI + PCG map generation.
 
-渐进式披露 — 按需阅读：
-
 ```
 gol/                               # Management repo (YOU ARE HERE)
 ├── AGENTS.md                      # 管理仓库知识（工作流程、CI/CD）
@@ -51,3 +49,7 @@ gol/                               # Management repo (YOU ARE HERE)
 - Main agent focuses on acceptance, global decisions, and task coordination
 - Execute independent tasks in parallel with multiple subagents for efficiency
 - Unit tests required; functional changes also need E2E tests
+
+**Issue feedback:** Report pain points encountered during work — repetitive tasks, time-consuming difficulties, inelegant code, hard-to-use tools — by creating issues on the `gol-project` repo (`gh issue create -R Dluck-Games/god-of-lego`).
+
+**Chinese summary for acceptance:** 涉及需要用户验收的改动时，用中文从用户视角（而非实现视角）总结：改了什么、如何验收、遇到的问题是否需要提 issue。
