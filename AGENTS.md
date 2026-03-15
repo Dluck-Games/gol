@@ -32,14 +32,6 @@ gol/                               # Management repo (YOU ARE HERE)
 └── gol-tools/                     # Tooling submodule (foreman, gds-lsp)
 ```
 
-## Gotchas
-
-- Chinese comments in some files (Config.gd, SMove, ECSUtils) — normal
-- `GoapGoal` uses untyped Dictionary — Godot 4.x StringName leak bug workaround
-- `Config.BASE_COMPONENTS` — components that survive death
-- PCG uses seeded RNG — same seed = same map
-- Entity recipes support inheritance via `base_recipe`
-
 ## CI/CD
 
 - **run-tests.yml**: gdUnit4 on push to main/develop + PRs
