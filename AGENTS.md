@@ -32,12 +32,6 @@ gol/                               # Management repo (YOU ARE HERE)
 └── gol-tools/                     # Tooling submodule (foreman, gds-lsp)
 ```
 
-## Submodule Workflow (CRITICAL)
-
-All code changes happen inside `gol-project/`. Push order: submodule first, then update main repo reference.
-
-**NEVER** run `git checkout` / Godot commands from the `gol/` root.
-
 ## Gotchas
 
 - Chinese comments in some files (Config.gd, SMove, ECSUtils) — normal
