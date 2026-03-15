@@ -9,28 +9,6 @@
 God of Lego (GOL) — 2D survival game, Godot 4.6, GDScript.
 Architecture: ECS ([GECS](addons/gecs)) + MVVM UI + GOAP AI + PCG map generation.
 
-## Repo Structure
-
-```
-gol/                           # Management repo (YOU ARE HERE)
-├── AGENTS.md / CLAUDE.md      # This file (CLAUDE.md is symlink)
-├── gol-project/               # Game code submodule (god-of-lego repo)
-│   ├── scripts/               # ~180 GDScript files
-│   │   ├── components/        # ECS Components (c_*.gd)
-│   │   ├── systems/           # ECS Systems (s_*.gd, auto-discovered)
-│   │   ├── gameplay/          # GOAP AI + ECS authoring + game state
-│   │   ├── pcg/               # PCG pipeline + WFC
-│   │   ├── services/          # ServiceContext + 7 service impls
-│   │   ├── ui/                # MVVM: ViewModels + Views
-│   │   ├── debug/             # ImGui debuggers
-│   │   └── configs/           # Config.gd — game constants
-│   ├── scenes/                # .tscn files
-│   ├── resources/             # .tres (recipes, goals, sprite_frames)
-│   ├── tests/                 # gdUnit4 tests (ai/, flow/, pcg/, system/, unit/)
-│   └── addons/                # gecs, gdUnit4, imgui-godot
-└── gol-tools/                 # Tooling submodule (foreman, gds-lsp)
-```
-
 ## Where to Look
 
 | Task | Location (inside gol-project/) | Notes |
