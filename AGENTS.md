@@ -52,4 +52,4 @@ gol/                               # Management repo (YOU ARE HERE)
 
 **Issue feedback:** Report pain points encountered during work — repetitive tasks, time-consuming difficulties, inelegant code, hard-to-use tools — by creating issues on the `gol-project` repo (`gh issue create -R Dluck-Games/god-of-lego`).
 
-**Chinese summary for acceptance:** 涉及需要用户验收的改动时，用中文从用户视角（而非实现视角）总结：改了什么、如何验收、遇到的问题是否需要提 issue。
+**Chinese summary for acceptance:** When delivering user-facing changes, provide a concise Chinese summary from the user's perspective — what changed, how to verify, and whether any issues should be filed.
