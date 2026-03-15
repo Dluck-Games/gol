@@ -133,18 +133,6 @@ Detailed domain docs live alongside the code:
 - `scripts/ui/AGENTS.md` — MVVM bindings
 - `tests/AGENTS.md` — Test patterns & gdUnit4
 
-## Available Skills (load via tools, NOT injected here)
-
-| Skill | Purpose |
-|-------|---------|
-| `gol-unittest` | Run gdUnit4 tests (all, single file, directory) |
-| `gol-debug` | AI Debug Bridge — screenshots, console, scripts, state |
-| `gol-e2e` | E2E acceptance tests against live game |
-| `gol-run` | Launch game for playtesting |
-| `gol-clean` | Reset repo to clean state |
-| `gol-version-bump` | Bump version in project.godot |
-| `git-master` | Git operations — commits, rebase, history search |
-
 ## CI/CD
 
 - **run-tests.yml**: gdUnit4 on push to main/develop + PRs
