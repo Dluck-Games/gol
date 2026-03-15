@@ -52,3 +52,4 @@ gol/                               # Management repo (YOU ARE HERE)
 - Delegate implementation tasks to subagents (via `task()`) rather than direct file editing
 - Main agent focuses on acceptance, global decisions, and task coordination
 - Execute independent tasks in parallel with multiple subagents for efficiency
+- Unit tests required; functional changes also need E2E tests
