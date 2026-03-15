@@ -32,7 +32,7 @@ gol/                               # Management repo (YOU ARE HERE)
 
 - **run-tests.yml**: gdUnit4 on push to main/develop + PRs
 - **release.yml**: Build on version tags (`X.Y.Z`, no `v` prefix)
-- Godot 4.5.1, Ubuntu (tests) / Windows (builds)
+- Godot 4.6.1, Ubuntu (tests) / Windows (builds)
 
 ## Workflow
 
