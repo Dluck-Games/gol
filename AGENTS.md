@@ -21,7 +21,7 @@ gol/                               # Management repo (YOU ARE HERE)
 │   │   ├── pcg/AGENTS.md          # Map generation pipeline
 │   │   ├── services/AGENTS.md     # Service layer
 │   │   └── ui/AGENTS.md           # UI / MVVM
-│   └── tests/AGENTS.md            # Testing patterns
+│   └── tests/AGENTS.md            # Testing patterns and hierarchy
 └── gol-tools/                     # Tooling submodule
     ├── foreman/                   # AI daemon: GitHub issue → PR automation pipeline
     ├── gds-lsp/                   # GDScript LSP stdio-TCP bridge (npm: godot-lsp-stdio-bridge)
@@ -48,7 +48,7 @@ gol/                               # Management repo (YOU ARE HERE)
 - Delegate implementation tasks to subagents (via `task()`) rather than direct file editing
 - Main agent focuses on acceptance, global decisions, and task coordination
 - Execute independent tasks in parallel with multiple subagents for efficiency
-- Unit tests required; functional changes also need E2E tests
+- Unit tests live under `gol-project/tests/unit/`; integration coverage lives under `gol-project/tests/integration/`; functional changes also need E2E tests
 
 **Issue feedback:** Report pain points encountered during work — repetitive tasks, time-consuming difficulties, inelegant code, hard-to-use tools — by creating issues on the `gol-project` repo (`gh issue create -R Dluck-Games/god-of-lego`).
 

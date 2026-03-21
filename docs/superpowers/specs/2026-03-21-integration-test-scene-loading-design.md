@@ -482,7 +482,7 @@ godot --path gol-project --scene scenes/main.tscn
 | `scripts/main.gd` | Still calls `GOL.setup()` + `GOL.start_game()` |
 | `project.godot` | Autoloads unchanged |
 | `addons/gecs/` | ECS framework untouched |
-| `tests/ai/`, `tests/pcg/`, etc. | GdUnit4 unit tests — independent path |
+| `tests/unit/ai/`, `tests/unit/pcg/`, etc. | GdUnit4 unit tests — independent path |
 
 ### Release Exclusion (export_presets.cfg)
 
@@ -496,7 +496,7 @@ exclude_filter="tests/*, scripts/tests/*, scripts/debug/*, scenes/tests/*"
 |------|--------|
 | `gol-e2e` | Adapt launch command to `test_main.tscn -- --config=... --no-exit` |
 | New `gol-integration` | Document integration test authoring, config file format, launch commands, result interpretation |
-| `gol-unittest` | Unchanged |
+| `gol-unittest` | Update examples to point at `tests/unit/` now that the test root is split by type |
 | `gol-run` | Unchanged |
 
 ## Design Decisions
