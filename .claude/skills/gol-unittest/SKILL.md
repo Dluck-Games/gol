@@ -27,18 +27,21 @@ The skill uses `GODOT_PATH` from environment, falling back to:
 ## Commands
 
 ```bash
-# Run all tests
-<GODOT_PATH> --headless --path "d:/Repos/god-of-lego" -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests/ -c --ignoreHeadlessMode
+# Run all gdUnit unit suites
+<GODOT_PATH> --headless --path "d:/Repos/god-of-lego" -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests/unit/ -c --ignoreHeadlessMode
 
 # Run specific test file
-<GODOT_PATH> --headless --path "d:/Repos/god-of-lego" -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests/ai/test_enemy_ai.gd -c --ignoreHeadlessMode
+<GODOT_PATH> --headless --path "d:/Repos/god-of-lego" -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests/unit/ai/test_enemy_ai.gd -c --ignoreHeadlessMode
 
 # Run test directory
-<GODOT_PATH> --headless --path "d:/Repos/god-of-lego" -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests/system/ -c --ignoreHeadlessMode
+<GODOT_PATH> --headless --path "d:/Repos/god-of-lego" -s res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests/unit/system/ -c --ignoreHeadlessMode
 ```
 
 ## Test directories
 
-- `res://tests/ai/` - AI and GOAP tests
-- `res://tests/flow/` - Integration tests
-- `res://tests/system/` - ECS System tests
+- `res://tests/unit/ai/` - AI and GOAP unit tests
+- `res://tests/unit/pcg/` - PCG unit tests
+- `res://tests/unit/system/` - ECS system unit tests
+- `res://tests/unit/service/` - Service unit tests
+
+For SceneConfig or scenario integration coverage, use `gol-integration` or run `res://tests/integration/` directly.

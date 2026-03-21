@@ -125,6 +125,8 @@ Translate into checkable assertions:
 
 ### Step 2: Choose the Test Scene
 
+`tests/integration/` is the integration root in this repo. gdUnit4 unit suites live under `tests/unit/` and are outside this E2E workflow.
+
 | Feature | Scene | Why |
 |---------|-------|-----|
 | PCG map generation | `scenes/tests/test_main.tscn` with `--config=res://tests/integration/test_pcg_map.gd` | SceneConfig with full PCG pipeline |

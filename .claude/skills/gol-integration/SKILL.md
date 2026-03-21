@@ -15,6 +15,10 @@ allowed-tools: Bash, Read, Write
 
 Integration tests sit between gdUnit4 unit tests and E2E acceptance tests. They load a real GOLWorld with specific systems and entities, run assertions against the ECS state, and report results. Unlike E2E tests, they don't require the AI Debug Bridge — the test runs the assertions directly and exits with a code.
 
+Repository test layout note:
+- `tests/unit/` is reserved for gdUnit4 unit suites.
+- `tests/integration/` is the integration root; SceneConfig scripts live directly there, and gdUnit4 scenario suites live under `tests/integration/flow/`.
+
 ## When to Use
 
 - Testing gameplay mechanics (combat, AI, spawning) in isolation
