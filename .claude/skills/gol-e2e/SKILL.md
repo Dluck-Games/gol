@@ -130,6 +130,7 @@ Translate into checkable assertions:
 | PCG map generation | `scenes/tests/l_test_pcg.tscn` | Dedicated PCG debug scene with step-by-step phases |
 | Gameplay (combat, AI, movement) | `scenes/main.tscn` | Full game with player, enemies, etc. |
 | UI/HUD | `scenes/main.tscn` | Needs full game context |
+| Integration test (combat, AI) | `scenes/tests/test_main.tscn` with `--config=...` | Isolated systems, no PCG overhead |
 
 ### Step 3: Launch Game
 
@@ -147,6 +148,22 @@ node gol-tools/ai-debug/ai-debug.mjs get entity_count
 ```
 
 If timeout: game didn't start. Check `/tmp/godot_e2e.log` for errors.
+
+#### Launching with Integration Test Config
+
+For testing specific systems in isolation without the full PCG overhead, use the integration test scene with a SceneConfig:
+
+```bash
+# ALWAYS launch from inside gol-project or use --path
+cd /Users/dluckdu/Documents/Github/gol/gol-project
+/Applications/Godot.app/Contents/MacOS/Godot --path . --scene scenes/tests/test_main.tscn -- --config=res://tests/integration/test_combat.gd --no-exit 2>&1 | tee /tmp/godot_e2e.log &
+```
+
+**Key arguments:**
+- `--config=res://tests/integration/test_combat.gd` — Path to a GDScript extending SceneConfig that defines what systems/entities to load
+- `--no-exit` — Keeps the scene running after setup so AI Debug Bridge can inject diagnostic scripts (without this, the test runs and exits automatically)
+
+The integration test system uses SceneConfig subclasses to configure the test environment. The test runs and exits with exit code 0/1 automatically unless `--no-exit` is provided. With `--no-exit`, you can inject diagnostic scripts and interact with the running game.
 
 ### Step 4: Write Diagnostic Scripts
 
