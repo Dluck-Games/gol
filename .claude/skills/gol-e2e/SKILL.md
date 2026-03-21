@@ -127,7 +127,7 @@ Translate into checkable assertions:
 
 | Feature | Scene | Why |
 |---------|-------|-----|
-| PCG map generation | `scenes/tests/l_test_pcg.tscn` | Dedicated PCG debug scene with step-by-step phases |
+| PCG map generation | `scenes/tests/test_main.tscn` with `--config=res://tests/integration/test_pcg_map.gd` | SceneConfig with full PCG pipeline |
 | Gameplay (combat, AI, movement) | `scenes/main.tscn` | Full game with player, enemies, etc. |
 | UI/HUD | `scenes/main.tscn` | Needs full game context |
 | Integration test (combat, AI) | `scenes/tests/test_main.tscn` with `--config=...` | Isolated systems, no PCG overhead |

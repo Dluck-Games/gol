@@ -109,9 +109,14 @@ func test_run(world: GOLWorld) -> Variant:
     for i in range(60):
         await world.get_tree().process_frame
     
-    # Find entities and assert
-    var player = world.get_entity_by_name("TestPlayer")
-    var enemy = world.get_entity_by_name("TestEnemy")
+    # Find entities by iterating world.entities (Array[Entity])
+    var player: Entity = null
+    var enemy: Entity = null
+    for entity: Entity in world.entities:
+        if entity.name == "TestPlayer":
+            player = entity
+        elif entity.name == "TestEnemy":
+            enemy = entity
     
     result.assert_true(player != null, "Player entity exists")
     result.assert_true(enemy != null, "Enemy entity exists")
@@ -213,8 +218,6 @@ var result := TestResult.new()
 # Assertions
 result.assert_true(condition: bool, description: String)
 result.assert_equal(actual: Variant, expected: Variant, description: String)
-result.assert_not_null(value: Variant, description: String)
-
 # Results
 result.passed() -> bool          # true if all assertions passed
 result.exit_code() -> int        # 0 or 1
@@ -239,8 +242,8 @@ result.print_report() -> void    # Prints formatted report
 | Test configs | `tests/integration/test_*.gd` |
 | Empty test scene | `scenes/maps/l_test.tscn` |
 | Test entry point | `scenes/tests/test_main.tscn` |
-| SceneConfig base | `scripts/services/scene_config.gd` |
-| TestResult class | `scripts/services/test_result.gd` |
+| SceneConfig base | `scripts/gameplay/ecs/scene_config.gd` |
+| TestResult class | `scripts/tests/test_result.gd` |
 
 ## Example: Combat Test
 
