@@ -48,7 +48,12 @@ gol/                               # Management repo (YOU ARE HERE)
 - Delegate implementation tasks to subagents (via `task()`) rather than direct file editing
 - Main agent focuses on acceptance, global decisions, and task coordination
 - Execute independent tasks in parallel with multiple subagents for efficiency
-- Unit tests live under `gol-project/tests/unit/`; integration coverage lives under `gol-project/tests/integration/`; functional changes also need E2E tests
+- Functional changes also need E2E tests
+
+**Test runners (two phases, both automated):**
+- **Phase 1 — gdUnit4:** Discovers all `extends GdUnitTestSuite` suites (unit + integration).
+- **Phase 2 — SceneConfig:** Each `extends SceneConfig` under `tests/integration/` loads a real GOLWorld for scene-level verification.
+- Both phases run headless. `run-tests.command` in repo root runs everything with a combined ASCII report.
 
 **Issue feedback:** Report pain points encountered during work — repetitive tasks, time-consuming difficulties, inelegant code, hard-to-use tools — by creating issues on the `gol-project` repo (`gh issue create -R Dluck-Games/god-of-lego`).
 

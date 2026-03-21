@@ -16,8 +16,8 @@ allowed-tools: Bash, Read, Write
 Integration tests sit between gdUnit4 unit tests and E2E acceptance tests. They load a real GOLWorld with specific systems and entities, run assertions against the ECS state, and report results. Unlike E2E tests, they don't require the AI Debug Bridge — the test runs the assertions directly and exits with a code.
 
 Repository test layout note:
-- `tests/unit/` is reserved for gdUnit4 unit suites.
-- `tests/integration/` is the integration root; SceneConfig scripts live directly there, and gdUnit4 scenario suites live under `tests/integration/flow/`.
+- `tests/unit/` is reserved for gdUnit4 unit suites (single class/component, mocked dependencies).
+- `tests/integration/` is the integration root; SceneConfig scripts, full-pipeline PCG tests, and multi-system gdUnit4 suites live here. The `flow/` subdirectory holds multi-system scenario suites.
 
 ## When to Use
 
@@ -307,13 +307,13 @@ func test_run(world: GOLWorld) -> Variant:
 
 ## Comparison: Test Types
 
-| Aspect | Unit Tests (gdUnit4) | Integration Tests (SceneConfig) | E2E Tests (AI Debug) |
-|--------|---------------------|--------------------------------|----------------------|
+| Aspect | Unit Tests (gdUnit4) | Integration Tests (SceneConfig + gdUnit4) | E2E Tests (AI Debug) |
+|--------|---------------------|------------------------------------------|----------------------|
 | Speed | Fast (~ms) | Medium (~seconds) | Slow (~tens of seconds) |
-| World | None | Minimal GOLWorld | Full game |
-| PCG | No | Optional | Yes |
+| World | None | Minimal GOLWorld or full pipeline | Full game |
+| PCG | No | Optional (full pipeline tests live here) | Yes |
 | CI | Yes | Yes | Manual |
-| Use case | Pure functions, logic | System interaction | Full feature validation |
+| Use case | Single class/component | Multi-system interaction, full pipelines | Full feature validation |
 
 ## Troubleshooting
 

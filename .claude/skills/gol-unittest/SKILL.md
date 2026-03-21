@@ -40,8 +40,10 @@ The skill uses `GODOT_PATH` from environment, falling back to:
 ## Test directories
 
 - `res://tests/unit/ai/` - AI and GOAP unit tests
-- `res://tests/unit/pcg/` - PCG unit tests
+- `res://tests/unit/pcg/` - PCG single-phase unit tests
 - `res://tests/unit/system/` - ECS system unit tests
-- `res://tests/unit/service/` - Service unit tests
+- `res://tests/unit/service/` - Service unit tests + game state tests
+- `res://tests/unit/debug/` - AI Debug Bridge unit tests
+- `res://tests/unit/` (root) - Component tests + entity construction / scenario tests
 
-For SceneConfig or scenario integration coverage, use `gol-integration` or run `res://tests/integration/` directly.
+For full-pipeline PCG tests, SceneConfig, or multi-system integration coverage, use `gol-integration` or run `res://tests/integration/` directly.
