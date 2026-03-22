@@ -65,16 +65,26 @@ Add `_drop_component_box(component, position)` method that creates a Box entity 
 
 Modify `_on_no_hp()`: after `remove_component()`, call `_drop_component_box()` with the stripped component and entity position.
 
+**Component instance lifetime:** `_get_random_component()` returns a component instance reference. After `remove_component()`, GECS erases it from the entity's dictionary but does not free the Resource — GDScript reference counting keeps it alive as long as `stored_components` holds a reference. The call order (remove → drop) is safe.
+
+**HP after stripping:** The existing behavior is intentional — HP stays at 0 after component stripping, with `invincible_time` (0.3s) preventing immediate re-triggering. Each subsequent lethal hit strips another component. This progressive decomposition IS the reverse composition mechanic.
+
 ### 3. SPickup — handle instance mode
 
 File: `scripts/systems/s_pickup.gd`
 
-Modify `_open_box()`: before the existing recipe-based path, check `container.stored_components.size() > 0`. If true:
+Modify `_open_box()`: add instance-mode branch **before** the existing `stored_recipe_id.is_empty()` error guard. The existing `push_error` for empty `stored_recipe_id` must move into an else-branch that only fires when **both** `stored_components` is empty **and** `stored_recipe_id` is empty.
+
+Instance-mode logic:
 
 - For each stored component, check if the player entity already has that component type
 - If yes and `on_merge()` exists: call `on_merge()` (e.g. CWeapon replaces weapon params)
 - If no: `add_component()` directly
 - Skip the recipe-based `create_entity_by_id()` path
+
+Direct component-level merging is used instead of creating a temporary Entity and calling `merge_entity()`, to avoid unnecessary entity allocation and world registration for a simple component transfer.
+
+**Note:** CHealer and CTracker currently lack `on_merge()`. Picking up a duplicate when the player already has one is a no-op (existing component kept). This is intentional for the initial implementation.
 
 ## What Does NOT Change
 
@@ -98,6 +108,10 @@ Core assertions:
 3. Player picks up Box → CWeapon merges via on_merge()
 4. Enemy with no LOSABLE_COMPONENT dies → no Box generated
 5. Box auto-despawns after 120s (CLifeTime)
+6. CTracker drop + pickup works (add_component path, no on_merge)
+7. Player already has CWeapon, picks up CWeapon Box → on_merge replaces params
+8. stored_components takes precedence over stored_recipe_id when both set
+9. E2E: kill enemy → Box spawns → player picks up → component acquired
 
 ## PR #118 Disposition
 
