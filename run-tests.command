@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run all GOL tests: gdUnit4 (unit + integration) + SceneConfig integration
+# Run all GOL tests: gdUnit4 (unit) + SceneConfig (integration)
 cd "$(dirname "$0")/gol-project"
 
 GODOT="/Applications/Godot.app/Contents/MacOS/Godot"
@@ -10,18 +10,18 @@ rm -rf reports/
 echo ""
 echo "  ┌──────────────────────────────────────────┐"
 echo "  │           GOL Test Runner  v1.0           │"
-echo "  │      Unit + Integration + SceneConfig     │"
+echo "  │     Unit (gdUnit4) + Integration (Scene)   │"
 echo "  └──────────────────────────────────────────┘"
 echo ""
 
 # ═══════════════════════════════════════════════════
-# Phase 1: gdUnit4 (unit + gdUnit4 integration)
+# Phase 1: gdUnit4 (unit tests ONLY)
 # ═══════════════════════════════════════════════════
-echo "▶ [1/2] gdUnit4 tests (unit + integration)..."
+echo "▶ [1/2] gdUnit4 unit tests..."
 echo ""
 
 "$GODOT" --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd \
-  --add res://tests/ \
+  --add res://tests/unit/ \
   --ignoreHeadlessMode \
   --verbose
 
@@ -38,7 +38,7 @@ SCENE_PASS=0
 SCENE_FAIL=0
 SCENE_LINES=""
 
-for config in $(grep -rl "extends SceneConfig" tests/integration/*.gd 2>/dev/null); do
+for config in $(find tests/integration -name "*.gd" -exec grep -l "extends SceneConfig" {} + 2>/dev/null); do
   name=$(basename "$config" .gd)
   echo -n "  $name ... "
 
@@ -127,7 +127,7 @@ echo "$BAR"
 echo "                       GOL TEST REPORT"
 echo "$BAR"
 echo ""
-echo "  gdUnit4 (Unit + Integration)"
+echo "  gdUnit4 (Unit)"
 echo "  ────────────────────────────"
 echo ""
 printf '  %-38s %5s %5s %5s %7s\n' "Suite" "Tests" "Pass" "Fail" "Time"
