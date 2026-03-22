@@ -1,5 +1,5 @@
 ---
-name: gol-test-runner
+name: gol-test
 description: Run and write tests for God of Lego — unit (gdUnit4), integration (SceneConfig), and E2E (AI Debug Bridge). Use when running tests, writing new tests, or deciding which test tier to use.
 allowed-tools: Bash, Read, Write
 ---
