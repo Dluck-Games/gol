@@ -342,7 +342,7 @@ With:
 
 Run: `gol-unittest` skill targeting `res://tests/unit/system/test_component_drop.gd`
 
-Expected: All 3 tests PASS.
+Expected: All 4 tests PASS.
 
 - [ ] **Step 5: Commit**
 
