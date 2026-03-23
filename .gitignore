@@ -12,9 +12,6 @@ resources/
 shaders/
 external/
 
-# Local plans
-.plan/
-
 # AI tool local state
 .claude/*
 !.claude/skills/
