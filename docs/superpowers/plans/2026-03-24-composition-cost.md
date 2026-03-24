@@ -667,6 +667,21 @@ func test_spawner_not_enraged_below_threshold() -> void:
     system._apply_spawner_enrage(player, [spawner_entity])
 
     assert_bool(spawner.enraged).is_false()
+
+func test_spawner_de_enrages_when_player_drops_below_threshold() -> void:
+    var player := auto_free(Entity.new())
+    player.add_component(CPlayer.new())
+    player.add_component(CTransform.new())
+    player.add_component(CWeapon.new())  # 1 component, below threshold
+
+    var spawner_entity := auto_free(Entity.new())
+    var spawner := CSpawner.new()
+    spawner.enraged = true  # previously enraged
+    spawner_entity.add_component(spawner)
+
+    system._apply_spawner_enrage(player, [spawner_entity])
+
+    assert_bool(spawner.enraged).is_false()  # should de-enrage
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -730,8 +745,8 @@ func _apply_spawner_enrage(player: Entity, spawner_entities: Array) -> void:
     var should_enrage := losable_count > Config.SPAWNER_ENRAGE_COMPONENT_THRESHOLD
     for entity in spawner_entities:
         var spawner: CSpawner = entity.get_component(CSpawner)
-        if spawner and should_enrage:
-            spawner.enraged = true
+        if spawner:
+            spawner.enraged = should_enrage
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
@@ -1274,23 +1289,6 @@ func test_healer_area_applies_scaled_heal() -> void:
     # HP should increase by 10 * 0.6 * 1.0 = 6.0 → 56.0
     var hp: CHP = target.get_component(CHP)
     assert_float(hp.hp).is_equal_approx(56.0, 0.01)
-
-func test_target_outside_radius_not_affected() -> void:
-    var source := _make_source_at(Vector2.ZERO)
-    var area := CAreaEffect.new()
-    area.radius = 100.0
-    area.affects_enemies = true
-    source.add_component(area)
-
-    var target := _make_target_at(Vector2(200, 0), CCamp.CampType.ENEMY)
-
-    var targets := system._get_targets_in_radius(Vector2.ZERO, area.radius, source, area)
-    # Target at 200 is outside radius 100
-    # Note: this test requires ECS.world to be available. If not possible in unit test,
-    # test _should_affect directly instead:
-    assert_bool(system._should_affect(
-        source.get_component(CCamp), target.get_component(CCamp), area, false
-    )).is_true()  # Would be affected if in range — proves filtering logic
 
 func test_should_affect_respects_camp_flags() -> void:
     var area := CAreaEffect.new()
