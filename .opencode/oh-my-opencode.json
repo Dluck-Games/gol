@@ -1,0 +1,75 @@
+{
+  "agents": {
+    "sisyphus": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    },
+    "sisyphus-junior": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    },
+    "prometheus": {
+      "model": "codebuddy/claude-opus-4.6"
+    },
+    "atlas": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    },
+    "metis": {
+      "model": "codebuddy/claude-opus-4.6"
+    },
+    "momus": {
+      "model": "codebuddy/gpt-5.4"
+    },
+    "hephaestus": {
+      "model": "codebuddy/gpt-5.4"
+    },
+    "oracle": {
+      "model": "codebuddy/gpt-5.4"
+    },
+    "librarian": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    },
+    "explore": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    },
+    "multimodal-looker": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    },
+    "plan": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    },
+    "build": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    }
+  },
+  "background_task": {
+    "defaultConcurrency": 3,
+    "providerConcurrency": {
+      "codebuddy": 10
+    }
+  },
+  "categories": {
+    "visual-engineering": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    },
+    "ultrabrain": {
+      "model": "codebuddy/gpt-5.4"
+    },
+    "deep": {
+      "model": "codebuddy/gpt-5.4"
+    },
+    "artistry": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    },
+    "quick": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    },
+    "unspecified-low": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    },
+    "unspecified-high": {
+      "model": "codebuddy/gpt-5.4"
+    },
+    "writing": {
+      "model": "codebuddy/kimi-k2.5-ioa"
+    }
+  }
+}

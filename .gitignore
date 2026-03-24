@@ -17,7 +17,8 @@ external/
 !.claude/skills/
 .codebuddy/
 .foreman/
-.opencode/
+.opencode/*
+!.opencode/oh-my-opencode.json
 .sisyphus/
 
 # Editor settings
