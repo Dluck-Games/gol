@@ -58,3 +58,11 @@ gol/                               # Management repo (YOU ARE HERE)
 **Issue feedback:** Report pain points encountered during work — repetitive tasks, time-consuming difficulties, inelegant code, hard-to-use tools — by creating issues on the `gol-project` repo (`gh issue create -R Dluck-Games/god-of-lego`).
 
 **Chinese summary for acceptance:** When delivering user-facing changes, provide a concise Chinese summary from the user's perspective — what changed, how to verify, and whether any issues should be filed.
+
+## Reference
+
+- Obsidian vault "Notes" has original game design and tech notes of GOL project.
+  - Use notesmd-cli to read.
+  - Never modify notes or add any extra files in obsidian vault.
+  - The original notes is golden standard for all design and implementation decisions.
+
