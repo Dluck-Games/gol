@@ -1,16 +1,16 @@
 {
   "agents": {
     "sisyphus": {
-      "model": "codebuddy/kimi-k2.5-ioa"
+      "model": "codebuddy/glm-5.0-turbo-ioa"
     },
     "sisyphus-junior": {
-      "model": "codebuddy/kimi-k2.5-ioa"
+      "model": "codebuddy/glm-5.0-turbo-ioa"
     },
     "prometheus": {
       "model": "codebuddy/claude-opus-4.6"
     },
     "atlas": {
-      "model": "codebuddy/kimi-k2.5-ioa"
+      "model": "codebuddy/glm-5.0-turbo-ioa"
     },
     "metis": {
       "model": "codebuddy/claude-opus-4.6"
@@ -25,19 +25,19 @@
       "model": "codebuddy/gpt-5.4"
     },
     "librarian": {
-      "model": "codebuddy/kimi-k2.5-ioa"
+      "model": "codebuddy/glm-5.0-turbo-ioa"
     },
     "explore": {
-      "model": "codebuddy/kimi-k2.5-ioa"
+      "model": "codebuddy/glm-5.0-turbo-ioa"
     },
     "multimodal-looker": {
       "model": "codebuddy/kimi-k2.5-ioa"
     },
     "plan": {
-      "model": "codebuddy/kimi-k2.5-ioa"
+      "model": "codebuddy/glm-5.0-turbo-ioa"
     },
     "build": {
-      "model": "codebuddy/kimi-k2.5-ioa"
+      "model": "codebuddy/glm-5.0-turbo-ioa"
     }
   },
   "background_task": {
@@ -60,10 +60,10 @@
       "model": "codebuddy/kimi-k2.5-ioa"
     },
     "quick": {
-      "model": "codebuddy/kimi-k2.5-ioa"
+      "model": "codebuddy/glm-5.0-turbo-ioa"
     },
     "unspecified-low": {
-      "model": "codebuddy/kimi-k2.5-ioa"
+      "model": "codebuddy/glm-5.0-turbo-ioa"
     },
     "unspecified-high": {
       "model": "codebuddy/gpt-5.4"
