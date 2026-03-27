@@ -57,11 +57,23 @@
 **Files:**
 - None (git/GitHub operations only)
 
-- [ ] **Step 1: Create feature branch in gol-project submodule**
+- [ ] **Step 1: Create worktree for isolated development**
+
+All implementation work happens in a worktree, keeping the main workspace on `main` untouched.
 
 ```bash
-cd gol-project
-git checkout -b feat/component-blueprint main
+cd /Users/dluckdu/Documents/Github/gol/gol-project
+# Create feature branch without switching
+git branch feat/component-blueprint main
+# Create worktree at a sibling directory
+git worktree add ../gol-project-blueprint feat/component-blueprint
+```
+
+This creates `/Users/dluckdu/Documents/Github/gol/gol-project-blueprint/` as an isolated copy on `feat/component-blueprint`. **All subsequent tasks (Task 1–13) work inside this worktree directory**, not the original `gol-project/`.
+
+Working directory for all tasks:
+```
+/Users/dluckdu/Documents/Github/gol/gol-project-blueprint/
 ```
 
 - [ ] **Step 2: Update Issue #109 description**
@@ -1408,7 +1420,14 @@ PR_EOF
 )"
 ```
 
-- [ ] **Step 3: Update parent repo (gol/)**
+- [ ] **Step 3: Clean up worktree**
+
+```bash
+cd /Users/dluckdu/Documents/Github/gol/gol-project
+git worktree remove ../gol-project-blueprint
+```
+
+- [ ] **Step 4: Update parent repo (gol/)**
 
 ```bash
 cd /Users/dluckdu/Documents/Github/gol
