@@ -19,6 +19,7 @@ external/
 .foreman/
 .opencode/
 .sisyphus/
+.worktrees/
 
 # Editor settings
 .vscode/

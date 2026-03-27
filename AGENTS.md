@@ -72,8 +72,17 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 **VCS workflow**
 
 1. Finish work in submodules (`gol-project/` for game code, `gol-tools/` for tooling)
-2. Push submodule changes first (`git push origin main` in submodule)
-3. Update main repo reference (`git add gol-project/`), commit, and push main repo changes
+2. When isolation is needed, create the submodule worktree under `gol/.worktrees/<name>/` from inside the submodule repo (for example, run `git worktree add` in `gol-project/` and point it at `gol/.worktrees/<name>`)
+3. Do all code edits, tests, and branch operations inside that submodule worktree, not in the management repo root
+4. Push submodule changes first (`git push origin main` in submodule)
+5. Update the main repo's submodule pointer (`git add gol-project/`), commit, and push main repo changes
+
+**Worktree workflow**
+
+- Use `gol/.worktrees/` only as a container for submodule worktree checkouts such as `gol/.worktrees/issue-188`
+- Create worktrees from the submodule repository you are changing (`gol-project/` or `gol-tools/`), never from the management repo root
+- Treat each worktree as disposable local state: do not stage or commit any path under `gol/.worktrees/` in the management repo, and clean them up after the task is merged or abandoned
+- If a worktree needs Godot import/cache state for local testing, keep that setup local and out of version control
 
 **Agent workflow:**
 
@@ -89,9 +98,11 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 - **MONOREPO RULES**: This root (`gol/`) is strictly for management and coordination.
   - **ALWAYS** Push the submodule first, then update the main repo reference
   - **ALWAYS** Atomic push changes must be atomically pushed after completion without asking.
+  - **ALWAYS** Keep local submodule worktrees under `gol/.worktrees/` ignored by the management repo
   - **NEVER** create game files (scripts/, assets/, scenes/) at this root.
   - **NEVER** run Godot from this directory — always work inside `gol-project/`.
   - **NEVER** create branches in the main repo (`gol/`) — all development happens in `gol-project/` submodule.
+  - **NEVER** create a worktree for the management repo itself inside `gol/.worktrees/`; that directory exists only to hold checkouts owned by `gol-project/` or `gol-tools/`.
 
 ## Reference
 
