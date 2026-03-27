@@ -66,14 +66,14 @@ cd /Users/dluckdu/Documents/Github/gol/gol-project
 # Create feature branch without switching
 git branch feat/component-blueprint main
 # Create worktree at a sibling directory
-git worktree add ../gol-project-blueprint feat/component-blueprint
+git worktree add /Users/dluckdu/Documents/Github/gol-project-blueprint feat/component-blueprint
 ```
 
-This creates `/Users/dluckdu/Documents/Github/gol/gol-project-blueprint/` as an isolated copy on `feat/component-blueprint`. **All subsequent tasks (Task 1–13) work inside this worktree directory**, not the original `gol-project/`.
+This creates `/Users/dluckdu/Documents/Github/gol-project-blueprint/` as an isolated copy on `feat/component-blueprint`. **All subsequent tasks (Task 1–13) work inside this worktree directory**, not the original `gol-project/`.
 
 Working directory for all tasks:
 ```
-/Users/dluckdu/Documents/Github/gol/gol-project-blueprint/
+/Users/dluckdu/Documents/Github/gol-project-blueprint/
 ```
 
 - [ ] **Step 2: Update Issue #109 description**
@@ -1424,7 +1424,7 @@ PR_EOF
 
 ```bash
 cd /Users/dluckdu/Documents/Github/gol/gol-project
-git worktree remove ../gol-project-blueprint
+git worktree remove /Users/dluckdu/Documents/Github/gol-project-blueprint
 ```
 
 - [ ] **Step 4: Update parent repo (gol/)**
