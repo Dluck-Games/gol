@@ -20,6 +20,8 @@
 | 组合专家逻辑 | Utils 静态函数，无事件驱动系统 | 遵循 ECS 轮询理念 |
 | 蓝图对应范围 | 4 种 losable components | CWeapon, CTracker, CHealer, CPoison |
 | NPC 生成方式 | recipe + GOLWorld VILLAGE POI 生成 | 和现有 guards 生成逻辑一致 |
+| NPC 行为 | GOAP: Wander + Flee（无战斗） | 有生活感，见怪物会跑，不参与战斗 |
+| NPC 可死亡 | 是，有 CHP | 保护 NPC 成为游戏压力的一部分 |
 
 ## Data Layer
 
@@ -187,8 +189,10 @@ blueprint_poison.tres    → CBlueprint(component_type=CPoison), CContainer, CSp
 
 ```
 npc_composer.tres
-  CTransform, CSprite, CCollision
-  CCamp(PLAYER)
+  CTransform, CSprite, CCollision, CMovement
+  CCamp(PLAYER), CHP
+  CPerception
+  CGoapAgent(goals: [Survive, Wander], actions: [Flee, Wander])
   CDialogue(
     npc_name: "组合专家",
     entries: [DialogueEntry(
