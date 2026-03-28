@@ -79,7 +79,9 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 
 **Worktree workflow**
 
-- Use `gol/.worktrees/` only as a container for submodule worktree checkouts such as `gol/.worktrees/issue-188`
+- All worktree checkouts live under `gol/.worktrees/`, organized by source:
+  - `gol/.worktrees/manual/` — interactive agent or manual work (e.g. `manual/issue-188`)
+  - `gol/.worktrees/foreman/` — foreman daemon auto-created (e.g. `foreman/ws_20260328_abcd1234`)
 - Create worktrees from the submodule repository you are changing (`gol-project/` or `gol-tools/`), never from the management repo root
 - Treat each worktree as disposable local state: do not stage or commit any path under `gol/.worktrees/` in the management repo, and clean them up after the task is merged or abandoned
 - If a worktree needs Godot import/cache state for local testing, keep that setup local and out of version control
@@ -98,11 +100,11 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 - **MONOREPO RULES**: This root (`gol/`) is strictly for management and coordination.
   - **ALWAYS** Push the submodule first, then update the main repo reference
   - **ALWAYS** Atomic push changes must be atomically pushed after completion without asking.
-  - **ALWAYS** Keep local submodule worktrees under `gol/.worktrees/` ignored by the management repo
+  - **ALWAYS** Keep all worktree checkouts under `gol/.worktrees/` (subdirs: `manual/`, `foreman/`), ignored by the management repo
   - **NEVER** create game files (scripts/, assets/, scenes/) at this root.
   - **NEVER** run Godot from this directory — always work inside `gol-project/`.
   - **NEVER** create branches in the main repo (`gol/`) — all development happens in `gol-project/` submodule.
-  - **NEVER** create a worktree for the management repo itself inside `gol/.worktrees/`; that directory exists only to hold checkouts owned by `gol-project/` or `gol-tools/`.
+  - **NEVER** create a worktree for the management repo itself inside `gol/.worktrees/`; that directory holds only submodule checkouts from `gol-project/` or `gol-tools/`.
 
 ## Reference
 
