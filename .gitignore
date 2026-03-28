@@ -28,7 +28,7 @@ external/
 node_modules/
 
 # Logs
-firebase-debug.log
+logs/
 
 # OS generated files
 .DS_Store
