@@ -1,20 +1,22 @@
 # Foreman Prompt Architecture Redesign
 
-**Date:** 2026-03-31
-**Scope:** Prompt template layering, task polymorphism, worktree reuse, TL-driven context routing
+**Date:** 2026-03-31 (v4: 2026-04-01)
+**Scope:** Prompt template layering with extends/block, task polymorphism, worktree reuse, TL-driven context routing, path-level permissions
 **Out of scope:** Codebuddy client internals (不可控的7层), agent model selection, CI/CD, LLM summary pipeline
 
 ## Overview
 
-Replace the current 5 monolithic prompt templates with a layered, composable architecture using Nunjucks includes. Introduce task polymorphism so the TL selects specific task templates per spawn action. Fix the workspace lifecycle to reuse worktrees across iterations. Shift context injection from daemon mechanical concatenation to TL intelligent routing — TL reads all handoff documents and writes precisely what the downstream agent needs.
+Replace the current 5 monolithic prompt templates with a layered, composable architecture using Nunjucks extends/block inheritance. Rules merge into the Identity layer (no separate rules files). Task templates use a base class with fixed structure (steps, acceptance criteria, output format) that subtypes override via block polymorphism. TL injection is drastically slimmed — TL reads documents itself instead of receiving them via daemon injection. Path-level read permissions via `.codebuddy/settings.local.json` give TL document access while blocking code access.
 
 **Motivation:**
 
 1. **Rule duplication** — "禁止 gh issue close" repeated across all 5 templates, easy to desync
 2. **No task polymorphism** — planner re-analysis and initial analysis use the same prompt
-3. **Context bloat via mechanical injection** — daemon concatenates planDoc + prevHandoff full text into coder prompt (~26-63KB on multi-iteration issues). The agent that needs the context (TL) already has it; the downstream agent (coder) receives it blindly.
-4. **Workspace churn** — daemon destroys and recreates worktrees on every coder spawn, losing git state and forcing full re-checkout
+3. **Context bloat via mechanical injection** — daemon concatenates planDoc + prevHandoff full text into coder prompt (~26-63KB on multi-iteration issues)
+4. **Workspace churn** — daemon destroys and recreates worktrees on every coder spawn, losing git state
 5. **Tight coupling** — identity, rules, workflow, and output format mixed in one file
+6. **Redundant gh prohibitions** — agents without Bash access don't need prompt-level gh rules (tool enforcement suffices)
+7. **TL over-injection** — TL receives full document content as injection when its primary job is reading documents
 
 ---
 
@@ -22,56 +24,47 @@ Replace the current 5 monolithic prompt templates with a layered, composable arc
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| Layer model | 5-layer include assembly | Clear separation of concerns |
-| Assembly mode | Pure include (no extends) | Simpler, each entry is a readable "bill of materials" |
-| Rule reuse | 2-level: shared.md + readonly/write | Catches all duplication without over-abstracting |
-| Task polymorphism | TL Decision adds `Task` field | Enables differentiated prompts per scenario |
-| Task fallback | Default mapping table | Graceful degradation when TL omits Task field |
-| Output format location | Embedded in task template | Each task may have slightly different output requirements |
-| TL Context | Free text (no schema) | Flexibility, rely on TL prompt examples |
-| TL context injection | Index table + latest doc full | Adequate for decision-making without bloat |
+| Layer model | 4-layer: Identity(+rules) → Task → TL Context → Environment | Rules belong with agent identity, not as separate layer |
+| Identity inheritance | `include _shared-rules.md` + role-specific append | Shared rules included, role-specific appended inline |
+| Task inheritance | Convention-based structure, plain markdown with Nunjucks variables | Fixed structure (steps/acceptance/output) by convention, no template inheritance |
+| Entry assembly | `extends _base.md`, fills identity/task/context/env blocks | Readable skeleton showing full prompt structure |
+| gh rule placement | Only in Bash-capable agent prompts | No-Bash agents (TL, Reviewer) don't need prompt-level gh prohibitions |
+| TL document access | Path-level permissions via settings.local.json | TL reads docs itself; allowedTools whitelist + settings allow for doc paths only |
+| TL injection | Slim: only issueContext, triggerEvent, systemAlerts, availableModels, env vars | TL reads latestDoc/orchestration/decisions/docListing itself |
 | Context routing | TL writes what downstream needs | TL reads all docs, writes targeted context; daemon does NOT inject handoff full text |
-| Workspace lifecycle | Reuse worktree across iterations | No destroy+recreate; coder works on same branch with accumulated commits |
-| Summary pipeline | Deferred | Not needed with TL-driven context routing; can add later if needed |
-| Migration | One-time replacement | No version coexistence complexity |
+| Workspace lifecycle | Reuse worktree across iterations | No destroy+recreate; coder works on same branch |
+| Summary pipeline | Not needed | TL-driven context routing replaces it |
+| Migration | One-time replacement | No version coexistence |
 
 ---
 
 ## 1. Prompt Layer Model
 
-The prompt passed to `-p` (user message) is assembled from 5 layers in order:
+The prompt passed to `-p` is assembled from 4 layers:
 
 ```
 ┌──────────────────────────────────────────────────┐
-│  Layer 1: Identity        │ 角色身份 (1 file/role) │
+│  Layer 1: Identity (+Rules)  │ 角色 + 行为准则    │
+│  (include shared rules)      │ shared + 角色专属   │
 ├──────────────────────────────────────────────────┤
-│  Layer 2: Shared Rules    │ shared.md + 权限级     │
+│  Layer 2: Task               │ 工作步骤 + 完成标准 │
+│  (include task structure)    │ 多态：TL 选择模板   │
 ├──────────────────────────────────────────────────┤
-│  Layer 3: Task Template   │ TL 选择的任务模板       │
+│  Layer 3: TL Context         │ TL 自由文本指导     │
+│  (仅非 TL 角色)              │ 上下文路由核心       │
 ├──────────────────────────────────────────────────┤
-│  Layer 4: TL Context      │ TL 自由文本指导         │
-├──────────────────────────────────────────────────┤
-│  Layer 5: Runtime Facts   │ daemon 注入的事实数据   │
+│  Layer 4: Environment        │ 环境变量 + 系统信息  │
+│  (daemon 注入)               │ 精简、一行一条       │
 └──────────────────────────────────────────────────┘
 ```
 
-Layers 1-2 are static (seldom change). Layer 3 is polymorphic (TL selects). Layer 4 is dynamic per decision — **this is where all handoff context flows**, written by TL after reading all documents. Layer 5 is injected from daemon state.
+### Key principles
 
-### Key principle: TL is the context router
-
-The TL agent reads **all documents** (orchestration history + latest doc full text). When it decides to spawn a downstream agent, it writes **TL Context** that contains precisely what that agent needs — extracted from its understanding of all the documents.
-
-```
-TL reads: orchestration (index) + latestDoc (full) + all previous docs (via Read tool)
-           ↓
-TL understands: what happened, what went wrong, what needs to happen next
-           ↓
-TL writes TL Context: targeted, concise guidance for the specific agent
-           ↓
-Downstream agent receives: TL Context (smart) + docDir path (to Read if needed)
-```
-
-**Daemon does NOT inject planDoc, prevHandoff, or any document full text into non-TL agent prompts.** Only TL gets full documents; downstream agents get TL Context + file paths.
+- **Rules live with Identity** — shared rules in `_shared-rules.md`, role-specific rules appended inline. No separate rules files.
+- **Task defines structure** — by convention: task name → steps → acceptance → output format. Each task template is self-contained plain markdown.
+- **gh prohibitions only where Bash exists** — TL/Reviewer have no Bash access (enforced at tool level), so no need for prompt-level `gh` rules.
+- **TL reads its own documents** — daemon does NOT inject latestDocContent, orchestrationContent, latestDecision, decisionPath, docListing. TL reads these via its own Read tool (path-scoped to docs).
+- **Environment is compact** — one-line facts: paths, branch, iteration count, previous agent, duration.
 
 ---
 
@@ -79,35 +72,32 @@ Downstream agent receives: TL Context (smart) + docDir path (to Read if needed)
 
 ```
 prompts/
-├── _base/
-│   ├── identity/
-│   │   ├── tl.md
-│   │   ├── planner.md
-│   │   ├── coder.md
-│   │   ├── reviewer.md
-│   │   └── tester.md
-│   └── rules/
-│       ├── shared.md           # 全角色通用禁令
-│       ├── readonly-agent.md   # TL/Planner/Reviewer
-│       └── write-agent.md      # Coder/Tester
+├── _base.md                        # Entry skeleton (extends target)
+├── identity/
+│   ├── _shared-rules.md            # Shared rules (included by all identity files)
+│   ├── tl.md                       # includes _shared-rules.md
+│   ├── planner.md                  # includes _shared-rules.md
+│   ├── coder.md                    # includes _shared-rules.md
+│   ├── reviewer.md                 # includes _shared-rules.md
+│   └── tester.md                   # includes _shared-rules.md
 │
 ├── tasks/
 │   ├── tl/
-│   │   └── decision.md
+│   │   └── decision.md             # includes _task-sections.md
 │   ├── planner/
-│   │   ├── initial-analysis.md
-│   │   └── re-analysis.md
+│   │   ├── initial-analysis.md     # includes _task-sections.md
+│   │   └── re-analysis.md          # includes _task-sections.md
 │   ├── coder/
-│   │   ├── implement.md
-│   │   ├── rework.md
-│   │   └── ci-fix.md
+│   │   ├── implement.md            # includes _task-sections.md
+│   │   ├── rework.md               # includes _task-sections.md
+│   │   └── ci-fix.md               # includes _task-sections.md
 │   ├── reviewer/
-│   │   ├── full-review.md
-│   │   └── rework-review.md
+│   │   ├── full-review.md          # includes _task-sections.md
+│   │   └── rework-review.md        # includes _task-sections.md
 │   └── tester/
-│       └── e2e-acceptance.md
+│       └── e2e-acceptance.md       # includes _task-sections.md
 │
-└── entry/                      # Assembly entry points (Nunjucks main templates)
+└── entry/                          # Final assembly (extends _base.md)
     ├── tl.md
     ├── planner.md
     ├── coder.md
@@ -115,240 +105,144 @@ prompts/
     └── tester.md
 ```
 
-旧的单体模板文件（`prompts/tl-decision.md`, `prompts/planner-task.md` 等）全部删除。
+**Removed from v3:** `_base/rules/shared.md`, `_base/rules/readonly-agent.md`, `_base/rules/write-agent.md` — absorbed into identity layer.
 
 ---
 
-## 3. Entry Templates
+## 3. Base Templates
 
-### 3.1 `entry/planner.md`
+### 3.1 `_base.md` — Entry Skeleton
 
 ```jinja2
-{# === Layer 1: Identity === #}
-{% include "_base/identity/planner.md" %}
+{# ============================================================ #}
+{# 提示词总骨架 — 所有 entry 模板 extends 此文件              #}
+{# ============================================================ #}
+
+{% block identity %}{% endblock %}
 
 ---
 
-{# === Layer 2: Rules === #}
-{% include "_base/rules/shared.md" %}
-{% include "_base/rules/readonly-agent.md" %}
+{% block task %}{% endblock %}
 
 ---
 
-{# === Layer 3: Task === #}
-{% include "tasks/planner/" + taskTemplate + ".md" %}
+{% block tl_context %}{% endblock %}
 
 ---
 
-{# === Layer 4: TL Context === #}
-{% if tlContext %}
-## 任务上下文（来自 Team Leader）
-{{ tlContext }}
-{% endif %}
-
----
-
-{# === Layer 5: Runtime Facts === #}
-## 运行时信息
-- **Issue**: #{{ issueId }} - {{ issueTitle }}
-- **Workspace**: {{ wsPath }}
-- **文档目录**: {{ docDir }}
-{% if issueBody %}
-
-## Issue 描述
-{{ issueBody }}
-{% endif %}
+{% block environment %}{% endblock %}
 ```
 
-### 3.2 `entry/coder.md` (no document injection)
-
-```jinja2
-{% include "_base/identity/coder.md" %}
-
----
-
-{% include "_base/rules/shared.md" %}
-{% include "_base/rules/write-agent.md" %}
-
----
-
-{% include "tasks/coder/" + taskTemplate + ".md" %}
-
----
-
-{% if tlContext %}
-## 任务上下文（来自 Team Leader）
-{{ tlContext }}
-{% endif %}
-
----
-
-## 运行时信息
-- **Workspace**: {{ wsPath }}
-- **Branch**: {{ branch }}
-- **文档目录**: {{ docDir }}
-- **文档序号**: {{ seq }}
-
-## 工作文档
-所有工作文档位于: `{{ docDir }}`
-如需查阅计划文档或前序交接文档，请用 Read 工具读取对应文件。
-```
-
-**Key change:** No `planDoc`, no `prevHandoff`, no `planSummary`, no `issueId`/`issueTitle`. Coder gets:
-- TL Context (what TL decided it needs to know)
-- docDir path (to Read any document if needed)
-- Everything else is in the worktree's git history (since we reuse worktrees)
-
-### 3.3 `entry/tl.md`
-
-TL is the only agent that receives full documents from daemon:
-
-```jinja2
-{% include "_base/identity/tl.md" %}
-
----
-
-{% include "_base/rules/shared.md" %}
-{% include "_base/rules/readonly-agent.md" %}
-
----
-
-{% include "tasks/tl/" + taskTemplate + ".md" %}
-
----
-
-## Issue 上下文
-{{ issueContext }}
-
-## 当前触发事件
-{{ triggerEvent }}
-
-{% if systemAlerts and systemAlerts != "None" %}
-## System Alerts
-{{ systemAlerts }}
-{% endif %}
-
-## Orchestration 历史
-{{ orchestrationContent }}
-
-## 工作目录文档列表
-{{ docListing }}
-
-## 最新文档内容
-{{ latestDocContent }}
-
-## Latest Decision
-{{ latestDecision }}
-
-## 可用模型
-{{ availableModels }}
-```
-
-### 3.4 `entry/reviewer.md`
-
-```jinja2
-{% include "_base/identity/reviewer.md" %}
-
----
-
-{% include "_base/rules/shared.md" %}
-{% include "_base/rules/readonly-agent.md" %}
-
----
-
-{% include "tasks/reviewer/" + taskTemplate + ".md" %}
-
----
-
-{% if tlContext %}
-## 任务上下文（来自 Team Leader）
-{{ tlContext }}
-{% endif %}
-
----
-
-## 运行时信息
-- **PR**: #{{ prId }}
-- **Repository**: {{ repo }}
-- **文档目录**: {{ docDir }}
-- **文档序号**: {{ seq }}
-
-## 工作文档
-所有工作文档位于: `{{ docDir }}`
-请 Read 相关文档了解实现细节和测试契约。
-```
-
-### 3.5 `entry/tester.md`
-
-```jinja2
-{% include "_base/identity/tester.md" %}
-
----
-
-{% include "_base/rules/shared.md" %}
-{% include "_base/rules/write-agent.md" %}
-
----
-
-{% include "tasks/tester/" + taskTemplate + ".md" %}
-
----
-
-{% if tlContext %}
-## 任务上下文（来自 Team Leader）
-{{ tlContext }}
-{% endif %}
-
----
-
-## 运行时信息
-- **Issue**: #{{ issueId }}
-- **Workspace**: {{ wsPath }}
-- **文档目录**: {{ docDir }}
-- **文档序号**: {{ seq }}
-```
-
----
-
-## 4. Base Layer Files
-
-### 4.1 `_base/identity/planner.md`
+### 3.2 `identity/_shared-rules.md` — Shared Rules (included by all identity files)
 
 ```markdown
-## 角色定义
-你是一个规划代理。你分析 issue、探索代码库、制定实现方案。
-你**不写代码**，**不修改文件**（除了产出文档）。
-```
-
-(Each identity file is 3-5 lines. Minimal, focused.)
-
-### 4.2 `_base/rules/shared.md`
-
-```markdown
-## 通用规则
-- **禁止**使用 `gh issue close`、`gh pr close` — Issue 和 PR 由人工关闭
-- **禁止**使用 `gh issue comment`、`gh issue edit`、`gh pr edit` — GitHub 交互由框架处理
-- **禁止**假设 — 如果不清楚，明确说明
+{# 通用行为准则 — 所有角色 include 此文件 #}
 - 始终以 AGENTS.md 为最高技术指导
 - 所有文档产出使用中文
+- **禁止**假设 — 如果不清楚，明确说明
 ```
 
-### 4.3 `_base/rules/readonly-agent.md`
+### 3.3 Task Structure Convention
+
+All task templates follow a fixed structure (enforced by convention, not by template inheritance):
 
 ```markdown
-## 只读约束
+## 任务：<task name>
+
+### 工作步骤
+<numbered steps>
+
+### 完成标准
+<bullet list>
+
+### 产出格式
+<output file path + required sections>
+```
+
+Task templates are plain markdown files with Nunjucks variables (e.g. `{{ wsPath }}`). They are `include`d by entry templates.
+
+---
+
+## 4. Identity Templates
+
+### 4.1 `identity/tl.md`
+
+```jinja2
+## 角色
+你是 GOL 项目的 Team Leader。你阅读工作文档，决定下一步由哪个 Agent 接手，并为其编写精准的任务上下文。
+你不直接读代码（通过 explorer 子代理），不实现功能，只做调度决策。
+
+## 行为准则
+{% include "identity/_shared-rules.md" %}
+- 决策完全基于文档内容，不猜测
+- 每次只做一个决策
+- 所有内部迭代对用户不可见，不发中间评论
+```
+
+**注意：** TL 没有 Bash 权限（通过 allowedTools 白名单控制），因此不需要 `禁止 gh xxx` 规则。
+
+### 4.2 `identity/planner.md`
+
+```jinja2
+## 角色
+你是一个规划代理。你分析 issue、探索代码库、制定实现方案。
+你**不写代码**，**不修改文件**（除了产出文档）。
+
+## 行为准则
+{% include "identity/_shared-rules.md" %}
 - **禁止**使用 Edit、Write、NotebookEdit（文档文件除外）
 - **禁止**执行 git 操作
-- Bash 权限因角色而异（参见权限矩阵），受 disallowedTools 控制
+- **禁止**使用 `gh issue close`、`gh pr close`、`gh issue comment`、`gh issue edit`、`gh pr edit` — GitHub 交互由框架处理
+- **禁止**过度规划简单任务
+- 计划必须引用探索中找到的精确文件路径
 ```
 
-### 4.4 `_base/rules/write-agent.md`
+### 4.3 `identity/coder.md`
 
-```markdown
-## 写操作约束
+```jinja2
+## 角色
+你是 GOL 项目的实现工程师。你根据 Team Leader 提供的任务上下文实现代码并编写测试。
+
+## 行为准则
+{% include "identity/_shared-rules.md" %}
 - **禁止**删除文件（不可使用 rm、trash）
 - **禁止**修改 `.github/` 工作流
 - git add/commit/push 由框架管理，不要执行
+- **禁止**使用 `gh issue close`、`gh pr close`、`gh issue comment`、`gh issue edit`、`gh pr edit` — GitHub 交互由框架处理
+```
+
+### 4.4 `identity/reviewer.md`
+
+```jinja2
+## 角色
+你是一个**对抗性**代码审查员。你的目标是**找到会破坏系统的地方**。
+你不是形式审查 — 你要真正阅读代码，追踪调用链，验证边界条件。
+你通过 Read/Grep/Glob 访问代码库。
+
+## 行为准则
+{% include "identity/_shared-rules.md" %}
+- **禁止**使用 Edit、Write、NotebookEdit（审查文档除外）
+- **禁止**执行 git 操作
+- 必须实际读取代码，不能只看 diff
+- 问题报告必须具体 — 包含文件名、行号、原因
+```
+
+**注意：** Reviewer 没有 Bash 权限（通过 allowedTools 白名单控制），因此不需要 `禁止 gh xxx` 规则。
+
+### 4.5 `identity/tester.md`
+
+```jinja2
+## 角色
+你是一个 E2E 测试代理。你通过在**运行中的游戏实例**内注入诊断脚本来验证核心功能是否实现。
+你**不修改**游戏代码，只在 `/tmp/` 下编写临时诊断脚本。
+
+## 行为准则
+{% include "identity/_shared-rules.md" %}
+- **禁止**使用 `gh issue close`、`gh pr close`、`gh issue comment`、`gh issue edit` — GitHub 交互由框架处理
+- **禁止**修改任何游戏代码
+- **禁止**对游戏文件使用 Edit/Write（仅 /tmp/ 和测试文档）
+- **必须**包含截图视觉描述
+- 诊断脚本失败 2 次后立即跳转截图验证
 ```
 
 ---
@@ -368,13 +262,9 @@ const DEFAULT_TASK = {
 };
 ```
 
-Daemon resolves: `task = decision.task || DEFAULT_TASK[decision.action]`.
-
 Non-spawn actions (`verify`, `abandon`) skip task resolution entirely — no agent is spawned. Truly unknown actions (not in `DEFAULT_TASK` and not `verify`/`abandon`) are logged as errors and treated as `abandon`.
 
 ### 5.2 Task Valid Registry
-
-All valid `(action, task)` pairs. Daemon validates before rendering:
 
 ```javascript
 const VALID_TASKS = {
@@ -385,59 +275,574 @@ const VALID_TASKS = {
 };
 ```
 
-Invalid task → warn + fall back to default.
+### 5.3 Task Template Examples
 
-### 5.3 Task Template Content
+#### `tasks/coder/implement.md`
 
-Each task template contains:
+```jinja2
+## 任务：实现功能
 
-1. **Task heading** — `## 任务：XXX`
-2. **Workflow steps** — numbered steps with `{{ wsPath }}` / `{{ branch }}` references
-3. **Quality requirements** — specific to the task type
-4. **Output format** — required sections for the handoff document (embedded, not separate)
+### 工作步骤
+1. `cd {{ wsPath }}` 确认工作目录
+2. 阅读 AGENTS.md 了解项目规范
+3. 确认在 `{{ branch }}` 分支上
+4. 根据 TL Context 实现功能/修复
+5. 如需查看完整计划文档，Read `{{ docDir }}/01-planner-*.md`
+6. 编写/更新测试
+7. 运行测试确认通过
 
-Example — `tasks/coder/rework.md` vs `tasks/coder/implement.md`:
+### 完成标准
+- 所有相关测试通过
+- 代码符合 AGENTS.md 架构约束
+- 无未处理的编译错误
 
-- `implement.md`: "根据 TL Context 中的计划实现功能/修复。如需查看完整计划文档，Read `{{ docDir }}/01-planner-*.md`。"
-- `rework.md`: "根据 TL Context 中 reviewer 提出的问题逐项修复。只修复指出的问题，不做额外重构。如需查看审查文档，Read `{{ docDir }}/03-reviewer-*.md`。"
-- `ci-fix.md`: "根据 TL Context 中的 CI 失败摘要定位问题。优先修复代码 bug，不要通过修改测试来通过。"
+### 产出格式
+完成后写交接文档到 `{{ docDir }}/{{ seq }}-coder-<主题描述>.md`
 
-**Reviewer task notes:**
-- `full-review.md` and `rework-review.md`: **不使用 `gh` 命令**。Reviewer 通过 Read/Grep/Glob 读取源码审查，TL Context 会指定重点审查的文件路径。
+<主题描述>：3-5 个英文单词，kebab-case。
+例如：`02-coder-fix-bullet-target-filter.md`
 
-**Tester task notes:**
-- `e2e-acceptance.md`: **删除 Step 7 提 Bug Issue**。截图证据留在测试报告文档中，TL 决定是否需要上传 GitHub。
+**文档必须包含：**
+
+## 完成的工作
+- 修改/新增了哪些文件及原因
+
+## 测试契约覆盖
+- 对照 planner 的测试契约，标注覆盖状态
+
+## 决策记录
+- 实现过程中的关键决策
+- 与计划有偏差的地方及原因
+
+## 仓库状态
+- branch 名称、commit SHA、测试结果摘要
+
+## 未完成事项
+- 如果全部完成，写"无"
+```
+
+#### `tasks/coder/rework.md`
+
+```jinja2
+## 任务：Review 修复
+
+### 工作步骤
+1. `cd {{ wsPath }}` 确认工作目录
+2. 根据 TL Context 中 reviewer 提出的问题逐项修复
+3. **只修复指出的问题，不做额外重构**
+4. 如需查看审查文档，Read `{{ docDir }}/` 下对应的 reviewer 文档
+5. 运行测试确认通过
+
+### 完成标准
+- Reviewer 指出的每个问题都已修复
+- 无新增回归
+- 测试通过
+
+### 产出格式
+完成后写交接文档到 `{{ docDir }}/{{ seq }}-coder-<主题描述>.md`
+
+**文档必须包含：**
+
+## 逐项修复记录
+- 每个 reviewer 问题的修复方式
+
+## 测试结果
+
+## 仓库状态
+
+## 未完成事项
+```
+
+#### `tasks/coder/ci-fix.md`
+
+```jinja2
+## 任务：CI 修复
+
+### 工作步骤
+1. `cd {{ wsPath }}` 确认工作目录
+2. 根据 TL Context 中的 CI 失败摘要定位问题
+3. 优先修复代码 bug，**不要通过修改测试来通过**
+4. 运行测试确认通过
+
+### 完成标准
+- CI 中失败的测试全部通过
+- 无新增回归
+
+### 产出格式
+完成后写交接文档到 `{{ docDir }}/{{ seq }}-coder-<主题描述>.md`
+
+**文档必须包含：**
+
+## 修复记录
+- 失败原因分析
+- 修复方式
+
+## 测试结果
+
+## 仓库状态
+```
+
+#### `tasks/tl/decision.md`
+
+```jinja2
+## 任务：调度决策
+
+### 工作步骤
+1. Read `{{ docDir }}/` 目录了解所有工作文档
+2. Read orchestration 历史了解之前的决策和进展
+3. 如果有最新文档，Read 全文评估其质量
+4. 评估当前触发事件和系统状态
+5. 决定下一步 Action 和 Task
+6. 为下游 agent 编写 TL Context
+
+**决策规则：**
+- Planner 永远先跑，你决定 plan 质量是否足够往下走
+- CI 是硬性 gate，不可跳过
+- 内部迭代超过 3 次必须 abandon（参考环境信息中的调度轮次）
+- 当 reviewer 发现架构问题时，回退 planner 而不是让 coder 修补
+- 当 CI 失败时，评估原因决定是让 coder 修测试还是回退 planner
+
+**可用动作：**
+
+| Action | 可选 Task | 默认 Task | 使用场景 |
+|--------|----------|----------|----------|
+| spawn @planner | initial-analysis, re-analysis | initial-analysis | 新issue / 方案需重设计 |
+| spawn @coder | implement, rework, ci-fix | implement | 首次实现 / review修复 / CI修复 |
+| spawn @reviewer | full-review, rework-review | full-review | 首次审查 / rework后审查 |
+| spawn @tester | e2e-acceptance | e2e-acceptance | E2E验收 |
+| verify | — | — | 任务通过 |
+| abandon | — | — | 放弃 |
+
+**必须 abandon 的场景：**
+- 内部迭代超过 3 次仍未解决
+- Planner 报告 issue 需求不清晰
+- Reviewer 发现需求本身有矛盾
+
+### 完成标准
+- Decision 格式完整（见产出格式）
+- TL Context 具体可操作（包含文件路径、修改点、约束）
+- 终态决策（verify/abandon）包含 GitHub Comment
+
+### 产出格式
+将 Decision 写入 `{{ docDir }}/decisions/{{ decisionSeq }}-<phase>.md`
+
+```markdown
+# Decision N — YYYY-MM-DD HH:MM
+**Trigger:** <触发事件描述>
+**Assessment:** <对当前状态的评估>
+**Action:** <spawn @planner | spawn @coder | spawn @reviewer | spawn @tester | verify | abandon>
+**Task:** <task-template-name>
+**Model:** <使用的模型名称>
+**Guidance:** <给 agent 的简要指导>
+**TL Context for <Agent>:**
+> <给对应 agent 的详细任务指导段落，多行 markdown>
+```
+
+终态（verify/abandon）追加：
+```markdown
+**GitHub Comment:**
+<面向用户的中文总结>
+```
+
+**TL Context 质量要求：**
+- **具体可操作** — 写具体的文件、函数、修改点，不泛泛而谈
+- **包含路径** — 告诉下游 agent 哪些文档值得 Read
+- **包含约束** — 列出必须遵守的限制
+- **简洁** — 几百字足够，下游 agent 有能力自己 Read 细节
+
+同时更新 `{{ docDir }}/orchestration.md` 的索引表。
+```
+
+#### `tasks/planner/initial-analysis.md`
+
+```jinja2
+## 任务：初始分析
+
+### 工作步骤
+1. 验证 Issue 描述（空白/不清晰 → 文档标记 BLOCKED）
+2. `cd {{ wsPath }}` 进入工作目录
+3. 阅读 AGENTS.md 了解项目架构
+4. 使用 Glob/Grep/Read 搜索相关代码
+5. 追踪执行路径和调用链
+6. 撰写分析文档
+
+### 完成标准
+- 需求分析完整
+- 影响面追踪到所有相关文件
+- 测试契约明确且可验证
+- 每个实现步骤足够具体，让另一个 agent 无需猜测就能执行
+
+### 产出格式
+写入 `{{ docDir }}/{{ seq }}-planner-<主题描述>.md`
+
+<主题描述>：3-5 个英文单词，kebab-case。
+
+**文档必须包含：**
+
+## 需求分析
+## 影响面分析
+## 实现方案
+## 架构约束
+- 涉及的 AGENTS.md 文件
+- 引用的架构模式
+- 文件归属层级
+- 测试模式
+## 测试契约
+## 风险点
+## 建议的实现步骤
+```
+
+#### `tasks/planner/re-analysis.md`
+
+```jinja2
+## 任务：方案重设计
+
+### 工作步骤
+1. `cd {{ wsPath }}` 进入工作目录
+2. Read TL Context 中提到的审查文档了解问题
+3. Read 原始计划文档了解之前的方案
+4. 分析问题根因
+5. 设计新方案，规避已发现的问题
+
+### 完成标准
+- 明确说明与前一版方案的差异
+- 新方案解决了 reviewer 指出的问题
+- 不引入新的架构风险
+
+### 产出格式
+写入 `{{ docDir }}/{{ seq }}-planner-<主题描述>.md`
+
+**文档必须包含：**
+
+## 问题回顾
+## 修正后的方案
+## 与前版差异
+## 测试契约（更新）
+## 风险点
+```
+
+#### `tasks/reviewer/full-review.md`
+
+```jinja2
+## 任务：完整代码审查
+
+### 工作步骤
+1. Read 工作文档（`{{ docDir }}/` 下的 planner 和 coder 文档）了解实现意图
+2. 使用 Read 读取修改文件的**完整内容**（不只看 diff 片段）
+3. 使用 Grep 追踪修改函数的**所有调用者** — 确认修改不破坏上游
+4. 检查**边界条件** — null、空值、极端输入
+5. 验证**测试质量** — 测试是否真正验证了行为
+6. 检查**副作用** — 修改是否影响了非目标代码路径
+
+### 完成标准
+- 每个验证项有实际执行的验证动作（不能只写"已检查"）
+- 架构一致性全部通过
+- 结论明确（verified / rework）
+
+### 产出格式
+写入 `{{ docDir }}/{{ seq }}-reviewer-<主题描述>.md`
+
+**文档必须包含：**
+
+## 审查范围
+
+## 验证清单
+- [ ] 验证项（描述 + 实际执行的动作）
+
+### 架构一致性对照（固定检查项）
+- [ ] 新增代码是否遵循 planner 指定的架构模式
+- [ ] 新增文件是否放在正确目录，命名符合 AGENTS.md 约定
+- [ ] 是否存在平行实现——功能和已有代码重叠但没有复用
+- [ ] 测试是否使用正确的测试模式
+- [ ] 测试是否验证了真实行为
+
+> 架构违规 severity = Important
+
+## 发现的问题
+- 严重程度（Critical/Important/Minor）、置信度、文件位置、建议修复
+
+## 测试契约检查
+
+## 结论
+- `verified` — 所有检查通过
+- `rework` — 发现需要修复的问题
+```
+
+#### `tasks/reviewer/rework-review.md`
+
+```jinja2
+## 任务：Rework 增量审查
+
+### 工作步骤
+1. Read 上一轮审查文档了解之前指出的问题
+2. Read coder 的 rework 交接文档了解修复内容
+3. 逐项验证之前指出的问题是否已修复
+4. 检查修复是否引入新问题
+
+### 完成标准
+- 每个之前的问题都有明确的验证结果
+- 无新增问题
+
+### 产出格式
+写入 `{{ docDir }}/{{ seq }}-reviewer-<主题描述>.md`
+
+**文档必须包含：**
+
+## 逐项验证
+| # | 原问题 | 修复状态 | 验证方式 |
+|---|--------|---------|---------|
+
+## 新发现（如有）
+
+## 结论
+```
+
+#### `tasks/tester/e2e-acceptance.md`
+
+```jinja2
+## 任务：E2E 功能验收
+
+### 工作步骤
+1. Read `{{ docDir }}/` 下的 planner 文档提取测试契约
+2. 启动游戏：
+   ```bash
+   cd {{ wsPath }}/gol-project
+   /Applications/Godot.app/Contents/MacOS/Godot --scene <场景路径> 2>&1 | tee /tmp/godot_e2e.log &
+   ```
+3. 等待初始化（~12秒），验证调试桥：
+   ```bash
+   node gol-tools/ai-debug/ai-debug.mjs get entity_count
+   ```
+4. 执行前置条件
+5. 逐项执行验收标准：
+   - 编写诊断脚本到 `/tmp/e2e_check_*.gd`
+   - 注入执行：`node gol-tools/ai-debug/ai-debug.mjs script /tmp/e2e_check_*.gd`
+   - 完整记录原始输出
+6. 截图取证（**必须**）：
+   ```bash
+   node gol-tools/ai-debug/ai-debug.mjs screenshot
+   ```
+   使用 Read 读取截图 → 文字描述（≥3句）→ 写入报告
+7. 清理：
+   ```bash
+   rm -f /tmp/e2e_*.gd
+   kill $(pgrep -f "Godot") 2>/dev/null
+   ```
+
+### 完成标准
+- 核心功能正常 = 通过，即使存在小问题
+- 每个测试项有完整证据链（脚本 → 输出 → 截图）
+- 截图有文字描述
+
+### 产出格式
+写入 `{{ docDir }}/{{ seq }}-tester-<主题描述>.md`
+
+**文档必须包含：**
+
+## 测试环境
+- 场景路径、Godot 版本、前置条件
+
+## 测试用例与结果
+| # | 检查项 | 结果 | 证据 |
+|---|--------|------|------|
+
+## 截图证据
+- 截图文件路径
+- 视觉描述
+
+## 发现的非阻塞问题
+- 如果没有：写"无"
+
+## 结论
+- `pass` — 核心功能正常
+- `fail` — 核心功能不可用（附理由）
+```
 
 ---
 
-## 6. Context Routing: TL as the Intelligence Layer
+## 6. Entry Templates
 
-### 6.1 Problem with current design
+### 6.1 `entry/tl.md`
 
-Currently daemon mechanically concatenates `planDoc` + `prevHandoff` into coder prompt:
+```jinja2
+{% extends "_base.md" %}
 
-```javascript
-// CURRENT (wrong) — foreman-daemon.mjs #spawnCoder()
-const planDoc = docs.find(doc => doc.startsWith('01-planner'));
-const prevHandoff = docs.filter(doc => !doc.startsWith('01-planner'))
-    .map(doc => `### ${doc}\n\n${this.#docs.readDoc(issue_number, doc)}`)
-    .join('\n\n---\n\n');
-// → 26-63KB of full document text injected into every coder prompt
+{% block identity %}
+{% include "identity/tl.md" %}
+{% endblock %}
+
+{% block task %}
+{% include "tasks/tl/" + taskTemplate + ".md" %}
+{% endblock %}
+
+{% block tl_context %}
+{# TL 不接收 TL Context — TL 是 context 的源头 #}
+{% endblock %}
+
+{% block environment %}
+## 环境信息
+- **Issue**: #{{ issueId }} — {{ issueTitle }}
+- **Workspace**: {{ wsPath }}
+- **Branch**: {{ branch }}
+- **文档目录**: {{ docDir }}
+- **调度轮次**: {{ iteration }} / 3
+- **上一轮 Agent**: {{ prevAgent }}
+- **处理时长**: {{ totalDuration }}
+
+## Issue 上下文
+{{ issueContext }}
+
+## 触发事件
+{{ triggerEvent }}
+
+{% if systemAlerts and systemAlerts != "None" %}
+## 系统警报
+{{ systemAlerts }}
+{% endif %}
+
+## 可用资源
+{{ availableModels }}
+{% endblock %}
 ```
 
-This is wrong because:
-1. **Coder doesn't need full history** — it needs to know "what to fix" and "what constraints exist", not every detail of every previous iteration
-2. **Wastes context window** — 17K-42K tokens of history that dilutes attention on the actual task
-3. **Noise** — commit SHAs, test output, step-by-step logs from previous coders are irrelevant to the current coder
-4. **Violates separation of concerns** — daemon is making content routing decisions that should be TL's job
+### 6.2 `entry/planner.md`
 
-### 6.2 New design: TL routes context
+```jinja2
+{% extends "_base.md" %}
 
-TL already reads all documents (orchestration + latestDoc). When TL decides to spawn a downstream agent, it writes **TL Context** that contains:
+{% block identity %}
+{% include "identity/planner.md" %}
+{% endblock %}
 
-1. **What happened** — brief summary of the current situation
+{% block task %}
+{% include "tasks/planner/" + taskTemplate + ".md" %}
+{% endblock %}
+
+{% block tl_context %}
+{% if tlContext %}
+## 任务上下文（来自 Team Leader）
+{{ tlContext }}
+{% endif %}
+{% endblock %}
+
+{% block environment %}
+## 环境信息
+- **Issue**: #{{ issueId }} — {{ issueTitle }}
+- **Workspace**: {{ wsPath }}
+- **文档目录**: {{ docDir }}
+{% if issueBody %}
+
+## Issue 描述
+{{ issueBody }}
+{% endif %}
+{% endblock %}
+```
+
+### 6.3 `entry/coder.md`
+
+```jinja2
+{% extends "_base.md" %}
+
+{% block identity %}
+{% include "identity/coder.md" %}
+{% endblock %}
+
+{% block task %}
+{% include "tasks/coder/" + taskTemplate + ".md" %}
+{% endblock %}
+
+{% block tl_context %}
+{% if tlContext %}
+## 任务上下文（来自 Team Leader）
+{{ tlContext }}
+{% endif %}
+{% endblock %}
+
+{% block environment %}
+## 环境信息
+- **Workspace**: {{ wsPath }}
+- **Branch**: {{ branch }}
+- **文档目录**: {{ docDir }}
+- **文档序号**: {{ seq }}
+- **调度轮次**: {{ iteration }}
+- **上一轮 Agent**: {{ prevAgent }}
+{% endblock %}
+```
+
+### 6.4 `entry/reviewer.md`
+
+```jinja2
+{% extends "_base.md" %}
+
+{% block identity %}
+{% include "identity/reviewer.md" %}
+{% endblock %}
+
+{% block task %}
+{% include "tasks/reviewer/" + taskTemplate + ".md" %}
+{% endblock %}
+
+{% block tl_context %}
+{% if tlContext %}
+## 任务上下文（来自 Team Leader）
+{{ tlContext }}
+{% endif %}
+{% endblock %}
+
+{% block environment %}
+## 环境信息
+- **PR**: #{{ prId }}
+- **Repository**: {{ repo }}
+- **文档目录**: {{ docDir }}
+- **文档序号**: {{ seq }}
+- **调度轮次**: {{ iteration }}
+{% endblock %}
+```
+
+### 6.5 `entry/tester.md`
+
+```jinja2
+{% extends "_base.md" %}
+
+{% block identity %}
+{% include "identity/tester.md" %}
+{% endblock %}
+
+{% block task %}
+{% include "tasks/tester/" + taskTemplate + ".md" %}
+{% endblock %}
+
+{% block tl_context %}
+{% if tlContext %}
+## 任务上下文（来自 Team Leader）
+{{ tlContext }}
+{% endif %}
+{% endblock %}
+
+{% block environment %}
+## 环境信息
+- **Issue**: #{{ issueId }}
+- **Workspace**: {{ wsPath }}
+- **文档目录**: {{ docDir }}
+- **文档序号**: {{ seq }}
+{% endblock %}
+```
+
+---
+
+## 7. Context Routing: TL as the Intelligence Layer
+
+### 7.1 Problem with current design
+
+Daemon mechanically concatenates `planDoc` + `prevHandoff` into coder prompt (26-63KB). Additionally, TL receives full document content as injection when its primary job is reading documents — this is both wasteful and architecturally inconsistent.
+
+### 7.2 New design: TL routes context
+
+TL reads all documents itself (via path-scoped Read permissions). When TL decides to spawn a downstream agent, it writes **TL Context** containing:
+
+1. **What happened** — brief summary
 2. **What to do** — specific, actionable guidance
-3. **What to reference** — which documents to Read for details (file paths, not full content)
+3. **What to reference** — file paths for details
 
 Example TL Context for coder rework:
 
@@ -447,109 +852,71 @@ Reviewer 发现 3 个问题需要修复：
 2. 测试用例没覆盖空 HP 场景 — 需要新增 `test_bullet_no_damage_on_zero_hp`
 3. 函数命名不符合 AGENTS.md 约定 — `check_hit` 应改为 `is_valid_bullet_target`
 
-计划文档: `{docDir}/01-planner-entity-purge-freed-ref.md`
-审查文档: `{docDir}/03-reviewer-side-effect-found.md`
+计划文档: `iterations/42/01-planner-entity-purge-freed-ref.md`
+审查文档: `iterations/42/03-reviewer-side-effect-found.md`
 
 注意：不要修改 is_valid_bullet_target 的签名，只修改内部逻辑。
 ```
 
-The coder receives this focused context (a few hundred bytes) and knows where to find details if needed.
+### 7.3 Daemon changes for context routing
 
-> （注：TL 在实际输出中使用真实路径，如 `iterations/42/01-planner-*.md`，此处 `{{ docDir }}` 仅为示意。）
-
-### 6.3 TL Context for planner re-analysis
-
-```markdown
-Reviewer 发现当前方案的副作用：修改 CHP 过滤会导致 SpawnerLoot 行为改变。
-Planner 的原始方案: `{docDir}/01-planner-*.md`
-Reviewer 的发现: `{docDir}/03-reviewer-*.md`
-
-请重新设计方案，保持 SpawnerLoot 的现有行为。可以考虑给 is_valid_bullet_target 增加一个参数来区分 CHP 实体。
-```
-
-### 6.4 TL Context for coder ci-fix
-
-```markdown
-CI 失败摘要:
-- test_bullet_damage: 预期 10 HP 扣除，实际扣了 0 — `scripts/components/bullet_damage.gd` 第 45 行的 `max()` 应为 `min()`
-- test_spawn_loot: 空引用崩溃 — `SpawnerLoot._ready()` 没有检查 entity validity
-
-只修复这两个测试指向的代码 bug。不要修改测试。
-```
-
-### 6.5 Daemon changes for context routing
-
-`#spawnCoder()` simplifies dramatically:
-
-```javascript
-async #spawnCoder(task, decision) {
-    const { issue_number, issue_title, branch: existingBranch } = task;
-
-    // NO planDoc reading, NO prevHandoff concatenation
-    // TL Context already contains everything the coder needs
-
-    let branch = existingBranch || await this.#findPRBranch(issue_number);
-    if (!branch) branch = this.#generateBranchName(issue_number, issue_title);
-
-    const workspace = await this.#workspaces.getOrCreate(task, { branch });
-
-    const prompt = this.#prompts.buildPrompt('coder', task, {
-        wsPath: workspace,
-        branch,
-        tlContext: decision.tlContext || '',
-        docDir: this.#docs.getIterationsDir(issue_number),
-        seq: this.#docs.nextSeq(issue_number),
-    });
-
-    // ... spawn process
-}
-```
-
-Same simplification applies to `#spawnPlanner()`, `#spawnReviewer()`, `#spawnTester()`.
+All `#spawnXxx()` methods simplify dramatically. No planDoc/prevHandoff concatenation.
 
 #### Spawner Context Variables
 
-Each `#spawnXxx()` passes these template variables to `buildPrompt()`:
-
 | Spawner | Template Variables |
 |---------|-------------------|
-| `#spawnTl()` | `taskTemplate='decision'`（硬编码）, `issueContext`, `triggerEvent`, `systemAlerts`, `orchestrationContent`, `docListing`, `latestDocContent`, `latestDecision`, `availableModels` |
-| `#spawnPlanner()` | `taskTemplate`, `tlContext`, `issueId`, `issueTitle`, `wsPath`, `docDir`, `issueBody` |
-| `#spawnCoder()` | `taskTemplate`, `tlContext`, `wsPath`, `branch`, `docDir`, `seq` |
-| `#spawnReviewer()` | `taskTemplate`, `tlContext`, `prId`, `repo`, `docDir`, `seq` |
+| `#spawnTl()` | `taskTemplate='decision'`（硬编码）, `issueId`, `issueTitle`, `issueContext`, `triggerEvent`, `systemAlerts`, `availableModels`, `wsPath`, `branch`, `docDir`, `iteration`, `prevAgent`, `totalDuration`, `decisionSeq` |
+| `#spawnPlanner()` | `taskTemplate`, `tlContext`, `issueId`, `issueTitle`, `wsPath`, `docDir`, `issueBody`, `seq` |
+| `#spawnCoder()` | `taskTemplate`, `tlContext`, `wsPath`, `branch`, `docDir`, `seq`, `iteration`, `prevAgent` |
+| `#spawnReviewer()` | `taskTemplate`, `tlContext`, `prId`, `repo`, `docDir`, `seq`, `iteration` |
 | `#spawnTester()` | `taskTemplate`, `tlContext`, `issueId`, `wsPath`, `docDir`, `seq` |
 
-**Reviewer note:** Reviewer 不需要 daemon 注入 diff — reviewer 通过 Read/Grep/Glob 自行读取源码，TL Context 指导重点文件。
+---
 
-### 6.6 TL prompt update
+## 8. Permission Model
 
-TL prompt must make clear that it is responsible for writing good downstream context. Add to `tasks/tl/decision.md`:
+### 8.1 Permission Matrix
 
-```markdown
-## TL Context 质量要求
-- **具体可操作** — 不要写泛泛而谈的指导，写具体的文件、函数、修改点
-- **包含路径** — 告诉下游 agent 哪些文档值得 Read（用 `{{ docDir }}/XX-*.md` 格式）
-- **包含约束** — 列出必须遵守的约束（如"不要修改签名"、"只修复指出的问题"）
-- **简洁** — 几百字足够，不需要复述文档全文。下游 agent 有能力自己 Read
+All roles use whitelist mode (`allowedTools` + `permissions.allow`). Only explicitly listed tools are available.
+
+| Role | allowedTools (CLI) | settings.local.json allow | Notes |
+|------|-------------------|--------------------------|-------|
+| TL | Read, Grep, Glob, LS, Write, TodoWrite, Task, TaskOutput | `Read(docs/**)`, `Read(iterations/**)`, `Read(decisions/**)`, `Read(orchestration.md)` | 代码读取通过 explorer 子代理 |
+| Planner | Read, Grep, Glob, LS, Bash, Write, TodoWrite, Task, TaskOutput | — | Bash 用于 read-only 探索 |
+| Coder | Read, Write, Edit, Grep, Glob, LS, Bash, Task, TaskOutput, WebFetch, WebSearch, TodoWrite, NotebookEdit | — | 完整实现能力 |
+| Reviewer | Read, Grep, Glob, LS, Write, TodoWrite, Task, TaskOutput | — | 通过 Read/Grep/Glob 审查源码 |
+| Tester | Read, Write, Edit, Grep, Glob, LS, Bash, TodoWrite, Task, TaskOutput | — | 需要 Bash 运行测试，Write 写 /tmp/ 脚本 |
+
+### 8.2 TL Path-Level Permissions
+
+Foreman daemon writes `.codebuddy/settings.local.json` in the worktree before spawning TL:
+
+```json
+{
+    "permissions": {
+        "allow": [
+            "Read(docs/**)",
+            "Read(iterations/**)",
+            "Read(decisions/**)",
+            "Read(orchestration.md)"
+        ]
+    }
+}
 ```
 
-### 6.7 Permission Matrix
+**Effect:**
+- TL can Read document directories (docs/foreman/, iterations/, decisions/, orchestration.md) ✅
+- TL cannot Read anything else (code, assets, etc.) ❌ → delegates to explorer sub-agent
+- TL cannot use Bash (not in allowedTools) ❌
 
-Summary of tool permissions per role. Changes from current config marked with ⚠️.
+**Implementation:** `foreman-daemon.mjs` writes this file in `#spawnTl()` before spawning. The settings.local.json is per-worktree and not committed.
 
-| Role | Client | disallowedTools | allowedTools | Notes |
-|------|--------|----------------|--------------|-------|
-| TL | codebuddy | AskUserQuestion, EnterPlanMode, Edit, NotebookEdit, ⚠️ Read, ⚠️ Grep, ⚠️ Glob, ⚠️ LS, ⚠️ Bash | — | 代码读取通过 explorer 子代理 |
-| Planner | codebuddy | AskUserQuestion, EnterPlanMode | — | 只读分析，通过 Bash(gh/ls/cat) 探索代码 |
-| Coder | codebuddy | — | Read, Write, Edit, Grep, Glob, LS, Bash, Agent, WebFetch, WebSearch, TodoWrite, NotebookEdit | 白名单模式不变 |
-| Reviewer | codebuddy | AskUserQuestion, EnterPlanMode, Edit, ⚠️ Bash | — | 通过 Read/Grep/Glob 审查源码，不执行命令 |
-| Tester | codebuddy | AskUserQuestion, EnterPlanMode | — | 需要 Bash 运行测试 |
+### 8.3 TL Explorer Sub-agent
 
-### 6.8 TL Explorer Sub-agent
+TL has an `explorer` sub-agent for code access when needed.
 
-TL is prohibited from Read/Grep/Glob/LS/Bash to prevent it from going down code rabbit holes. Instead, TL has an `explorer` sub-agent for occasional file verification.
-
-**Injection mechanism:** `--agents` CLI flag (JSON string) added by process-manager.mjs when spawning TL.
+**Injection:** `--agents` CLI flag (JSON string):
 
 ```json
 [{
@@ -560,9 +927,7 @@ TL is prohibited from Read/Grep/Glob/LS/Bash to prevent it from going down code 
 }]
 ```
 
-**process-manager.mjs change:** When spawning TL, append `--agents '<json>'` to the CLI args. This is a new parameter path in `buildArgs()`.
-
-**config/default.json change:** Add `agents` field to TL role config:
+**config/default.json:**
 ```json
 {
     "tl": {
@@ -576,33 +941,17 @@ TL is prohibited from Read/Grep/Glob/LS/Bash to prevent it from going down code 
 }
 ```
 
-**Usage pattern:** TL asks explorer to verify file existence, check directory structure, or read specific file contents when making decisions. TL itself focuses on orchestration and context routing.
-
 ---
 
-## 7. Worktree Reuse
+## 9. Worktree Reuse
 
-### 7.1 Current problem
+### 9.1 Current problem
 
-`#spawnCoder()` destroys the old worktree and creates a new one on every spawn:
+`#spawnCoder()` destroys and recreates worktree on every spawn, losing git state.
 
-```javascript
-// CURRENT (wrong)
-if (task.workspace) {
-    this.#workspaces.destroy(task.workspace);  // ← destroys git state
-}
-const workspace = await this.#workspaces.create({ newBranch: branch });  // ← full re-checkout
-```
-
-This means:
-1. Each coder starts from a clean checkout → **loses all previous commits** on the branch
-2. The coder can't see its own previous work via `git log` (only what's pushed)
-3. On rework, coder has to re-read plan docs to understand what was already done
-
-### 7.2 New design: reuse worktree
+### 9.2 New design: reuse worktree
 
 ```javascript
-// NEW — reuse existing workspace, only create if needed
 const workspace = await this.#workspaces.getOrCreate(task, { branch });
 ```
 
@@ -610,18 +959,14 @@ const workspace = await this.#workspaces.getOrCreate(task, { branch });
 
 ```javascript
 async getOrCreate(task, options = {}) {
-    // If workspace exists and is valid, reuse it
     if (task.workspace) {
         try {
             execSync('git rev-parse --show-toplevel', { cwd: task.workspace, timeout: 5000 });
             return task.workspace;
         } catch {
-            // Workspace corrupted, create new
             warn(COMPONENT, `#${task.issue_number}: workspace corrupted, recreating`);
         }
     }
-
-    // Create new workspace
     if (options.branch) {
         return this.create({ newBranch: options.branch });
     }
@@ -631,117 +976,49 @@ async getOrCreate(task, options = {}) {
 
 当 `options.branch` 未提供时，`create()` 使用默认行为：基于 submodule 当前 HEAD 创建 worktree。
 
-### 7.3 Benefits
-
-- Coder has access to **all previous commits** on the branch via `git log`
-- Coder can `git diff` against previous commit to see what was changed
-- No redundant checkout time
-- Worktree accumulates the full implementation history
-
 ---
 
-## 8. PromptBuilder Unified Interface
+## 10. PromptBuilder Unified Interface
 
-### 8.1 New API
+### 10.1 New API
 
 ```javascript
 class PromptBuilder {
-    // Unified entry point — replaces all buildXxxPrompt() methods
     buildPrompt(role, taskTemplate, context) {
         return this.#render(`entry/${role}.md`, { taskTemplate, ...context });
     }
 }
 ```
 
-### 8.2 Removed API
+### 10.2 Caller Changes
 
 ```javascript
-// DELETED — all replaced by buildPrompt(role, task, ctx)
-buildTLPrompt(...)
-buildPlannerPrompt(...)
-buildCoderPrompt(...)
-buildReviewerPrompt(...)
-buildTesterPrompt(...)
-buildSummaryPrompt(...)  // LLM summary pipeline deferred
-```
-
-### 8.3 Caller Changes
-
-All 5 `#spawnXxx()` methods in `foreman-daemon.mjs` change from:
-
-```javascript
-// Before
-const prompt = this.#prompts.buildPlannerPrompt({ issueId, ... });
-```
-
-To:
-
-```javascript
-// After
 const taskTemplate = decision.task || DEFAULT_TASK[decision.action];
 const prompt = this.#prompts.buildPrompt('planner', taskTemplate, { issueId, ... });
 ```
 
-### 8.4 Nunjucks Configuration
-
-`prompt-builder.mjs` already configured correctly:
-
-```javascript
-new nunjucks.Environment(
-    new nunjucks.FileSystemLoader(promptsDir, { noCache: true }),
-    {
-        autoescape: false,      // Don't escape markdown content
-        throwOnUndefined: true, // Catch missing variables early
-        trimBlocks: true,       // Clean output after block tags
-        lstripBlocks: true,     // Remove leading whitespace before block tags
-    }
-);
-```
-
-Note: `throwOnUndefined: true` means any missing variable will throw. All variables passed to `buildPrompt()` must be defined (even if empty string).
-
 ---
 
-## 9. TL Decision Format Change
+## 11. TL Decision Format
 
-### 9.1 New Field: Task
-
-TL's Decision output adds a `Task` field between `Action` and `Model`:
+### 11.1 New Field: Task
 
 ```markdown
 # Decision N — YYYY-MM-DD HH:MM
 **Trigger:** <触发事件描述>
 **Assessment:** <对当前状态的评估>
 **Action:** <spawn @planner | spawn @coder | spawn @reviewer | spawn @tester | verify | abandon>
-**Task:** <task-template-name>        ← NEW
+**Task:** <task-template-name>
 **Model:** <使用的模型名称>
 **Guidance:** <给 agent 的简要指导>
 **TL Context for <Agent>:**
-> <给对应 agent 的详细任务指导段落>
+> <详细任务指导>
 ```
 
-### 9.2 Updated TL Prompt
-
-`tasks/tl/decision.md` available actions table:
-
-```markdown
-| Action | 可选 Task | 默认 Task | 使用场景 |
-|--------|----------|----------|----------|
-| spawn @planner | initial-analysis, re-analysis | initial-analysis | 新issue / 方案需重设计 |
-| spawn @coder | implement, rework, ci-fix | implement | 首次实现 / review修复 / CI修复 |
-| spawn @reviewer | full-review, rework-review | full-review | 首次审查 / rework后审查 |
-| spawn @tester | e2e-acceptance | e2e-acceptance | E2E验收 |
-| verify | — | — | 任务通过 |
-| abandon | — | — | 放弃 |
-```
-
-### 9.3 Decision Parsing Update
-
-`tl-dispatcher.mjs` `parseDecisionFile()` adds `task` field:
+### 11.2 Decision Parsing
 
 ```javascript
 parseDecisionFile(content) {
-    // ... existing parsing ...
     const taskMatch = content.match(/\*\*Task:\*\*\s*(.+)/);
     const contextMatch = content.match(/\*\*TL Context for \w+:\*\*\s*\n([\s\S]+?)(?=\n\*\*|\n#|$)/);
     return {
@@ -759,160 +1036,111 @@ parseDecisionFile(content) {
 Daemon resolves task with fallback:
 
 ```javascript
-const task = decision.task || DEFAULT_TASK[decision.action];
+let task = decision.task || DEFAULT_TASK[decision.action];
 if (task && !VALID_TASKS[decision.action]?.includes(task)) {
     warn(COMPONENT, `#${issueNumber}: invalid task "${task}" for ${decision.action}, using default`);
     task = DEFAULT_TASK[decision.action];
 }
 ```
 
-### 9.4 TL Prompt Examples Update
-
-All Decision examples in `tasks/tl/decision.md` updated to include `**Task:**` field:
-
-```markdown
-### 新 issue → spawn planner
-# Decision 1 — 2026-03-28 10:30
-**Trigger:** New issue assigned
-**Assessment:** 新 issue 需要先分析
-**Action:** spawn @planner
-**Task:** initial-analysis
-**Model:** glm-5.0-turbo-ioa
-**Guidance:** 分析 issue 需求，追踪影响面，制定测试契约
-```
-
-```markdown
-### Planner 完成 → spawn coder
-# Decision 2 — 2026-03-28 10:45
-**Assessment:** Plan 质量充分——影响面追踪到了 boxes/loot，测试契约完整
-**Action:** spawn @coder
-**Task:** implement
-**Model:** kimi-k2.5-ioa
-**TL Context for Coder:**
-> 实现子弹消耗逻辑修复：
-> 1. `scripts/components/bullet_damage.gd` — 添加 CHP 检查，跳过无HP实体
-> 2. 新增测试: `tests/unit/test_bullet_no_damage_on_zero_hp.tscn`
-> 3. 测试契约在 `{docDir}/01-planner-*.md` 的"测试契约"段落
->
-> 计划文档: `{docDir}/01-planner-*.md`
-```
-
-```markdown
-### Reviewer 发现问题 → 回退 planner
-# Decision 3 — 2026-03-28 11:20
-**Assessment:** Reviewer 发现方案有架构副作用，需要重新设计
-**Action:** spawn @planner
-**Task:** re-analysis
-**Model:** glm-5.0-turbo-ioa
-**TL Context for Planner:**
-> Reviewer 发现当前方案的副作用：修改 CHP 过滤会导致 SpawnerLoot 行为改变。
-> 请重新设计方案，保持 SpawnerLoot 的现有行为。
->
-> 审查文档: `{{ docDir }}/03-reviewer-*.md`
-```
-
 ---
 
-## 10. File Change Summary
+## 12. File Change Summary
 
-### Files to Create (22 new)
+### Files to Create (21 new)
 
-#### Base layer (8)
+#### Base templates (2)
 | Path | Purpose |
 |------|---------|
-| `prompts/_base/identity/tl.md` | TL role identity |
-| `prompts/_base/identity/planner.md` | Planner role identity |
-| `prompts/_base/identity/coder.md` | Coder role identity |
-| `prompts/_base/identity/reviewer.md` | Reviewer role identity |
-| `prompts/_base/identity/tester.md` | Tester role identity |
-| `prompts/_base/rules/shared.md` | Universal prohibitions |
-| `prompts/_base/rules/readonly-agent.md` | Read-only agent constraints |
-| `prompts/_base/rules/write-agent.md` | Write agent constraints |
+| `prompts/_base.md` | Entry skeleton |
+| `prompts/identity/_shared-rules.md` | Shared rules (included by all identity files) |
+
+#### Identity templates (5)
+| Path | Purpose |
+|------|---------|
+| `prompts/identity/tl.md` | TL identity |
+| `prompts/identity/planner.md` | Planner identity |
+| `prompts/identity/coder.md` | Coder identity |
+| `prompts/identity/reviewer.md` | Reviewer identity |
+| `prompts/identity/tester.md` | Tester identity |
 
 #### Task templates (9)
 | Path | Purpose |
 |------|---------|
-| `prompts/tasks/tl/decision.md` | TL decision task |
+| `prompts/tasks/tl/decision.md` | TL decision |
 | `prompts/tasks/planner/initial-analysis.md` | First-time analysis |
 | `prompts/tasks/planner/re-analysis.md` | Post-review redesign |
 | `prompts/tasks/coder/implement.md` | First implementation |
 | `prompts/tasks/coder/rework.md` | Review-driven fix |
 | `prompts/tasks/coder/ci-fix.md` | CI failure fix |
 | `prompts/tasks/reviewer/full-review.md` | Full code review |
-| `prompts/tasks/reviewer/rework-review.md` | Incremental rework review |
+| `prompts/tasks/reviewer/rework-review.md` | Incremental review |
 | `prompts/tasks/tester/e2e-acceptance.md` | E2E acceptance test |
 
 #### Entry templates (5)
 | Path | Purpose |
 |------|---------|
-| `prompts/entry/tl.md` | TL assembly entry |
-| `prompts/entry/planner.md` | Planner assembly entry |
-| `prompts/entry/coder.md` | Coder assembly entry |
-| `prompts/entry/reviewer.md` | Reviewer assembly entry |
-| `prompts/entry/tester.md` | Tester assembly entry |
+| `prompts/entry/tl.md` | TL assembly |
+| `prompts/entry/planner.md` | Planner assembly |
+| `prompts/entry/coder.md` | Coder assembly |
+| `prompts/entry/reviewer.md` | Reviewer assembly |
+| `prompts/entry/tester.md` | Tester assembly |
+
+*Note: v3 had 22 files because of 3 separate rule files. v4 has 21: base (_base.md + _shared-rules.md) + 5 identity + 9 task + 5 entry. `_task-base.md` removed — task structure is convention-based, not template inheritance.*
 
 ### Files to Delete (5 old)
 
 | Path | Replacement |
 |------|-------------|
-| `prompts/tl-decision.md` | `entry/tl.md` + layered files |
-| `prompts/planner-task.md` | `entry/planner.md` + layered files |
-| `prompts/coder-task.md` | `entry/coder.md` + layered files |
-| `prompts/reviewer-task.md` | `entry/reviewer.md` + layered files |
-| `prompts/tester-task.md` | `entry/tester.md` + layered files |
+| `prompts/tl-decision.md` | Layered files |
+| `prompts/planner-task.md` | Layered files |
+| `prompts/coder-task.md` | Layered files |
+| `prompts/reviewer-task.md` | Layered files |
+| `prompts/tester-task.md` | Layered files |
 
 ### Files to Modify (6)
 
 | Path | Changes |
 |------|---------|
-| `lib/prompt-builder.mjs` | Replace 5 build methods with `buildPrompt(role, task, ctx)`; remove `buildSummaryPrompt()` |
-| `lib/tl-dispatcher.mjs` | Add `task` to `parseDecisionFile()`, `parseLegacyDecision()` |
-| `lib/workspace-manager.mjs` | Add `getOrCreate()` method for worktree reuse |
-| `foreman-daemon.mjs` | Remove planDoc/prevHandoff concatenation from `#spawnCoder()`; use `getOrCreate()` instead of destroy+create; simplify all `#spawnXxx()` to use unified `buildPrompt()` |
-| `lib/process-manager.mjs` | Add `--agents` parameter support for TL sub-agents; read agents config from role config |
-| `config/default.json` | Add `agents` field to TL config; Update TL `disallowedTools` to include Read/Grep/Glob/LS/Bash; Update Reviewer `disallowedTools` to include Bash |
+| `lib/prompt-builder.mjs` | Replace 5 build methods with `buildPrompt(role, task, ctx)` |
+| `lib/tl-dispatcher.mjs` | Add `task` to `parseDecisionFile()`; remove latestDocContent/orchestration/latestDecision injection logic |
+| `lib/workspace-manager.mjs` | Add `getOrCreate()` method |
+| `foreman-daemon.mjs` | Remove document concatenation; use `getOrCreate()`; write settings.local.json for TL; add iteration/prevAgent/totalDuration tracking; use unified `buildPrompt()` |
+| `lib/process-manager.mjs` | Add `--agents` parameter support |
+| `config/default.json` | All roles: switch to `allowedTools` whitelist; TL: add `agents` + path-level `permissions.allow` |
 
 ---
 
-## 11. What Changed from Previous Version
+## 13. Implementation Order
 
-1. **Removed LLM summary pipeline** — replaced with TL-driven context routing. TL already reads all docs and writes targeted guidance; no need for a separate summarization layer. Can be added later if data shows it's needed.
-2. **Removed `_internal/summarize.md`** — no longer needed.
-3. **Removed `lib/summarizer.mjs`** — no longer needed.
-4. **Removed `config/default.json` summary section** — no longer needed.
-5. **Removed `doc-manager.mjs` `readDocSummary()`** — no longer needed.
-6. **Added context routing design (§6)** — TL as the intelligence layer that reads all docs and writes targeted downstream context.
-7. **Added worktree reuse design (§7)** — `getOrCreate()` replaces destroy+create.
-8. **Simplified coder entry template** — no `planSummary`/`prevHandoffSummary`/`planDocPath` variables. Just `docDir` path + TL Context.
-
----
-
-## 12. Implementation Order
-
-1. **Create base files** — identity + rules (pure content extraction from existing templates)
-2. **Create task templates** — extract workflow-specific content, add rework/ci-fix variants
-3. **Create entry templates** — assemble layers via include
-4. **Update prompt-builder.mjs** — unified `buildPrompt()` interface
-5. **Update tl-dispatcher.mjs** — parse `Task` field from decisions
-6. **Update workspace-manager.mjs** — add `getOrCreate()` for worktree reuse
-7. **Update foreman-daemon.mjs** — remove handoff concatenation, use `getOrCreate()`, use unified `buildPrompt()`
-8. **Delete old templates** — remove 5 monolithic files
-9. **Test** — render all entry templates with sample data, verify output matches expected structure
-10. **Commit** — one atomic commit for the full refactor
+1. **Create base templates** — `_base.md`, `_shared-rules.md`
+2. **Create identity templates** — plain markdown with `{% include "identity/_shared-rules.md" %}`, role-specific rules appended inline
+3. **Create task templates** — plain markdown following convention structure (§3.3), with Nunjucks variables
+4. **Create entry templates** — assemble layers via extends + include
+5. **Update prompt-builder.mjs** — unified `buildPrompt()` interface
+6. **Update tl-dispatcher.mjs** — parse `Task` field; remove document content injection
+7. **Update workspace-manager.mjs** — add `getOrCreate()`
+8. **Update foreman-daemon.mjs** — write settings.local.json for TL; add env var tracking; remove handoff concatenation; use unified API
+9. **Update process-manager.mjs** — add `--agents` parameter
+10. **Update config/default.json** — TL permissions + agents; Reviewer Bash restriction
+11. **Delete old templates**
+12. **Test** — render all entry templates with sample data
+13. **Commit**
 
 ---
 
-## 13. What Changed from v2 to v3
+## 14. Version History
 
-1. **Planner Runtime Facts**: Removed `seq` (always 01) and `repo` (issue body injected by daemon, planner doesn't call `gh`)
-2. **Coder Runtime Facts**: Removed `issueId` and `issueTitle` (all context flows through TL Context)
-3. **Reviewer Runtime Facts**: Removed `issueId`, `issueTitle`, `wsPath`; **no `prDiff` injection** — reviewer reads source code via Read/Grep/Glob, TL Context guides which files to focus on
-4. **Tester Runtime Facts**: Removed `issueTitle`, `prId`, `repo`
-5. **Tester task template**: Removed Step 7 (提 Bug Issue) — screenshot evidence stays in test report, TL decides GitHub upload
-6. **Reviewer task templates**: Removed `gh` command steps — reviewer uses Read/Grep/Glob only
-7. **TL Permission**: Added Read, Grep, Glob, LS, Bash to disallowedTools — code access via explorer sub-agent only
-8. **Reviewer Permission**: Added Bash to disallowedTools
-9. **TL Explorer sub-agent**: New `--agents` JSON injection via CLI, model: gemini-3.0-flash, tools: Read/Grep/Glob/LS
-10. **Permission Matrix**: New section documenting all role permissions
-11. **process-manager.mjs**: New `--agents` parameter support
-12. **config/default.json**: TL gets `agents` config + expanded disallowedTools; Reviewer gets Bash in disallowedTools
+### v4 (2026-04-01) — Architecture overhaul
+
+1. **Layer model**: 5-layer → 4-layer. Rules merged into Identity via include
+2. **Nunjucks pattern**: Identity files use `{% include "_shared-rules.md" %}` (no extends). Task files are plain markdown (no extends/blocks). Entry templates are the only files using `extends _base.md`.
+3. **Separate rules files removed**: `shared.md`, `readonly-agent.md`, `write-agent.md` absorbed into identity base + role overrides
+4. **gh prohibitions scoped**: Only in prompts of Bash-capable agents (Planner, Coder, Tester). Removed from TL and Reviewer prompts.
+5. **TL injection slimmed**: Removed `latestDocContent`, `orchestrationContent`, `latestDecision`, `decisionPath`, `docListing`. TL reads documents itself.
+6. **TL path-level permissions**: New `.codebuddy/settings.local.json` with `allow` rules for document directories (whitelist approach). Replaces blanket `disallowedTools: Read`.
+7. **All roles switched to allowedTools whitelist**: Replaced `disallowedTools` + `deny` pattern with `allowedTools` + `permissions.allow` across all roles.
+8. **Environment layer enhanced**: Added `iteration`, `prevAgent`, `totalDuration` as standard env vars
+9. **availableModels enhanced**: Now includes model capabilities and agent-model mapping
+10. **Spawner variables**: Added `seq` to `#spawnPlanner()`, `decisionSeq` to `#spawnTl()`
+11. **File count**: 22 → 21 (removed 3 rule files + `_task-base.md`, added `_base.md` + `_shared-rules.md`)
