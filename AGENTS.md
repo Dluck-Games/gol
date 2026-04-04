@@ -114,5 +114,38 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
   - The original notes are the golden standard for all design and implementation decisions.
 - **Project Documentation:** The `docs/` folder in mono repo contains working plans, design docs, and technical documentation of the project.
   - The `superpowers/` folder logged the plans and key decisions, read them for understanding the history of features and design choices for the project.
-  - The `plans/` folder contains some working plans for single tasks used to be shared between agents, this is pieces of working notes.
   - The `handoff/` folder contains handoff notes of working tasks between agents, this is pieces of working notes.
+
+## Docs — Structure & Rules
+
+```
+docs/
+├── superpowers/          # Feature specs, plans, and key design decisions
+│   ├── plans/            # Implementation plans (date-prefixed: YYYY-MM-DD-topic.md)
+│   └── specs/            # Design specs and technical blueprints (date-prefixed)
+├── foreman/              # Foreman daemon per-issue work logs (organized by issue number)
+├── reports/              # Analysis and verification reports (date-prefixed)
+└── handoff/              # Session handoff notes between agents (date-prefixed)
+```
+
+### File naming
+
+- **All docs** use `YYYY-MM-DD-topic.md` format (except `foreman/` which uses `issue-number/` dirs)
+- No spaces, no CamelCase, lowercase with hyphens
+
+### Ownership & commits
+
+| Folder | Created by | Committed by |
+|---|---|---|
+| `superpowers/` | Planning agents | Planning agent (with the plan commit) |
+| `foreman/` | Foreman daemon | Foreman daemon (auto-commits after each task) |
+| `reports/` | Any agent | Agent that created it (atomic commit with the work) |
+| `handoff/` | Any agent | Agent that created it (atomic commit with the work) |
+
+### Workspace hygiene
+
+- **NEVER** leave uncommitted doc files in `docs/` after a task completes — always commit with the work.
+- **NEVER** create files outside the four defined subdirectories.
+- **NEVER** create temporary or scratch files in `docs/` — use the agent's own local scratch space (`.sisyphus/`, `.claude/`, etc.).
+- **NEVER** modify handoff notes after creation — they are immutable snapshots.
+- Clean up stale handoff notes older than 7 days during any docs-related task.
