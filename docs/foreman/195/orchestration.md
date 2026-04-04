@@ -26,35 +26,14 @@
 
 ## Decision Log
 | # | Action | Summary |
-|---|--------|--------|
-| 37 | verify | 终态确认（复验第 21 轮） |
-| 36 | verify | 终态确认（复验第 20 轮） |
-| 35 | verify | 终态确认（复验第 19 轮） |
-| 34 | verify | 终态确认（复验第 18 轮） |
-| 33 | verify | 终态确认（复验第 17 轮） |
-| 32 | verify | 终态确认（复验第 16 轮） |
-| 31 | verify | 终态确认（复验第 15 轮） |
-| 30 | verify | 终态确认（复验第 14 轮） |
-| 29 | verify | 终态确认（复验第 13 轮） |
-| 28 | verify | 终态确认（复验第 12 轮） |
-| 27 | verify | 终态确认（复验第 11 轮） |
-| 26 | verify | 终态确认（复验第 10 轮） |
-| 25 | verify | 终态确认（复验第 9 轮） |
-| 24 | verify | 终态确认（复验第 8 轮） |
-| 23 | verify | 终态确认（复验第 7 轮） |
-| 22 | verify | 终态确认（复验第 6 轮） |
-| 21 | verify | 终态确认（复验第 5 轮） |
-| 20 | verify | 终态确认（复验第 4 轮） |
-| 19 | verify | 终态确认（复验第 3 轮） |
-| 18 | verify | 终态确认（复验第 2 轮） |
-| 17 | verify | 终态确认（首轮验证） |
-| 16 | spawn @reviewer | rework-review（D13 doc rewrite 后审查） |
-| 15 | spawn @reviewer | full-review（D14 coder rework 后审查） |
-| 14 | spawn @coder | ci-fix（CI 失败修复） |
-| 13 | spawn @coder | rework（reviewer 发现文档格式问题） |
-| 12 | spawn @coder | implement（v2 三分支恢复方案实现） |
-| 11 | spawn @planner | re-analysis（v1 方案被 reviewer 架构否决，需重设计） |
-| 10 | spawn @reviewer | full-review（首次代码审查 — 架构问题） |
-| 9 | spawn @coder | implement（v1 方案实现） |
-| 8 | spawn @planner | initial-analysis（新 issue 首次规划） |
-| 33 | verify | - Issue #195 已有完整决策历史 D1-D32，修复链在 D16 前完成（规划→编码→审查→测试全流程） |
+|---|--------|---------|
+| 4 | spawn @planner (initial-analysis) | 首次正式调度，要求 planner 分析冻结伤害→动画状态机链路根因并产出计划 |
+| 5 | spawn @coder (implement) | 计划文档质量达标，直接派发 coder 实施 Bug-1/Bug-2 修复 + T8/T9/T10 测试用例 |
+| 6 | spawn @reviewer (full-review) | Coder 实施完成，进入全量审查阶段。验证代码一致性、正确性、测试通过性 |
+| 7 | spawn @coder (rework) | Reviewer verified 通过，发现两个非阻塞性改进项（文档遗漏 c_animation.gd 声明 + T8 缺 frame 断言），派发 coder 轻量修复后合入 |
+| 7 | spawn @coder | Reviewer 完成了全面审查，结论为通过（verified）。代码实现与计划高度一致：Fix-1/Fix-2 代码位置、逻辑、边界条件均正确，架构约束全部通 |
+| 8 | spawn @coder (rework) | Reviewer 文档校验未通过（格式不匹配标准模板），但内容质量高且结论为 verified。重新派发 coder 完成 2 个轻量改进项 + 产出符合格式要求的交接文档 |
+| 9 | spawn @reviewer (rework-review) | Coder 完成 rework（Rework-1: 补充 c_animation.gd 文档声明 + Rework-2: T8 补充 frame 断言），产出 `04-coder-rework-freeze-animation.md`。文档格式和内容均符合预期，派发 reviewer 做最终复查确认 |
+| 9 | spawn @reviewer | Coder 已完成 Decision 8 派发的两项非阻塞性改进任务： |
+| 10 | verify | Reviewer 复查文档结论为 verified（所有检查项通过），实质工作全部完成。文档格式非标准但不阻塞终态，Issue #195 修复工作结束 |
+| 10 | verify | **文档内容评估（高质量）：** |

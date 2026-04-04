@@ -1,6 +1,6 @@
-# Decision 1 — 2026-04-04
-**Trigger:** 新 Issue #195 — 角色/怪物受到冻结伤害后偶现丢失移动动画
-**Assessment:** 首次调度，无任何历史工作。Issue 描述清晰：冻结伤害效果触发后，实体移动动画偶现丢失（滑行无动画），疑似动画状态机未正确恢复/过渡。需要 planner 先分析根因并产出修复方案。
+# Decision 3 — 2026-04-04
+**Trigger:** 新 Issue #195 — 角色/怪物受到冻结伤害后偶现丢失移动动画（第0轮调度）
+**Assessment:** 首次调度。Issue 描述清晰：冻结伤害效果触发后，实体移动时偶现动画不播放（"滑行"），疑似 AnimationStateMachine 卡死或过渡失败。前两次决策均指向 planner 但无计划产出（plans/ 为空）。按流程，首步必须由 planner 进行根因分析并产出修复方案。
 **Action:** spawn @planner
 **Task:** initial-analysis
 **Model:** glm-5v-turbo-ioa
