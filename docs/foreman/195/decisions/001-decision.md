@@ -1,29 +1,44 @@
-# Decision 1 — 2026-04-04
-**Trigger:** 新 issue #195 — 角色/怪物受到冻结伤害后偶现丢失移动动画
-**Assessment:** 首次接手，无历史决策、计划或迭代记录。这是一个视觉类 bug，涉及冻结伤害效果与移动状态机的交互。需要先由 planner 分析根因和修复方案。
+# Decision 001 — 2026-04-04 00:00
+
+**Trigger:** 新 Issue #195 — 角色/怪物受到冻结伤害后偶现丢失移动动画（new_issue）
+
+**Assessment:** 首次调度，无历史记录。Issue 描述了一个动画状态机 bug：实体受到冻结伤害后，移动动画偶现丢失，表现为"滑行"。需要先由 planner 分析根因并制定修复方案。
+
 **Action:** spawn @planner
 **Task:** initial-analysis
 **Model:** glm-5v-turbo-ioa
-**Guidance:** 这是一个动画状态机相关的 bug，重点分析冻结伤害效果如何影响实体动画状态机，找出状态卡死或未恢复的代码路径。
+**Guidance:** 这是一个视觉类 bug，涉及动画状态机与冻结效果系统的交互。重点分析冻结伤害如何影响动画状态机的状态转换，找出可能导致状态卡死的代码路径。
+
 **TL Context for @planner:**
-> **Issue #195: 冻结伤害后移动动画丢失**
+
+> ## 任务：分析 Issue #195 并制定修复方案
 >
-> ## Bug 描述
-> 当角色或怪物受到冻结伤害（冰冻效果）后，偶现移动时丢失动画（实体"平移滑行"，不播放行走/跑动动画）。期望行为：冻结伤害触发/结束后，状态机能正常过渡回移动动画。实际行为：状态机卡死或动画未恢复。
+> **Bug 摘要：** 角色或怪物受到冰冻/冻结伤害后，移动时偶现丢失动画（滑行现象）。怀疑是动画状态机在冻结效果触发/解除时未能正确过渡回移动状态。
 >
-> ## 分析要求
-> 请在 `gol-project/` 子模块中分析以下内容：
+> **分析要求：**
+> 1. 阅读以下入口文档了解项目结构：
+>    - `gol-project/AGENTS.md` — 项目代码概览
+>    - `gol-project/scripts/components/AGENTS.md` — 组件目录（关注动画相关组件）
+>    - `gol-project/scripts/systems/AGENTS.md` — 系统目录（关注动画系统）
+> 2. 定位以下关键模块的代码：
+>    - **动画状态机实现** — 找到 Player/Monster 的 AnimationTree / AnimationPlayer / StateMachine 配置和驱动逻辑
+>    - **冻结/冰冻伤害系统** — 定位 freeze/frost/chill 相关的伤害效果组件或系统
+>    - **两者交互点** — 冻结效果如何影响动画状态（是否禁用动画、修改状态机参数、或直接操控播放）
+> 3. 分析可能的根因路径：
+>    - 冻结效果结束时是否遗漏了恢复动画状态的逻辑？
+>    - 动画状态机是否存在从 frozen → move 的非法/缺失过渡？
+>    - 是否有竞态条件（如快速连续受到冻结伤害）导致状态不一致？
+> 4. 输出一份 plan 文档到 `docs/foreman/195/plans/` 目录，包含：
+>    - 根因分析结论
+>    - 具体修复方案（涉及哪些文件、函数、改动点）
+>    - 测试策略（单元测试 + E2E 测试要点）
 >
-> 1. **冻结/冰冻效果实现**：找到 freeze/frost/ice 相关的 damage effect 或 status effect 组件与系统，理解其生命周期（施加、持续、移除）
-> 2. **动画状态机**：找到角色/怪物的 AnimationTree / AnimationPlayer / 状态机配置，特别关注移动状态（idle → walk/run）和冻结状态的转换逻辑
-> 3. **交互点**：冻结效果如何影响/中断当前播放的动画？效果结束时是否正确恢复？
->
-> ## 参考文档
-> - `gol-project/AGENTS.md` — 代码结构概览
-> - `gol-project/scripts/components/AGENTS.md` — 组件目录
-> - `gol-project/scripts/systems/AGENTS.md` — 系统目录
->
-> ## 输出要求
-> - 在 `/Users/dluckdu/Documents/Github/gol/docs/foreman/195/plans/` 下输出分析文档
-> - 明确标注：根因假设、涉及的关键文件和函数、修复方案、风险评估
-> - 文档使用中文
+> **约束：**
+> - 只做分析和规划，不写任何代码
+> - 方案必须可操作，具体到文件路径和函数名
+> - 如果发现需求不清晰或信息不足以判断根因，在 plan 中明确标注需要补充的信息
+
+---
+
+**GitHub Comment:**
+（待后续阶段产出）
