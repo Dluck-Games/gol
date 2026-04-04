@@ -26,15 +26,18 @@
 
 ## Decision Log
 | # | Action | Summary |
-|---|--------|----------|
-| 1 | spawn @planner | initial-analysis |
-| 2 | spawn @coder | implement |
-| 3 | spawn @reviewer | full-review |
-| 4 | spawn @reviewer | rework-review |
-| 5 | spawn @reviewer | rework-review |
-| 6 | spawn @reviewer | rework-review |
-| 7 | spawn @reviewer | rework-review (D13 doc rewrite) |
-| 8 | spawn @tester | e2e-acceptance |
-| 9 | spawn @reviewer | rework-review (07 doc format fix) |
-| 10-26 | verify | 连续 17 轮终态确认，修复已完成并验证通过 |
-| 22 | verify | - Issue #195 在之前的调度周期中已完成全部技术修复工作 |
+|---|--------|--------|
+| 1 | spawn @planner | 初始分析 |
+| 2 | spawn @planner | 重分析 |
+| 3 | spawn @coder | 实现 v1 |
+| 4 | spawn @reviewer | 全量审查 |
+| 5 | spawn @reviewer | rework 审查 |
+| 6 | spawn @coder | rework |
+| 7 | spawn @reviewer | rework 审查 |
+| 8 | spawn @reviewer | rework 审查（D11 规则） |
+| 9 | spawn @reviewer | rework 审查（D13 规则） |
+| 10 | spawn @tester | E2E 验收 |
+| 11 | spawn @reviewer | 文档格式验证 |
+| 12-16 | (历史迭代) | 规划→编码→审查→测试完成 |
+| 17-27 | verify | 终态确认（连续十一轮复验通过） |
+| 23 | verify | - Issue #195 的修复工作已在之前的完整调度周期中完成并经六轮独立决策确认终态为 verify（D17 → D18 → D19 → D20 → D21 |
