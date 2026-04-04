@@ -1,35 +1,34 @@
 # Decision 1 — 2026-04-04 00:00
-**Trigger:** 新 Issue #188 — 修复箱子阻挡并消耗子弹（new_issue）
-**Assessment:** 首次调度，Issue 已包含详细的根因分析和修复建议（方案A/B/C三选一）。无历史决策或迭代记录，需要 Planner 进行初始分析并产出实现方案。
+**Trigger:** 新 issue #188 — 箱子会阻挡并消耗子弹（new_issue）
+**Assessment:** 首次调度。Issue 已包含详细的根因分析：`SDamage._is_valid_bullet_target()` 未检查目标是否有 `CHP` 组件，导致无血量实体（如 CContainer 箱子）通过验证后子弹被移除但伤害无效。Orchestration 中已给出三个修复方案，方案 A（在 `_is_valid_bullet_target()` 增加 CHP 检查）被标记为推荐。无历史决策、无迭代文档。调度轮次 0/3。
 **Action:** spawn @planner
 **Task:** initial-analysis
 **Model:** glm-5v-turbo-ioa
-**Guidance:** Issue 描述已非常清晰，包含根因分析、代码位置和三个修复方案。Planner 需要确认方案可行性，选择最优方案，并输出具体的实现计划。
+**Guidance:** Issue 根因分析已经很清晰，Planner 应聚焦于产出可执行的实现计划，而非重新分析问题。
 **TL Context for @planner:**
-> ## 任务：分析 Issue #188 并制定实现方案
+> ## 任务：为 #188 产出实现计划
 >
-> ### Issue 背景
-> 子弹命中箱子（CContainer）后被直接移除，即使箱子没有 CHP 组件无法承受伤害。导致子弹被"吃掉"无法穿透到后方敌人。
+> **Issue:** 子弹命中 CContainer 箱子后被移除但伤害无效（箱子无 CHP），导致子弹被"吃掉"无法穿透。
 >
-> ### 必读文档
-> - **Orchestration:** `docs/foreman/188/orchestration.md` — 完整的根因分析和修复建议
-> - **AGENTS.md:** `gol-project/AGENTS.md` — 项目架构概览
-> - **系统 AGENTS.md:** `gol-project/scripts/systems/AGENTS.md` — SDamage 系统上下文
+> **根因文件：** `gol-project/scripts/systems/s_damage.gd`
+> - `SDamage._process_bullet_collision()` → `_is_valid_bullet_target()` 未检查 CHP
+> - 无 CHP 实体通过目标验证 → `_take_damage()` 直接 return → 子弹仍被移除（line 99）
+> - 箱子实体（`authoring_box.gd`）：CTransform + CSprite + CCollision(CircleShape2D r=16) + CContainer，无 CHP 无 CCamp
 >
-> ### 核心问题点（来自 Issue）
-> - 文件：`scripts/systems/s_damage.gd`
-> - 函数：`_is_valid_bullet_target()` (line ~163-164)：没有 `CHP` 检查，无 CCamp 的目标直接返回 true
-> - 函数：`_take_damage()` 之后 (line ~99)：无论伤害是否生效都移除子弹
-> - 箱子实体（`authoring_box.gd`）：有 CCollision 但无 CHP、无 CCamp
+> **推荐方案 A：** 在 `_is_valid_bullet_target()` 中增加 `if not target.has_component(CHP): return false`
 >
-> ### Issue 提出的三个方案
-> - **方案 A（推荐）**：在 `_is_valid_bullet_target()` 增加 `has_component(CHP)` 检查
-> - **方案 B**：让 `_take_damage()` 返回 bool，仅伤害生效时移除子弹
-> - **方案 C**：跳过有 CContainer 但无 CHP 的实体
+> **约束：**
+> 1. 项目不使用 collision_layer/mask（所有 Area2D 默认 layer 1 / mask 1），不能通过碰撞层解决
+> 2. 不影响近战攻击（SMeleeAttack 有独立碰撞逻辑）
+> 3. 仅修改 `s_damage.gd` 一个文件
+> 4. 需要考虑：其他无 CHP 的实体是否也应跳过（如障碍物、装饰物），还是仅处理 CContainer 场景
 >
-> ### 输出要求
-> 1. 选择最优修复方案并说明理由
-> 2. 列出具体修改点（文件路径 + 函数 + 改动）
-> 3. 评估影响范围和风险
-> 4. 如需 E2E 测试，描述测试场景
-> 5. 将分析结果写入 `docs/foreman/188/iterations/001-planner-initial-analysis.md`
+> **要求产出：**
+> - 明确的修改方案选择及理由
+> - 具体的代码改动点（文件路径 + 函数名 + 行号范围）
+> - 影响评估（哪些实体类型会受影响）
+> - 测试策略（需要什么测试覆盖）
+>
+> **参考文档：**
+> - `/Users/dluckdu/Documents/Github/gol/docs/foreman/188/orchestration.md` — Issue 全文和根因分析
+> - `gol-project/AGENTS.md` — 项目代码规范和架构说明
