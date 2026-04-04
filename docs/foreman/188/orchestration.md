@@ -12,7 +12,7 @@
 
 ### 碰撞管线
 
-1. `SDamage._process_bullet_collision()` 查询所有 `CBullet + CCollision` 实体
+1. `SDamage._process_bullet_collision()` 查询所有 `CBullet + CCollision` 实例
 2. 通过 `Area2D.get_overlapping_areas()` 找到所有重叠实体
 3. `_is_valid_bullet_target()` 过滤目标：
    - 如果目标有 `CCamp`，必须与子弹所属阵营不同
@@ -57,4 +57,4 @@ if not target.has_component(CHP):
 ## Decision Log
 | # | Action | Summary |
 |---|--------|--------|
-| 1 | spawn @planner (initial-analysis) | 首次调度，Issue 根因清晰，需 Planner 产出可执行实现计划 |
+| 1 | spawn @planner (initial-analysis) | 首轮调度，委托 Planner 进行方案评估和实现计划制定 |
