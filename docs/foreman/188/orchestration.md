@@ -6,7 +6,7 @@
 **Body:**
 ## 问题
 
-子弹命中箱子（CContainer）后会被直接移除，即使箱子没有 `CHP` 组件（伤害无法生效）。导致玩家射击时，子弹被箱子"吃掉"，无法穿透到后方的敌人。
+子弹命中箱子（`CContainer`）后会被直接移除，即使箱子没有 `CHP` 组件（伤害无法生效）。导致玩家射击时，子弹被箱子"吃掉"，无法穿透到后方的敌人。
 
 ## 根因分析
 
@@ -57,7 +57,8 @@ if not target.has_component(CHP):
 ## Decision Log
 | # | Action | Summary |
 |---|--------|--------|
-| 1 | spawn @planner | 初始分析：评估 Issue #188 修复方案 |
-| 2 | verify | Planner 确认修复已存在于代码库（commit 6329447），终态 |
-| 3 | verify | 新调度周期确认，Issue #188 已解决，终态 |
-| 3 | verify | 已有完整决策链：Decision 1 → @planner initial-analysis → Decision 2 (verify)。Planner 报告（ |
+| 1 | spawn @planner | 初始分析：Issue 根因清晰，需 Planner 确认方案 |
+| 2 | verify | Planner 报告 bug 已修复（commit 6329447），8 测试通过，关闭 Issue |
+| 3 | verify | 终态确认：与 Decision 2 一致，Issue 已解决 |
+| 4 | verify | 终态确认：新调度周期评估，Decision 1-3 结论有效，Issue 已解决 |
+| 4 | verify | 完整决策链已存在（Decision 1→2→3）。Planner 初始分析（iteration 001）明确报告：bug 已在 commit `6329447` |
