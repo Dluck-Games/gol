@@ -1,25 +1,40 @@
-# Decision 5 — 2026-04-04 00:40
-**Trigger:** 新调度周期启动 — Issue #188 新 issue 事件（new_issue），调度轮次 0/3
-**Assessment:** 完整决策链已存在（Decision 1→2→3→4，共 4 轮）。Planner 初始分析（iteration 001）明确报告：bug 已在 commit `6329447` 中修复，采用方案 A+B 组合（`_is_valid_bullet_target()` 增加 CHP 检查 + `_take_damage()` 返回 bool），8 个单元/集成测试全部通过。前四轮调度均结论为 verify。Issue 状态为已解决，无需进一步操作。
+# Decision 5 — 2026-04-04 13:52
+**Trigger:** @tester abort — Bash 权限不可用（非交互模式下 permission prompts 不可用），无法执行 gdUnit4 测试套件
+**Assessment:**
+- **代码状态**: 提交 `2786550` 已在分支上，修改范围 3 个文件：`s_damage.gd`（+CHP 检查）、新建测试文件、更新回归用例
+- **Reviewer 结论**: Decision #4 记录为 **verified**，完成对抗性静态审查：
+  - 文件一致性 3/3 ✅
+  - Git diff 无缺失 ✅
+  - `_is_valid_bullet_target()` CHP 检查位置正确 L169-171 ✅
+  - 调用链两条路径均覆盖 ✅
+  - 架构一致性 5/5 ✅
+  - 零 Critical/Important/Minor 问题 ✅
+- **Tester 结果**: 环境故障导致 abort——Bash 工具在 foreman daemon 非交互模式下被拒绝，所有 Shell 命令（Godot headless、gdUnit4、AI Debug Bridge）均不可执行。这不是代码或测试失败问题，是工具权限限制。
+- **风险评估**: 变更极小（单行 has_component 前置检查），Reviewer 已做完整静态分析。CI 运行时验证缺失是已知风险，建议合并前手动运行一次完整测试套件。
+
 **Action:** verify
 **Task:** —
 **Model:** glm-5v-turbo-ioa
-**Guidance:** 终态确认，Issue #188 已解决。与前序 Decision 2、3、4 结论完全一致。
-**TL Context for none:**
-> 无需进一步操作。完整修复已存在于代码库中。
+**Guidance:** 终态决策——代码经 Reviewer 全面静态审查通过，Tester 因环境限制无法运行时验证但无任何负面发现。
+**TL Context for N/A:**
+> 不适用（终态决策）
 
 **GitHub Comment:**
-Issue #188 已确认修复完成。
+## Issue #188 已完成 — 修复：箱子会阻挡并消耗子弹
 
-**修复内容（方案 A + B 组合，commit `6329447`）：**
-- `_is_valid_bullet_target()` 增加 `has_component(CHP)` 检查 — 无 CHP 实体（如箱子）不再作为有效子弹目标
-- `_take_damage()` 返回 `bool` — 仅伤害生效时返回 true
-- `_process_bullet_collision()` 根据返回值决定是否移除子弹 — false 时保留子弹实现穿透
+### 修复内容
+在 `s_damage.gd` 的 `_is_valid_bullet_target()` 方法中增加 `CHP` 前置检查：只有拥有 `CHP` 组件的实体才能被子弹命中目标判定接受。没有 `CHP` 的实体（如箱子/CContainer）将被跳过，子弹继续飞行穿透。
 
-**测试覆盖（8 个用例全部通过）：**
-- 无 CHP / CContainer 无 CHP 实体被拒绝为子弹目标
-- 有 HP 敌人正常受击、同阵营免疫
-- 端到端验证：子弹穿透 CContainer 不被移除
-- Trigger 区域也不消耗子弹
+### 变更范围（3 个文件）
+- `scripts/systems/s_damage.gd` — 第 169-171 行新增 `has_component(CHP)` 检查
+- `tests/unit/systems/test_s_damage_is_valid_bullet_target.gd` — 新建，T01-T06 共 6 个单元测试
+- `tests/unit/systems/test_damage_system.gd` — 更新回归断言
 
-关闭此 Issue。
+### 验证状态
+- **Plan A 方案** ✅ 通过
+- **Coder 实施 + 提交** ✅ (`2786550`)
+- **Reviewer 静态审查** ✅ 全项通过（verified）
+- **CI 运行时测试** ⚠️ 因环境限制未执行——**合并前请手动运行 `run-tests.command` 确认全量测试通过**
+
+### 建议
+合并前在本地执行一次完整 gdUnit4 测试套件确认无回归后即可合入 develop。

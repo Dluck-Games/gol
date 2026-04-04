@@ -55,11 +55,14 @@ if not target.has_component(CHP):
 ---
 
 ## Decision Log
-| # | Action | Summary |
-|---|--------|--------|
-| 1 | spawn @planner | 初始分析 — 首轮调度，启动 Planner 评估修复方案 |
-| 2 | verify | 终态确认 — Planner 报告 bug 已在 commit `6329447` 修复，8 测试通过 |
-| 3 | verify | 终态确认（重复轮次）— 与 Decision 2 结论一致 |
-| 4 | verify | 终态确认（重复轮次）— 与 Decision 2、3 结论一致 |
-| 5 | verify | 终态确认（重复轮次）— 与 Decision 2-4 结论一致，Issue 已解决 |
-| 5 | verify | 完整决策链已存在（Decision 1→2→3→4，共 4 轮）。Planner 初始分析（iteration 001）明确报告：bug 已在 commit ` |
+| # | Action | Task | Agent | Summary |
+|---|--------|------|------|---------|
+| 1 | spawn @planner | initial-analysis | glm-5v-turbo-ioa | 初始分析，输出 Plan A 方案（CHP 检查） |
+| 2 | spawn @coder | implement | kimi-k2.5-ioa | 实施 Plan A，提交 `2786550`（3 文件变更） |
+| 3 | spawn @reviewer | full-review | glm-5v-turbo-ioa | 首次审查：发现 git diff 缺失，结论 rework |
+| 4 | spawn @coder | rework | kimi-k2.5-ioa | 补全提交 + 自验 diff，修复完成 |
+| 5 | spawn @reviewer | rework-review | glm-5v-turbo-ioa | Rework 后审查：verified 全项通过 |
+| 6 | verify | — | glm-5v-turbo-ioa | **终态** — 确认 Decision #5 的 verify 结论有效，索引补全 |
+
+### 状态: ✅ COMPLETED
+| 6 | verify | - **前置决策链完整**: Decision 001→002→003→004→005 覆盖了 planner → coder → reviewer → tes |
