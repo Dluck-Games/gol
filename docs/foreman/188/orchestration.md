@@ -12,7 +12,7 @@
 
 ### 碰撞管线
 
-1. `SDamage._process_bullet_collision()` 查询所有 `CBullet + CCollision` 实例
+1. `SDamage._process_bullet_collision()` 查询所有 `CBullet + CCollision` 实体
 2. 通过 `Area2D.get_overlapping_areas()` 找到所有重叠实体
 3. `_is_valid_bullet_target()` 过滤目标：
    - 如果目标有 `CCamp`，必须与子弹所属阵营不同
@@ -57,4 +57,9 @@ if not target.has_component(CHP):
 ## Decision Log
 | # | Action | Summary |
 |---|--------|--------|
-| 1 | spawn @planner (initial-analysis) | 首轮调度，委托 Planner 进行方案评估和实现计划制定 |
+| 1 | spawn @planner | 初始分析 — 首轮调度，启动 Planner 评估修复方案 |
+| 2 | verify | 终态确认 — Planner 报告 bug 已在 commit `6329447` 修复，8 测试通过 |
+| 3 | verify | 终态确认（重复轮次）— 与 Decision 2 结论一致 |
+| 4 | verify | 终态确认（重复轮次）— 与 Decision 2、3 结论一致 |
+| 5 | verify | 终态确认（重复轮次）— 与 Decision 2-4 结论一致，Issue 已解决 |
+| 5 | verify | 完整决策链已存在（Decision 1→2→3→4，共 4 轮）。Planner 初始分析（iteration 001）明确报告：bug 已在 commit ` |
