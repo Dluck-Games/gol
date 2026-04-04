@@ -55,6 +55,15 @@ if not target.has_component(CHP):
 ---
 
 ## Decision Log
-| # | Action | Summary |
-|---|--------|--------|
-| 8 | verify | - **决策链**: D1(@planner) → D2(@coder) → D3(@reviewer) → D4(@tester/abort) → D5(ve |
+| # | Action | Task | Summary |
+|---|--------|------|--------|
+| 1 | spawn @planner | initial-analysis | 首次调度，启动 planner 分析 Issue |
+| 2 | spawn @coder | implement | Plan A 通过，启动 coder 实施修复 |
+| 3 | spawn @reviewer | full-review | Coder 完成，启动 reviewer 静态审查 |
+| 4 | spawn @tester | e2e-acceptance | Reviewer verified，启动 tester 运行测试 |
+| 5 | verify | — | Tester abort（环境限制），终态判定完成 |
+| 6 | verify | — | 重新调度确认终态 |
+| 7 | verify | — | 再次重新调度确认终态 |
+| 8 | verify | — | 第三次重新调度确认终态 |
+| 9 | verify | — | 第四次重新调度，补全索引表并终态确认 |
+| 9 | verify | - **完整决策链**: D1(@planner) → D2(@coder) → D3(@reviewer) → D4(@tester/abort) → D5( |
