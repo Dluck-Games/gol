@@ -57,6 +57,7 @@ if not target.has_component(CHP):
 ## Decision Log
 | # | Action | Summary |
 |---|--------|--------|
-| 1 | spawn @planner (initial-analysis) | 首次调度，Planner 进行初始分析选择修复方案 |
-| 2 | verify | Planner 报告修复已在 commit 6329447 完成，8 个测试全部覆盖，Issue 可关闭 |
-| 2 | verify | Planner 报告 Issue #188 描述的 bug 已被修复：`s_damage.gd` 中 `_is_valid_bullet_target()` 增 |
+| 1 | spawn @planner | 初始分析：评估 Issue #188 修复方案 |
+| 2 | verify | Planner 确认修复已存在于代码库（commit 6329447），终态 |
+| 3 | verify | 新调度周期确认，Issue #188 已解决，终态 |
+| 3 | verify | 已有完整决策链：Decision 1 → @planner initial-analysis → Decision 2 (verify)。Planner 报告（ |
