@@ -27,5 +27,21 @@
 ## Decision Log
 | # | Action | Summary |
 |---|--------|--------|
-| 24 | **verify** | 终态确认：Issue #195 修复已完成（D17-D24 连续八轮一致确认），框架重复派发，建议直接合并 |
-| 20 | verify | - **技术状态：已全部完成且经多轮确认无变化** |
+| D1 | spawn @planner | initial-analysis — 首次规划 |
+| D2 | spawn @coder | implement — 首次实现 v1 |
+| D3 | spawn @reviewer | full-review — 首次审查 |
+| D4 | spawn @coder | rework — 审查后修复 |
+| D5 | spawn @reviewer | full-review | rework 后审查 |
+| D6 | spawn @coder | ci-fix — CI 修复 |
+| D7 | spawn @reviewer | full-review | CI fix 后审查 |
+| D8 | spawn @coder | rework — 文档格式修复 |
+| D9 | spawn @reviewer | full-review | 文档格式审查 |
+| D10 | spawn @coder | rework | 新周期重做 |
+| D11 | spawn @reviewer | full-review | 重做后完整审查 |
+| D12 | spawn @coder | rework | 测试契约补充修复 |
+| D13 | spawn @reviewer | full-review | 契约补充审查 |
+| D14 | spawn @coder | rework | 文档重写修复 |
+| D15 | spawn @reviewer | full-review | 文档重写审查 |
+| D16 | spawn @tester | e2e-acceptance | E2E 验收测试 |
+| D17-D25 (×9) | verify | 连续九轮终态确认 — 交付完成 |
+| 21 | verify | - **技术状态：已全部完成且经五轮独立决策确认（D17 → D18 → D19 → D20 → D21）** |
