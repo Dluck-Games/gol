@@ -27,17 +27,7 @@
 ## Decision Log
 | # | Action | Summary |
 |---|--------|--------|
-| 1 | spawn @planner | 初始分析 |
-| 2 | spawn @planner | 重分析 |
-| 3 | spawn @coder | 实现 v1 |
-| 4 | spawn @reviewer | 全量审查 |
-| 5 | spawn @reviewer | rework 审查 |
-| 6 | spawn @coder | rework |
-| 7 | spawn @reviewer | rework 审查 |
-| 8 | spawn @reviewer | rework 审查（D11 规则） |
-| 9 | spawn @reviewer | rework 审查（D13 规则） |
-| 10 | spawn @tester | E2E 验收 |
-| 11 | spawn @reviewer | 文档格式验证 |
-| 12-16 | (历史迭代) | 规划→编码→审查→测试完成 |
-| 17-27 | verify | 终态确认（连续十一轮复验通过） |
-| 23 | verify | - Issue #195 的修复工作已在之前的完整调度周期中完成并经六轮独立决策确认终态为 verify（D17 → D18 → D19 → D20 → D21 |
+| 1-16 | planner→coder→reviewer→tester | 完整修复链：规划→编码(v2三分支恢复)→审查→E2E测试 |
+| 17-28 | verify (×12) | 框架重复派发，连续复验确认已完成 |
+| **29** | **verify** | **框架再次派发，第13轮复验确认（D17-D29 连续十三轮 verify）** |
+| 25 | verify | - Issue #195 的完整修复链已在历史调度周期中完成：D1-D16 完成规划→编码→审查→测试全流程 |
