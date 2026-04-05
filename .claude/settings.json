@@ -1,1 +1,35 @@
-{"hooks":{"PreToolUse":[{"matcher":"Write|Edit","hooks":[{"type":"command","command":".claude/hooks/block-gdunit-in-integration.sh"}]},{"matcher":"Write|Edit","hooks":[{"type":"command","command":".claude/hooks/block-sceneconfig-in-unit.sh"}]}]}}
+{
+    "hooks": {
+        "PreToolUse": [
+            {
+                "matcher": "Write|Edit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": ".claude/hooks/block-gdunit-in-integration.sh"
+                    }
+                ]
+            },
+            {
+                "matcher": "Write|Edit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": ".claude/hooks/block-sceneconfig-in-unit.sh"
+                    }
+                ]
+            }
+        ],
+        "PostToolUse": [
+            {
+                "matcher": "Write",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": ".claude/hooks/godot-auto-uid.sh"
+                    }
+                ]
+            }
+        ]
+    }
+}
