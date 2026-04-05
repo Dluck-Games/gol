@@ -1,0 +1,59 @@
+{
+    "agents": {
+        "test-writer-integration": {
+            "variant": "high",
+            "temperature": 0.05,
+            "thinking": {
+                "type": "enabled",
+                "budgetTokens": 15000
+            },
+            "permission": {
+                "edit": "allow",
+                "write": "allow",
+                "bash": {
+                    "godot* *--headless*": "allow",
+                    "*": "ask"
+                },
+                "task": "deny"
+            }
+        },
+        "test-writer-unit": {
+            "variant": "medium",
+            "temperature": 0.05,
+            "thinking": {
+                "type": "enabled",
+                "budgetTokens": 10000
+            },
+            "permission": {
+                "edit": "allow",
+                "write": "allow",
+                "bash": {
+                    "godot* *--headless*": "allow",
+                    "*": "ask"
+                },
+                "task": "deny"
+            }
+        },
+        "test-runner": {
+            "variant": "medium",
+            "temperature": 0.0,
+            "thinking": {
+                "type": "enabled",
+                "budgetTokens": 8000
+            },
+            "permission": {
+                "edit": "deny",
+                "write": "deny",
+                "bash": {
+                    "godot* *--headless*": "allow",
+                    "*": "deny"
+                },
+                "task": "deny"
+            }
+        }
+    },
+    "claude_code": {
+        "agents": true,
+        "hooks": true
+    }
+}

@@ -17,6 +17,7 @@ external/
 !.claude/skills/
 .codebuddy/
 .foreman/
+!.opencode/oh-my-openagent.jsonc
 .opencode/
 .sisyphus/
 .worktrees/
