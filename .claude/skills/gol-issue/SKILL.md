@@ -4,23 +4,37 @@ description: (project - Skill) Submit GitHub issues to god-of-lego submodule rep
 allowed-tools: Bash, Read, Edit
 ---
 
-# gol-issue — 提交 GitHub Issue 到 god-of-lego 子模块仓库
+# gol-issue — 提交 GitHub Issue 到子模块仓库
 
-将用户模糊的需求描述转化为结构化的 GitHub Issue，提交到 `Dluck-Games/god-of-lego` 仓库。
+将用户模糊的需求描述转化为结构化的 GitHub Issue，提交到**正确的子模块 GitHub 仓库**。
 
 ## 关键前提
 
-gol 是 mono-repo 管理仓库，**Issue 始终提交到子模块仓库**：
+gol 是 mono-repo 管理仓库，**Issue 不提交到管理仓库本身，而是根据 issue 所属领域提交到对应的子模块 GitHub 仓库**：
 
 ```
-gol/                      ← 管理仓库（不是 issue 目标）
-├── gol-project/          ← 子模块：游戏代码（Issue 提交到这里）
-│   └── .github/
+gol/                      ← 管理仓库（不在此创建 issue）
+├── gol-project/          ← 子模块：游戏代码
+│   └── remote: Dluck-Games/god-of-lego
 └── gol-tools/            ← 子模块：工具链
+    └── remote: Dluck-Games/gol-tools
 ```
 
-- 目标仓库：`-R Dluck-Games/god-of-lego`
-- 如果需要源码分析来确定 issue 内容，在 `gol-project/` 中搜索
+## 仓库路由规则（重要！必须先判断目标仓库）
+
+| 如果 issue 涉及... | 目标仓库 | `-R` 参数 |
+|---|---|---|
+| 游戏逻辑 / 场景 / 资源 / UI / 系统(ECS) / 组件 / 测试(gdUnit4) | **gol-project** | `Dluck-Games/god-of-lego` |
+| Foreman daemon / AI Debug Bridge / GDS LSP Bridge / 工具链脚本 / CI/CD | **gol-tools** | `Dluck-Games/gol-tools` |
+| 管理流程 / 文档规范 / AGENTS.md 本身（罕见） | 在对应子模块创建并 cross-reference | — |
+
+**判断方法**：
+1. 看文件路径前缀：`gol-project/scripts/...` → gol-project；`gol-tools/foreman/...` → gol-tools
+2. 看技术栈：GDScript / Godot / .tres / .gd → gol-project；Node.js / Shell / mjs / foreman 配置 → gol-tools
+3. 看用户意图：如果用户明确说 "report to gol-tools" 或 "foreman 相关"，直接路由到 gol-tools
+4. **不确定时问用户**，不要默认猜 gol-project
+
+**历史错误**：旧版 skill 默认所有 issue 都发到 `Dluck-Games/god-of-lego`，导致工具链相关的 issue 被错误地提交到游戏代码仓库。此问题已在 2026-04-05 修正。
 
 ## 工作流程
 
@@ -205,8 +219,10 @@ Body 使用 Markdown，中文为主，技术标识符用英文内联代码。
 
 ### Step 6: 提交
 
+**根据仓库路由规则确定 `-R` 参数值**（见上方"仓库路由规则"表格）：
+
 ```bash
-gh issue create -R Dluck-Games/god-of-lego \
+gh issue create -R {TARGET_REPO} \
   --title "{标题}" \
   --body "$(cat <<'EOF'
 {body 内容}
@@ -215,9 +231,14 @@ EOF
   --label "{labels,逗号分隔}"
 ```
 
+其中 `{TARGET_REPO}` 为：
+- `Dluck-Games/god-of-lego` — 游戏代码相关 issue（默认，但不是唯一选项）
+- `Dluck-Games/gol-tools` — 工具链/foreman/CI 相关 issue
+
 **label 参数规则**：
 - 多个 label 用逗号分隔，无空格：`--label "feature,topic:gameplay"`
-- 标签名必须与仓库已有标签完全匹配（区分大小写）
+- 标签名必须与目标仓库已有标签完全匹配（区分大小写）
+- **不同仓库的 label 集合可能不同**：gol-tools 未必有 gol-project 的所有 label，提交前用 `gh label list -R {repo}` 确认
 
 ### Step 7: 确认
 
@@ -238,9 +259,10 @@ EOF
 
 ## 注意事项
 
+- **先判断目标仓库再提交**：根据"仓库路由规则"确定 `-R` 参数，不要默认发到 `god-of-lego`。工具链/foreman/CI 相关 issue 应发到 `gol-tools`
 - **先分析后提交**：模糊描述 → 源码分析 → 结构化 issue。不要在没看过代码的情况下写 issue
 - **body 要有信息量**：具体文件路径、类名、方法名、行号。开发者拿到 issue 就能动手
 - **不要加 emoji**：标题和 body 都不用 emoji
 - **不要加 praise**：不写"这个想法很好"之类的评价
 - **保持简洁**：body 控制在 100 行以内，过长的技术分析拆成代码注释或单独文档
-- **关联已有 issue**：如果和已有 issue 相关，在 body 末尾用 `关联 #{number}` 链接
+- **关联已有 issue**：如果和已有 issue 相关，在 body 末尾用 `关联 #{number}` 链接。跨仓库关联时写完整格式：`关联 god-of-lego/god-of-lego#{number}` 或 `关联 Dluck-Games/gol-tools#{number}`
