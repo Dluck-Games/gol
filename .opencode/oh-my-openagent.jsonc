@@ -1,6 +1,11 @@
 {
     "agents": {
         "test-writer-integration": {
+            "model": "codebuddy/kimi-k2.5-ioa",
+            "fallback_models": [
+                "codebuddy/minimax-m2.7-ioa",
+                "kimi-for-coding/k2p5"
+            ],
             "variant": "high",
             "temperature": 0.05,
             "thinking": {
@@ -18,6 +23,11 @@
             }
         },
         "test-writer-unit": {
+            "model": "codebuddy/kimi-k2.5-ioa",
+            "fallback_models": [
+                "codebuddy/minimax-m2.7-ioa",
+                "kimi-for-coding/k2p5"
+            ],
             "variant": "medium",
             "temperature": 0.05,
             "thinking": {
@@ -35,6 +45,11 @@
             }
         },
         "test-runner": {
+            "model": "codebuddy/kimi-k2.5-ioa",
+            "fallback_models": [
+                "codebuddy/minimax-m2.7-ioa",
+                "kimi-for-coding/k2p5"
+            ],
             "variant": "medium",
             "temperature": 0.0,
             "thinking": {

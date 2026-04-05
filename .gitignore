@@ -14,11 +14,14 @@ external/
 
 # AI tool local state
 .claude/*
+!.claude/agents/
 !.claude/skills/
+!.claude/hooks/
+!.claude/settings.local.json
 .codebuddy/
 .foreman/
-!.opencode/oh-my-openagent.jsonc
 .opencode/
+!.opencode/oh-my-openagent.jsonc
 .sisyphus/
 .worktrees/
 
