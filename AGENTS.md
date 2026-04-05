@@ -50,15 +50,26 @@ gol/                               # Management repo (YOU ARE HERE)
 
 ### Testing
 
-- **Unit tests:** gdUnit4 test suites for components, systems, and gameplay logic.
-- **Integration tests:** SceneConfig-based tests that load real GOLWorlds for end-to-end verification.
-- **E2E tests:** User-facing scenarios that validate complete features from input to output, also using SceneConfig for realistic environments.
+Three-tier test architecture (unit / integration / E2E). See `gol-project/tests/AGENTS.md` for full tier definitions and decision matrix.
 
-**Test runners (two phases, both automated):**
+**v2 Test Harness — subagent-driven workflow:**
 
-- **Phase 1 — gdUnit4:** Discovers all `extends GdUnitTestSuite` suites (unit + integration).
-- **Phase 2 — SceneConfig:** Each `extends SceneConfig` under `tests/integration/` loads a real GOLWorld for scene-level verification.
-- Both phases run headless. `run-tests.command` in repo root runs everything with a combined ASCII report.
+Main agents **NEVER** write or run tests directly. Delegate via the harness:
+
+1. **Invoke** `gol-test-dispatch` skill → determines correct tier
+2. **Spawn** writer subagent (`test-writer-unit` or `test-writer-integration`) → receives file path
+3. **Spawn** `test-runner` with file path → receives PASS/FAIL report
+4. Continue feature work
+
+| Subagent | Purpose |
+|----------|---------|
+| `test-writer-unit` | gdUnit4 tests (`tests/unit/`) |
+| `test-writer-integration` | SceneConfig tests (`tests/integration/`) |
+| `test-runner` | Execute + parse output + diagnose (both tiers) |
+
+Shell hooks enforce tier isolation (wrong base class = blocked).
+
+**Running all tests:** `run-tests.command` in repo root (combined ASCII report, both phases).
 
 ### CI/CD
 
@@ -91,7 +102,8 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 - Delegate implementation tasks to subagents (via `task()`) rather than direct file editing
 - Main agent focuses on acceptance, global decisions, and task coordination
 - Execute independent tasks in parallel with multiple subagents for efficiency
-- Functional changes also need E2E tests
+- **Test work ALWAYS delegates** via `gol-test-dispatch` skill → writer subagent → test-runner. Never write tests directly.
+- Functional changes should include test coverage (delegate to appropriate writer tier)
 
 **Issue feedback:** Report pain points encountered during work — repetitive tasks, time-consuming difficulties, inelegant code, hard-to-use tools — by creating issues on the `gol-project` repo (`gh issue create -R Dluck-Games/god-of-lego`).
 
