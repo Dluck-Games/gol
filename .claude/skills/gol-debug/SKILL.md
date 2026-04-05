@@ -194,3 +194,19 @@ Check if AIDebugBridge is loaded: Look for "AIDebugBridge ready" in Godot output
 - Ensure script `extends Node`
 - Ensure it has `func run()` method
 - Check Godot console output for detailed errors
+
+### Auto-Import (UID generation)
+
+When creating new `.gd` files, run import to generate `.uid` sidecar files:
+
+    node gol-tools/ai-debug/lib/godot-import.mjs ensure gol-project
+
+To check for missing UIDs without importing:
+
+    node gol-tools/ai-debug/lib/godot-import.mjs check-uids gol-project
+
+To clean orphaned `.uid` files after deleting scripts:
+
+    node gol-tools/ai-debug/lib/godot-import.mjs clean-uids gol-project
+
+For worktrees, replace `gol-project` with the worktree path.
