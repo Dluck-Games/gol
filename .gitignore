@@ -17,7 +17,8 @@ external/
 !.claude/agents/
 !.claude/skills/
 !.claude/hooks/
-!.claude/settings.local.json
+!.claude/settings.json
+!.claude/.gitignore
 .codebuddy/
 .foreman/
 .opencode/
