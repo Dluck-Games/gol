@@ -1,0 +1,5 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "kimi-for-coding/k2p5",
+  "small_model": "kimi-for-coding/k2p5"
+}
