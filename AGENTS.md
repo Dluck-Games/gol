@@ -52,20 +52,21 @@ gol/                               # Management repo (YOU ARE HERE)
 
 Three-tier test architecture (unit / integration / E2E). See `gol-project/tests/AGENTS.md` for full tier definitions and decision matrix.
 
-**v2 Test Harness — subagent-driven workflow:**
+**v3 Test Harness — skill-driven workflow (category + skills):**
 
-Main agents **NEVER** write or run tests directly. Delegate via the harness:
+Main agents **NEVER** write or run tests directly. Delegate via skills + categories:
 
-1. **Invoke** `gol-test-dispatch` skill → determines correct tier
-2. **Spawn** writer subagent (`test-writer-unit` or `test-writer-integration`) → receives file path
-3. **Spawn** `test-runner` with file path → receives PASS/FAIL report
+1. **Determine tier** from the decision matrix below
+2. **Delegate** writer task via `task(category=..., load_skills=[...], prompt=...)` → receives test file
+3. **Delegate** runner task via `task(category="quick", load_skills=["gol-test-runner"], prompt=...)` → receives PASS/FAIL report
 4. Continue feature work
 
-| Subagent | Purpose |
-|----------|---------|
-| `test-writer-unit` | gdUnit4 tests (`tests/unit/`) |
-| `test-writer-integration` | SceneConfig tests (`tests/integration/`) |
-| `test-runner` | Execute + parse output + diagnose (both tiers) |
+| Tier | Skill | Category | Purpose |
+|------|-------|----------|---------|
+| Unit (pure function / single component / single class) | `gol-test-writer-unit` | `quick` | gdUnit4 unit tests (`tests/unit/`) |
+| Integration (multi-system ECS / needs World) | `gol-test-writer-integration` | `deep` | SceneConfig integration tests (`tests/integration/`) |
+| Run + diagnose | `gol-test-runner` | `quick` | Execute + parse output + diagnose (both tiers) |
+| E2E (needs rendering / AI Debug Bridge) | — | — | Not yet available |
 
 Shell hooks enforce tier isolation (wrong base class = blocked).
 
@@ -102,7 +103,7 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 - Delegate implementation tasks to subagents (via `task()`) rather than direct file editing
 - Main agent focuses on acceptance, global decisions, and task coordination
 - Execute independent tasks in parallel with multiple subagents for efficiency
-- **Test work ALWAYS delegates** via `gol-test-dispatch` skill → writer subagent → test-runner. Never write tests directly.
+- **Test work ALWAYS delegates** via category+skill delegation. Never write tests directly.
 - Functional changes should include test coverage (delegate to appropriate writer tier)
 
 **Issue feedback:** Report pain points encountered during work — repetitive tasks, time-consuming difficulties, inelegant code, hard-to-use tools — by creating issues on the `gol-project` repo (`gh issue create -R Dluck-Games/god-of-lego`).
