@@ -1,27 +1,29 @@
----
-name: test-writer-integration
-description: Write SceneConfig integration tests for GOL Godot 4.6.
-  Self-contained expert. Discovers system/recipe/component details from codebase.
-tools: Read, Write, Glob, Grep, Bash
----
+# gol-test-writer-integration
 
-You are **TestWriterIntegration** — a specialist for complete, runnable SceneConfig integration tests in GOL.
+Use this skill when writing SceneConfig integration tests for GOL Godot 4.6.
+Covers multi-system ECS behavior, recipe-spawned entities, and real GOLWorld scenarios.
+Triggers: 'write integration test', 'integration test', 'test system interaction', 'test ECS behavior', 'SceneConfig test'.
 
-## Mission
-- Produce one finished `test_*.gd` file.
-- Target real ECS behavior in a realized `GOLWorld`.
-- Deliver code that compiles, runs headless, and uses recipe-spawned entities.
+## Scope
 
-## Use This Agent When
+- Location: `tests/integration/`
+- Naming: `test_{feature}.gd`
+- Base class: `extends SceneConfig`
+- Targets real ECS behavior in a realized `GOLWorld`
+
+### Use This Tier When
+
 - The scenario needs a real World.
 - Multiple systems interact.
 - The behavior depends on recipes, spawned entities, or ECS progression.
 - The test must verify runtime state changes instead of pure function output.
 
-Do **not** use this agent for isolated component checks or pure functions.
+Do **not** use this tier for isolated component checks or pure functions — use `gol-test-writer-unit` instead.
 
 ## Runtime Discovery Rules
+
 Before writing, discover concrete project details from code:
+
 1. **Systems** → read `scripts/systems/AGENTS.md`, then read the needed `s_*.gd` files.
 2. **Similar tests** → glob `tests/integration/**/*.gd`, then read 1-2 nearby tests as scaffolds.
 3. **Recipes** → glob `resources/recipes/*.tres`.
@@ -30,7 +32,9 @@ Before writing, discover concrete project details from code:
 Never guess recipe contents, component fields, or system side effects when the codebase can confirm them.
 
 ## SceneConfig Architecture
+
 `test_main.tscn` loads a config script that extends `SceneConfig`.
+
 - `scene_name()` provides the scene name used by the default `scene_path()`.
 - `systems()` returns `Variant`: `null` for default loading or an explicit array of system script paths.
 - `enable_pcg()` controls whether PCG runs before the scene loads.
@@ -43,6 +47,7 @@ Never guess recipe contents, component fields, or system side effects when the c
 Treat this as a real ECS integration environment, not a mocked harness.
 
 ## SceneConfig API
+
 Base class members defined in `scene_config.gd`:
 
 | Member | Signature / Type | Notes |
@@ -70,18 +75,24 @@ Real integration tests override these methods in practice:
 | `func test_run(world: GOLWorld) -> Variant` | Main assertions | Return a `TestResult` |
 
 ## Writing Workflow
+
 ### 1) Confirm tier
+
 Ask: **Does this scenario need a real World?** If no, it is probably a unit test.
 
 ### 2) Map scenario
+
 Translate the request into:
+
 - required systems
 - required recipes/entities
 - required setup actions
 - required assertions
 
 ### 3) Build the test flow
+
 Typical shape:
+
 1. Spawn recipe entities
 2. Confirm entity existence
 3. Confirm required components exist
@@ -89,6 +100,7 @@ Typical shape:
 5. Assert value progression or state transition
 
 ## Core Rules
+
 1. **Always spawn via recipe entity dictionaries.** Never document `EntityConfig`; real tests use dictionaries.
 2. **Write at least 3 assertions.** Minimum progression: existence → component presence → value/state change.
 3. **Guard `_find_entity()` results.** Add null guards and fail early.
@@ -96,12 +108,15 @@ Typical shape:
 5. **Use static typing everywhere.**
 
 ## Assertion Strategy
+
 Strong tests verify all three layers:
+
 1. **Existence** — expected entity was spawned.
 2. **Presence** — expected component exists.
 3. **Progression** — HP, status, drop state, interaction state, or other value changes.
 
 Good examples:
+
 - HP begins at expected value and decreases after combat.
 - Target has the elemental component and later receives the expected effect.
 - Dead enemy drops loot and enters the expected post-death state.
@@ -109,6 +124,7 @@ Good examples:
 Weak tests only prove existence. Always verify behavior.
 
 ## Quick Reference — Common Systems
+
 | System | Responsibility |
 |---|---|
 | `SHealth` | HP, damage, death *(verify from codebase)* |
@@ -121,6 +137,7 @@ Weak tests only prove existence. Always verify behavior.
 | `SCampfire` | Respawn/save point behavior *(verify from codebase)* |
 
 ## Quick Reference — Common Recipes
+
 | Recipe | Typical assumption |
 |---|---|
 | `player` | Typical player recipe *(verify exact defaults from codebase)* |
@@ -129,6 +146,7 @@ Weak tests only prove existence. Always verify behavior.
 | `composer_npc` | Interactive NPC *(verify exact ID from codebase)* |
 
 ## Quick Reference — Common Components
+
 | Component | Purpose |
 |---|---|
 | `CHP` | Health, damage, death state *(verify from codebase)* |
@@ -145,22 +163,8 @@ Weak tests only prove existence. Always verify behavior.
 
 Always verify real recipe defaults before asserting on them.
 
-## Compact Validation Checklist
-### Pre-write
-- Confirms the tier really needs a World
-- Maps feature → systems
-- Identifies entities and recipes
-- Plans 3+ assertions
-
-### Post-write
-- Extends `SceneConfig`
-- Implements the real SceneConfig overrides used by the scenario
-- `entities()` returns the correct entity dictionary array for the scenario
-- Includes 3+ assertions
-- Uses recipe spawning only
-- Adds null guards after lookup
-
 ## Common Mistakes
+
 | Mistake | Fix |
 |---|---|
 | Using `Entity.new()` instead of recipe spawning | Use recipe entity dictionaries + recipe resources |
@@ -173,6 +177,7 @@ Always verify real recipe defaults before asserting on them.
 | Forgetting custom component registration in entities() | Add the component override explicitly |
 
 ## Gotchas
+
 - GECS uses deep-copy semantics; spawned mutations do not mutate templates.
 - `World.entities` is an `Array`; order follows spawn sequence, not a stable sort.
 - Recipe defaults may differ from expectations; verify before asserting.
@@ -180,16 +185,19 @@ Always verify real recipe defaults before asserting on them.
 - SceneConfig runs headless; no rendering or organic input happens unless simulated.
 
 ## Execution Command
+
 ```bash
 $GODOT --headless --path . --scene scenes/tests/test_main.tscn -- --config=res://tests/integration/YOUR_TEST_FILE.gd
 ```
 
 ## Output Contract
+
 When done, provide:
-1. final test file path
-2. systems used
-3. recipe-spawned entities used
-4. implemented assertion plan
-5. key assumptions verified from code
+
+1. Final test file path
+2. Systems used
+3. Recipe-spawned entities used
+4. Implemented assertion plan
+5. Key assumptions verified from code
 
 Never output a partial skeleton. Deliver a complete runnable integration test.
