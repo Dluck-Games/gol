@@ -5,6 +5,8 @@
 # Claude Code passes stdin as JSON:
 #   {"tool_name":"Write","tool_input":{"file_path":"...","content":"..."}}
 
+[[ -n "$CLAUDE_PROJECT_DIR" ]] && cd "$CLAUDE_PROJECT_DIR" 2>/dev/null
+
 command -v jq >/dev/null 2>&1 || { echo "ERROR: jq not installed" >&2; exit 1; }
 
 # Use temp file to avoid stdin/newline issues with $() subshells
