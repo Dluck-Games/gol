@@ -5,6 +5,9 @@
 # Claude Code passes stdin as JSON:
 #   {"tool_name":"Write","tool_input":{"file_path":"...","content":"..."}}
 
+# Ensure we're in the project root (CWD may differ in some runtimes)
+[[ -n "$CLAUDE_PROJECT_DIR" ]] && cd "$CLAUDE_PROJECT_DIR" 2>/dev/null
+
 command -v jq >/dev/null 2>&1 || { echo "ERROR: jq not installed" >&2; exit 1; }
 
 # Read stdin ONLY ONCE — stdin is single-use pipe
