@@ -1,4 +1,13 @@
 {
+  "lsp": {
+    "gdscript": {
+      "command": ["node", "/Users/dluck/Documents/GitHub/gol/gol-tools/gds-lsp/index.mjs"],
+      "extensions": [".gd", ".gdshader"],
+      "env": {
+        "GODOT_PROJECT_PATH": "/Users/dluck/Documents/GitHub/gol/gol-project"
+      }
+    }
+  },
   "agents": {
     "hephaestus": {
       "model": "openai/gpt-5.4",
