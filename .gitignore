@@ -26,6 +26,9 @@ external/
 .sisyphus/
 .worktrees/
 
+# AI debug sandbox
+.debug/
+
 # Editor settings
 .vscode/
 
