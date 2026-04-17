@@ -15,6 +15,7 @@ AGENTS.md maps of overall project structure. Read them when you first enter each
 ```
 gol/                               # Management repo (YOU ARE HERE)
 ├── AGENTS.md                      # Workflow, CI/CD, agent preferences
+├── .debug/scripts/                # AI debug script sandbox (gitignored)
 ├── gol-project/                   # Game code submodule
 │   ├── AGENTS.md                  # Code overview — read on first entry
 │   ├── scripts/
@@ -114,6 +115,7 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
   - **ALWAYS** Push the submodule first, then update the main repo reference
   - **ALWAYS** Atomic push changes must be atomically pushed after completion without asking.
   - **ALWAYS** Keep all worktree checkouts under `gol/.worktrees/` (subdirs: `manual/`, `foreman/`), ignored by the management repo
+  - **ALWAYS** Write AI debug scripts to `.debug/scripts/` — never in `gol-project/scripts/` (Godot imports them) or `/tmp/` (not project-scoped)
   - **NEVER** create game files (scripts/, assets/, scenes/) at this root.
   - **NEVER** run Godot from this directory — always work inside `gol-project/`.
   - **NEVER** create branches in the main repo (`gol/`) — all development happens in `gol-project/` submodule.

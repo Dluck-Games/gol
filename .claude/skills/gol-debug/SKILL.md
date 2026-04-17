@@ -88,14 +88,48 @@ node gol-tools/ai-debug/ai-debug.mjs eval "1 + 1"
 # Note: Variable access is limited
 ```
 
+## Debug Script Sandbox
+
+**ALL debug scripts written by AI agents MUST go to `.debug/scripts/` in the management repo root.**
+
+```bash
+# Repository root path (management repo)
+# macOS: /Users/dluckdu/Documents/Github/gol/
+# The sandbox directory: <repo-root>/.debug/scripts/
+```
+
+### Why `.debug/scripts/`?
+
+- **NOT inside `gol-project/scripts/`** — Godot scans that directory and would import debug scripts as game code
+- **NOT `/tmp/`** — `/tmp` is shared system-wide, volatile across reboots, and not project-scoped
+- **Inside the repo tree but gitignored** — co-located with the project, never committed, survives reboot
+
+### Workflow
+
+1. Write debug scripts to `.debug/scripts/<descriptive_name>.gd`
+2. Execute via: `node gol-tools/ai-debug/ai-debug.mjs script .debug/scripts/<descriptive_name>.gd`
+3. The CLI reads the script, copies content to the Godot signal directory, and sends the execute command
+
+### Example
+
+```bash
+# 1. Write script to sandbox
+# (Write .debug/scripts/check_enemy_count.gd)
+
+# 2. Execute
+node gol-tools/ai-debug/ai-debug.mjs script .debug/scripts/check_enemy_count.gd
+```
+
 ## Dynamic Script Execution
 
 AI can write and execute GDScript to test functionality:
 
 ### 1. Create Test Script
 
+Write the script to `.debug/scripts/` — for example `.debug/scripts/check_enemy_count.gd`:
+
 ```gdscript
-# test_enemy_count.gd
+# .debug/scripts/check_enemy_count.gd
 extends Node
 
 func run():
@@ -111,7 +145,7 @@ func run():
 ### 2. Execute Script
 
 ```bash
-node gol-tools/ai-debug/ai-debug.mjs script test_enemy_count.gd
+node gol-tools/ai-debug/ai-debug.mjs script .debug/scripts/check_enemy_count.gd
 ```
 
 ### Script Requirements
@@ -119,6 +153,7 @@ node gol-tools/ai-debug/ai-debug.mjs script test_enemy_count.gd
 - Must `extends Node`
 - Must implement `func run()` method
 - Return value will be converted to string output
+- **Must be written to `.debug/scripts/`** — never `gol-project/scripts/`, never `/tmp/`
 
 ## Asset Refresh
 
