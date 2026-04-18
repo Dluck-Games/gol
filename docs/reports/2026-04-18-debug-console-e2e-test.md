@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-18
 **Scope:** Autocomplete, flat commands, category commands, edge cases
-**Game version:** `main` at `99ef332` (initial), `30dd3dc` (fix verified)
+**Game version:** `99ef332` (initial), `30dd3dc` (bugfix), `24e38e3` (refactor + fix verified)
 **Test method:** AI Debug Bridge CLI (`ai-debug.mjs console`), GDScript test scripts via `ai-debug.mjs script`
 
 ## Overall Results
@@ -30,6 +30,24 @@
 | Extra | `remove comp CHealth` wrong usage | FIXED |
 
 **9/9 regression tests PASS — all bugs confirmed fixed.**
+
+### After Refactor (`24e38e3`) — Full E2E Retest
+
+| Category | Pass | Fail | Total |
+|---|---|---|---|
+| Flat Commands | 18 | 0 | 18 |
+| Category Commands | 28 | 0 | 28 |
+| Edge Cases | 13 | 0 | 13 |
+| **Total** | **59** | **0** | **59** |
+
+**59/59 PASS — 100% pass rate after refactor.**
+
+All previously-fixed bugs remain fixed. The refactor (which removed `console_cursor_keys.gd`, simplified the registry, replaced Levenshtein with prefix-match typo hints, and moved Spec/Types to `ConsoleCommandModule` base class) did not introduce any regressions.
+
+Refactor issues found and fixed during this round:
+- Stale `_CursorKeys` preload in `service_console.gd` (deleted file still referenced)
+- Inner class path errors: `CommandSpec.ParamSpec` → `Spec.ParamSpec` (sibling inner classes, not nested)
+- Both caught by E2E testing before merge
 
 ---
 
