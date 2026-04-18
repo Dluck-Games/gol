@@ -27,6 +27,14 @@
     "superpowers:code-reviewer": {
       "model": "github-copilot/gpt-5.4",
       "variant": "high"
+    },
+    "console-playtester": {
+      "model": "github-copilot/gpt-5.4",
+      "variant": "medium",
+      "permission": {
+        "bash": { "node *": "allow", "godot *": "allow", "pkill *": "allow", "sleep *": "allow", "pgrep *": "allow", "*": "ask"
+        }
+      }
     }
   },
   "categories": {
