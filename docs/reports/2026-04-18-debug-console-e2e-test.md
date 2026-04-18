@@ -2,10 +2,12 @@
 
 **Date:** 2026-04-18
 **Scope:** Autocomplete, flat commands, category commands, edge cases
-**Game version:** `main` at `99ef332`
+**Game version:** `main` at `99ef332` (initial), `30dd3dc` (fix verified)
 **Test method:** AI Debug Bridge CLI (`ai-debug.mjs console`), GDScript test scripts via `ai-debug.mjs script`
 
 ## Overall Results
+
+### Initial Run
 
 | Test Suite | Pass | Fail | Total |
 |---|---|---|---|
@@ -14,6 +16,20 @@
 | Category Commands | 30 | 2 | 32 |
 | Edge Cases | 23 | 5 | 28 |
 | **Total** | **85** | **8** | **93** |
+
+### After Fix (`30dd3dc`) — Regression Retest
+
+| Bug | Command | Status |
+|---|---|---|
+| Bug 1 | `help spawn` | FIXED |
+| Bug 2 | `spawn` (no args) | FIXED |
+| Bug 3 | `time set` (no hour) | FIXED |
+| Bug 4 | `damage deal abc` | FIXED |
+| Bug 5 | `heal Full/FULL/FuLl` | FIXED |
+| Extra | `recipes` returning null | FIXED |
+| Extra | `remove comp CHealth` wrong usage | FIXED |
+
+**9/9 regression tests PASS — all bugs confirmed fixed.**
 
 ---
 
