@@ -51,23 +51,23 @@ gol/                               # Management repo (YOU ARE HERE)
 
 ### Testing
 
-Three-tier test architecture (unit / integration / E2E). See `gol-project/tests/AGENTS.md` for full tier definitions and decision matrix.
+Three-tier test architecture (unit / integration / playtest). See `gol-project/tests/AGENTS.md` for full tier definitions and decision matrix.
 
-**v3 Test Harness — skill-driven workflow (category + skills):**
+**v4 Test Harness — subagent-driven (two skills):**
 
-Main agents **NEVER** write or run tests directly. Delegate via skills + categories:
+Main agents NEVER write, run, or playtest directly. Always dispatch via skill:
 
-1. **Determine tier** from the decision matrix below
-2. **Delegate** writer task via `task(category=..., load_skills=[...], prompt=...)` → receives test file
-3. **Delegate** runner task via `task(category="quick", load_skills=["gol-test-runner"], prompt=...)` → receives PASS/FAIL report
-4. Continue feature work
+1. Load the appropriate skill
+2. Determine tier from decision matrix
+3. Dispatch subagent with the matching prompt template
+4. Receive report, decide next action
 
-| Tier | Skill | Category | Purpose |
-|------|-------|----------|---------|
-| Unit (pure function / single component / single class) | `gol-test-writer-unit` | `quick` | gdUnit4 unit tests (`tests/unit/`) |
-| Integration (multi-system ECS / needs World) | `gol-test-writer-integration` | `deep` | SceneConfig integration tests (`tests/integration/`) |
-| Run + diagnose | `gol-test-runner` | `quick` | Execute + parse output + diagnose (both tiers) |
-| E2E (needs rendering / AI Debug Bridge) | — | — | Not yet available |
+| Need | Skill | Tier → Prompt | Model |
+|------|-------|---------------|-------|
+| Write unit test | gol-test-writer | unit → unit-prompt.md | sonnet |
+| Write integration test | gol-test-writer | integration → integration-prompt.md | sonnet |
+| Run existing tests | gol-test-runner | runner → runner-prompt.md | haiku |
+| Verify feature in game (playtest) | gol-test-runner | playtest → playtest-prompt.md | sonnet |
 
 Shell hooks enforce tier isolation (wrong base class = blocked).
 
