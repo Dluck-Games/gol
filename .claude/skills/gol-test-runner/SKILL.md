@@ -1,174 +1,83 @@
 # gol-test-runner
 
-Use this skill when executing GOL tests (unit + integration), parsing output, and diagnosing failures.
-Supports single-test and batch modes across all tiers.
-Triggers: 'run tests', 'execute test', 'test runner', 'run unit tests', 'run integration tests', 'batch test'.
+Coordinator skill for running GOL tests and playtesting. Routes to the correct tier and dispatches a subagent with the matching prompt template.
 
-## Mission
+Triggers: 'run test', 'run all tests', 'test runner', 'playtest', 'verify in game', 'do playtest', 'test in game'.
 
-Given one file or a batch request, identify the tier, run the correct command, parse the output, classify failures, and return one unified report.
+## You Are the Coordinator
 
-## Modes
+You are the main agent. You **never** run tests or interact with Godot yourself. Your job:
 
-### Single test
+1. Determine the correct tier (runner vs playtest)
+2. Read the matching prompt template from `references/`
+3. Dispatch a subagent with the template + task-specific context
+4. Receive the subagent's report
+5. If FAIL: decide next action (fix code, fix test, re-run, escalate to user)
 
-1. Read the file.
-2. Detect tier from `extends`.
-3. Run the tier-appropriate command.
-4. Parse output.
-5. Report status and diagnosis.
+## Decision Matrix
 
-### Batch
+| Need | Tier | Prompt Template | Model |
+|------|------|-----------------|-------|
+| Run existing unit/integration tests | Runner | `references/runner-prompt.md` | haiku |
+| Verify a feature in the running game | Playtest | `references/playtest-prompt.md` | sonnet |
 
-1. Discover tests under `tests/unit/**/*.gd` and `tests/integration/**/*.gd`.
-2. Detect each file's tier.
-3. Execute sequentially.
-4. Aggregate into one summary.
+### Routing rules
 
-For integration tests, trust the process exit code for final pass/fail even if output is suppressed.
+- If the user says "run tests", "run unit tests", "run integration tests", "run all tests" → **Runner**
+- If the user says "playtest", "verify in game", "test in game", "check if it works" → **Playtest**
+- If the user says "run tests and playtest" → dispatch **both** sequentially (runner first, then playtest)
 
-## Tier Identification
+## Dispatch Protocol
 
-Read the file and inspect the `extends` clause:
+### Runner dispatch
 
-| Clause | Tier |
-|---|---|
-| `extends GdUnitTestSuite` | Unit |
-| `extends SceneConfig` | Integration |
+Spawn a subagent (model: haiku) with:
 
-If neither matches, report the file as unsupported instead of guessing.
+```
+<prompt-template>
+{contents of references/runner-prompt.md}
+</prompt-template>
 
-## Execution Commands
-
-```bash
-# Unit (gdUnit4)
-$GODOT --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --add res://tests/unit/$FILE --ignoreHeadlessMode
-
-# Integration (SceneConfig)
-$GODOT --headless --path . --scene scenes/tests/test_main.tscn -- --config=res://tests/integration/$FILE
+<task>
+What to run: {specific file, tier, or "all"}
+Working directory: {your CWD}
+Project directory: {path to gol-project/ or worktree}
+</task>
 ```
 
-Run from the Godot project root.
+### Playtest dispatch
 
-## Output Parsers
+Spawn a subagent (model: sonnet) with:
 
-### Unit — gdUnit4
+```
+<prompt-template>
+{contents of references/playtest-prompt.md}
+</prompt-template>
 
-Parse `reports/results.xml`.
-Look for:
-
-- `/testsuite` counts
-- `failures` attribute count
-- `/testsuite/testcase` elements
-- failure message nodes/attributes
-
-Extract:
-
-- total
-- pass/fail/error counts
-- testcase names
-- failure messages
-
-### Integration — SceneConfig
-
-Parse stdout and exit code using the real harness format:
-
-```text
-[test_main] Loaded config: res://tests/integration/test_XXX.gd (scene: test)
-[PASS] Entity exists after initialization
-[FAIL] Enemy took damage — expected: 80, got: 100
-=== 1/2 passed ===
+<task>
+What to verify: {feature-level description}
+Working directory: {your CWD}
+Project directory: {path to gol-project/ or worktree}
+Context: {what changed, known issues, relevant systems}
+</task>
 ```
 
-Also handle harness-level failures such as:
+## Worktree Support
 
-```text
-[FAIL] Missing --config= argument
-[FAIL] Config script not found: res://tests/integration/test_missing.gd
-[FAIL] Config script does not extend SceneConfig: res://tests/integration/test_bad.gd
-[FAIL] PCG generation failed
-```
+Pass your current working directory to the subagent. If you're in a worktree, the subagent works there too.
 
-Extract:
+## Fix-Retest Loop
 
-- `[test_main] Loaded config: ...` info line
-- `[PASS]` assertion lines
-- `[FAIL]` assertion or harness failure lines
-- `=== N/M passed ===` summary
-- process exit code (`0` pass, `1` fail)
+When a report says FAIL:
 
-Special cases from the real harness:
+1. **Runner FAIL**: Read the failure diagnosis. If it's a test bug, fix the test. If it's a code bug, fix the code. Then re-dispatch the runner.
+2. **Playtest FAIL**: Read the issues. If it's a code bug, fix the code and re-dispatch playtest. If it's a tool/environment issue, report to user.
+3. **Max retries**: 2 re-dispatches per tier. After that, escalate to user with full report.
 
-- `[test_main] No test_run defined, scene loaded successfully`
-- `[test_main] test_run returned non-TestResult value`
+## What You Do NOT Do
 
-## Unified Report Format
-
-Always summarize in this format:
-
-```text
-══ Test Run Summary ══════════════════════════════
-  Tier         | Total | Pass | Fail | Error
-──────────────┼───────┼──────┼──────┼──────
-  Unit         | ...   | ...  | ...  | ...
-  Integration  | ...   | ...  | ...  | ...
-══════════════════════════════════════════════════
-```
-
-After the table, list failed files with parsed details.
-
-## Failure Diagnosis Protocol
-
-Classify every non-pass result into one level:
-
-### Level 1 — Script error
-
-- syntax/load/parse failure before the test really runs
-- report the error message and `file:line` when available
-
-### Level 2 — Runtime error
-
-- null reference, type mismatch, or runtime traceback during execution
-- report stderr/traceback and likely failing call site
-
-### Level 3 — Logic failure
-
-- test completed but assertion failed
-- report testcase/assertion name and expected vs actual
-
-### Level 4 — Hang
-
-- no meaningful output or timeout
-- report timeout duration, last output seen, and suggest reducing scope or adding debug prints
-
-## Batch Mode Rules
-
-When running all tests:
-
-1. glob `tests/unit/**/*.gd`
-2. glob `tests/integration/**/*.gd`
-3. detect tier from `extends`
-4. run each file with the correct command
-5. parse tier-specific output
-6. aggregate by tier and overall status
-
-Prefer sequential execution for stable output and clear attribution.
-
-## Per-Run Output Expectations
-
-For each test include:
-
-- file path
-- detected tier
-- command executed
-- pass/fail/error status
-- parsed counts
-- failure diagnosis level when not passing
-
-## What You DON'T Do
-
-- Don't modify files.
-- Don't guess tier without reading the file.
-- Don't silently ignore XML parse failures in `reports/results.xml`.
-- Don't collapse runtime errors into assertion failures.
-- Don't speculate without showing real command output.
+- Run test commands
+- Parse test output
+- Launch or kill Godot
+- Write test files (use gol-test-writer for that)
+- Read test framework documentation
