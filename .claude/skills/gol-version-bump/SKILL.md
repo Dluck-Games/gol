@@ -13,6 +13,25 @@ allowed-tools: Bash, Read, Edit
 - ❌ DO NOT commit version changes to `gol/` parent repo
 - ✅ ALWAYS operate inside `gol-project/` submodule
 
+### 🚫 MANDATORY: Main-Branch-Only Version Bumps
+
+**Version bumps MUST be committed and tagged on the `main` branch of the submodule. This is a hard rule with zero exceptions.**
+
+- ❌ NEVER bump version on a feature branch, PR branch, foreman branch, or any non-main branch
+- ❌ NEVER tag a commit that is not on main's direct ancestry
+- ✅ ALWAYS verify you are on `main` before committing the version bump
+- ✅ ALWAYS tag the commit that is ON main (the merge commit, not the branch tip)
+
+**Why this matters:** If you tag a branch commit instead of the main merge commit, `git describe` will not find the tag (it only walks ancestors of HEAD). This causes broken version reporting (e.g., `0.1.1-199-ghash` instead of `0.1.10-9-ghash`). Every tag must be reachable from main, or version discovery breaks.
+
+**Enforcement:** Before any version bump, the agent MUST run:
+```bash
+cd gol-project
+git branch --show-current  # MUST output "main"
+git merge-base --is-ancestor HEAD origin/main  # MUST succeed
+```
+If either check fails, **STOP immediately** and do not proceed with the version bump.
+
 ### Directory Structure Awareness
 ```
 gol/                      ← Parent repo (NO project.godot here)
@@ -38,10 +57,22 @@ ls gol-project/project.godot     # Should SUCCEED if in gol/ root
 - All subsequent operations happen INSIDE `gol-project/`
 
 ### 2. Environment Check and Cleanup
-- **Branch restriction**: Must be executed on the `main` branch of the **submodule**.
+- **Branch restriction**: Must be executed on the `main` branch of the **submodule**. This is MANDATORY — see "Main-Branch-Only Version Bumps" above.
 - **Status cleanup**: Clean the submodule workspace before updating.
   ```bash
   cd gol-project  # Ensure you're in the submodule
+
+  # === MANDATORY: Verify you are on main ===
+  current_branch=$(git branch --show-current)
+  if [ "$current_branch" != "main" ]; then
+      echo "FATAL: Version bump attempted on '$current_branch' — MUST be on 'main'. Aborting."
+      exit 1
+  fi
+  if ! git merge-base --is-ancestor HEAD origin/main; then
+      echo "FATAL: Current HEAD is not an ancestor of origin/main. Aborting."
+      exit 1
+  fi
+
   git checkout main
   git pull origin main
   git reset --hard HEAD
@@ -63,6 +94,14 @@ ls gol-project/project.godot     # Should SUCCEED if in gol/ root
   git add project.godot
   git commit -m "chore: bump version to $NEW_VERSION"
   git tag $NEW_VERSION
+
+  # === MANDATORY: Verify tag is on main's ancestry ===
+  if ! git merge-base --is-ancestor $NEW_VERSION origin/main; then
+      echo "FATAL: Tag $NEW_VERSION is not reachable from origin/main. Removing tag."
+      git tag -d $NEW_VERSION
+      exit 1
+  fi
+
   git push origin main
   git push origin --tags
   ```
@@ -96,6 +135,17 @@ if [[ "$current_dir" != *"gol-project"* ]]; then
     exit 1
 fi
 
+# === MANDATORY: Verify on main branch ===
+current_branch=$(git branch --show-current)
+if [ "$current_branch" != "main" ]; then
+    echo "FATAL: Version bump attempted on '$current_branch' — MUST be on 'main'. Aborting."
+    exit 1
+fi
+if ! git merge-base --is-ancestor HEAD origin/main; then
+    echo "FATAL: Current HEAD is not an ancestor of origin/main. Aborting."
+    exit 1
+fi
+
 # Modify file
 sed -i '' "s/config\/version=\".*\"/config\/version=\"$NEW_VERSION\"/" project.godot
 
@@ -103,6 +153,14 @@ sed -i '' "s/config\/version=\".*\"/config\/version=\"$NEW_VERSION\"/" project.g
 git add project.godot
 git commit -m "chore: bump version to $NEW_VERSION"
 git tag $NEW_VERSION
+
+# === MANDATORY: Verify tag is on main's ancestry ===
+if ! git merge-base --is-ancestor $NEW_VERSION origin/main; then
+    echo "FATAL: Tag $NEW_VERSION is not reachable from origin/main. Removing tag."
+    git tag -d $NEW_VERSION
+    exit 1
+fi
+
 git push origin main
 git push origin --tags
 
@@ -117,8 +175,12 @@ git push origin main
 
 Before declaring success, verify:
 - [ ] `pwd` shows you're in `gol-project/` when modifying files
+- [ ] `git branch --show-current` outputs `main` (MANDATORY)
+- [ ] `git merge-base --is-ancestor HEAD origin/main` succeeds (MANDATORY)
 - [ ] `project.godot` was found and modified inside `gol-project/`
 - [ ] Commit and tag were pushed from `gol-project/` submodule
+- [ ] `git merge-base --is-ancestor $NEW_VERSION origin/main` succeeds (tag is reachable from main)
+- [ ] `git describe --tags --long HEAD` shows the correct version (not a stale older tag)
 - [ ] Parent repo `gol/` has an updated submodule pointer commit
 - [ ] Parent repo push includes `gol-project @ <new-commit-hash>`
 
