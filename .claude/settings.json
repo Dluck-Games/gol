@@ -27,6 +27,33 @@
                         "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-pull-submodule-code-in-parent.sh"
                     }
                 ]
+            },
+            {
+                "matcher": "Write|Edit",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-original-png-in-gol-project.sh"
+                    }
+                ]
+            },
+            {
+                "matcher": "Write|Edit|Bash",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-env-commit.sh"
+                    }
+                ]
+            },
+            {
+                "matcher": "Write",
+                "hooks": [
+                    {
+                        "type": "command",
+                        "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/validate-art-placement.sh"
+                    }
+                ]
             }
         ],
         "PostToolUse": [

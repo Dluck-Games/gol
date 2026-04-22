@@ -27,6 +27,11 @@ AI-driven pipeline that generates concept art (Gemini/ComfyUI), evaluates it aga
    └── Horizontal strips matching Godot SpriteFrames
 ```
 
+## Prerequisites
+
+- `GEMINI_API_KEY` environment variable (set in `.env` at project root, or export in shell)
+- Get a key at: https://aistudio.google.com/apikey
+
 ## Quick Start
 
 ```bash
@@ -35,7 +40,7 @@ node gol-tools/pixel-art/pixel-art.mjs pipeline \
   --prompt "A weathered wooden supply crate" \
   --type box \
   --backend gemini \
-  --output gol-project/assets/sprite_sheets/boxes/new_box
+  --output .debug/art-workspace/new_box
 
 # Step-by-step
 node gol-tools/pixel-art/pixel-art.mjs generate \
@@ -59,10 +64,10 @@ node gol-tools/pixel-art/pixel-art.mjs evaluate \
 |------|------|-----|
 | character | 32×32 | Player/NPC sprites |
 | enemy | 32×32 | Enemy sprites |
-| box | 64×64 | Supply crates/containers |
-| tile | 64×32 | Map tiles |
-| vfx | 100×100 | Visual effects |
-| bullet | 32×32 | Projectiles |
+| box | 32×32 | Supply crates/containers |
+| tile | 32×32 | Map tiles |
+| vfx | 32×32 | Visual effects |
+| bullet | 12×12 | Projectiles |
 | icon | 16×16 | UI icons |
 | item | 32×32 | Inventory items |
 
@@ -82,6 +87,21 @@ Every generated asset produces three files:
 <name>.prompt       — Generation prompt text
 <name>.original.png — Raw AI concept (1024×1024)
 <name>.png          — Production pixel art (target dimensions)
+```
+
+## Workspace
+
+Work-in-progress images go to `.debug/art-workspace/` (gitignored). Only commit final `.png` files to `gol-project/assets/`.
+
+```bash
+# Generate to workspace (default)
+node gol-tools/pixel-art/pixel-art.mjs pipeline \
+  --prompt "A healing potion bottle" \
+  --type item --backend gemini \
+  --output .debug/art-workspace/potion
+
+# After review, copy final to gol-project
+cp .debug/art-workspace/potion.png gol-project/assets/sprites/items/potion.png
 ```
 
 ## Evaluation Protocol
@@ -130,7 +150,10 @@ GOL animation conventions: idle=2 frames, walk=4 frames, death=22 frames.
 
 ## Resources
 
-See `references/` for detailed specifications:
-- `art-spec.md` — Full GOL art specifications
-- `prompt-templates.md` — Prompt templates per asset type
-- `pipeline-guide.md` — Detailed pipeline instructions
+Art standards live in `docs/arts/` (single source of truth):
+- `docs/arts/style-guide.md` — Color palette, aesthetic rules, animation conventions
+- `docs/arts/asset-paths.md` — Where each asset type belongs in gol-project/
+- `docs/arts/commit-convention.md` — Commit message format for art changes
+- `docs/arts/prompts/` — Per-category prompt templates (character, enemy, box, tile, vfx, bullet, icon, item)
+
+Update art standards by editing `docs/arts/` — no need to modify this skill.

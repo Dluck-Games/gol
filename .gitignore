@@ -26,6 +26,9 @@ external/
 .sisyphus/
 .worktrees/
 
+# Environment variables (secrets)
+.env
+
 # AI debug sandbox
 .debug/
 

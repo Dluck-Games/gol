@@ -141,6 +141,11 @@ docs/
 │   ├── plans/            # Implementation plans (date-prefixed: YYYY-MM-DD-topic.md)
 │   └── specs/            # Design specs and technical blueprints (date-prefixed)
 ├── foreman/              # Foreman daemon per-issue work logs (organized by issue number)
+├── arts/                 # Art standards SSOT (style guide, asset paths, prompt templates)
+│   ├── style-guide.md   # Palette, aesthetic rules, animation conventions
+│   ├── asset-paths.md   # Where each asset type goes in gol-project/
+│   ├── commit-convention.md  # art(category): description format
+│   └── prompts/          # Per-category prompt templates (character, enemy, box, etc.)
 ├── reports/              # Analysis and verification reports (date-prefixed)
 └── handoff/              # Session handoff notes between agents (date-prefixed)
 ```
@@ -156,13 +161,14 @@ docs/
 |---|---|---|
 | `superpowers/` | Planning agents | Planning agent (with the plan commit) |
 | `foreman/` | Foreman daemon | Foreman daemon (auto-commits after each task) |
+| `arts/` | Any agent | Agent that created it (atomic commit with the work) |
 | `reports/` | Any agent | Agent that created it (atomic commit with the work) |
 | `handoff/` | Any agent | Agent that created it (atomic commit with the work) |
 
 ### Workspace hygiene
 
 - **NEVER** leave uncommitted doc files in `docs/` after a task completes — always commit with the work.
-- **NEVER** create files outside the four defined subdirectories.
+- **NEVER** create files outside the five defined subdirectories.
 - **NEVER** create temporary or scratch files in `docs/` — use the agent's own local scratch space (`.sisyphus/`, `.claude/`, etc.).
 - **NEVER** modify handoff notes after creation — they are immutable snapshots.
 - Clean up stale handoff notes older than 7 days during any docs-related task.

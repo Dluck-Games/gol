@@ -1,3 +1,5 @@
+> **Superseded by `docs/arts/style-guide.md` and `docs/arts/asset-paths.md`.** This file is kept for backward compatibility. See `docs/arts/README.md` for the current SSOT.
+
 # GOL Art Specifications
 
 ## Screen Resolution

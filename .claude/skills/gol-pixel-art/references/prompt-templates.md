@@ -1,3 +1,5 @@
+> **Superseded by `docs/arts/prompts/`.** Per-category templates now live in individual files under `docs/arts/prompts/`. See `docs/arts/README.md` for the current SSOT.
+
 # Prompt Templates for GOL Pixel Art
 
 ## Base Template

@@ -1,3 +1,5 @@
+> **Superseded by `docs/arts/asset-paths.md` and the SKILL.md Quick Start section.** See `docs/arts/README.md` for the current SSOT.
+
 # Pipeline Guide
 
 ## Prerequisites
