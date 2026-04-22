@@ -29,7 +29,8 @@ gol/                               # Management repo (YOU ARE HERE)
 └── gol-tools/                     # Tooling submodule
     ├── foreman/                   # AI daemon: GitHub issue → PR automation pipeline
     ├── gds-lsp/                   # GDScript LSP stdio-TCP bridge (npm: godot-lsp-stdio-bridge)
-    └── ai-debug/                  # AI Debug Bridge: runtime screenshots, commands, script injection
+    ├── ai-debug/                  # AI Debug Bridge: runtime screenshots, commands, script injection
+    └── pixel-art/                 # AI pixel art pipeline: Gemini/ComfyUI → render → evaluate
 ```
 
 ## Architectural principles
@@ -46,6 +47,7 @@ gol/                               # Management repo (YOU ARE HERE)
 - **Foreman:** AI agent that automates GitHub issue triage and PR creation based on task delegation.
 - **GDS LSP Bridge:** Node.js tool that provides a TCP bridge for GDS Language Server Protocol, enabling AI agents to perform code analysis and refactoring.
 - **AI Debug Bridge:** Runtime tool that allows AI agents to capture screenshots, execute commands, and inject scripts for debugging purposes.
+- **Pixel Art Pipeline:** AI-driven asset creation tool that generates concept art (Gemini/ComfyUI), renders production pixel art with GOL's 10-color palette, and evaluates quality. See `gol-pixel-art` skill.
 
 ## Development
 
