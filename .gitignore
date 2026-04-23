@@ -32,6 +32,9 @@ external/
 # AI debug sandbox
 .debug/
 
+# Art workspace (AI-generated concepts, Aseprite sources, exports)
+.art-workspace/
+
 # Editor settings
 .vscode/
 

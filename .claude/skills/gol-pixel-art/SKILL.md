@@ -5,7 +5,7 @@ description: "Production pixel art asset creation pipeline for God of Lego. Use 
 
 # gol-pixel-art
 
-AI-driven pipeline that generates concept art (Gemini/ComfyUI), evaluates it against GOL art standards, and renders production-ready pixel art PNGs.
+AI-driven pipeline that generates concept art (Gemini/ComfyUI) and produces production-ready pixel art through Aseprite drawing. Concept downscaling is not used, it produces blurry unusable results. Only Aseprite drawing produces usable art.
 
 ## When to Use
 
@@ -16,55 +16,65 @@ AI-driven pipeline that generates concept art (Gemini/ComfyUI), evaluates it aga
 
 ## Pipeline Overview
 
-Two modes of operation:
+```
+1. GENERATE — AI creates concept image → .art-workspace/concepts/
+2. CREATE — New indexed sprite with GOL palette → .art-workspace/aseprite/
+3. DRAW — Agent draws pixel art referencing concept (artistry category subagent)
+4. PREVIEW — Export preview, inspect via look_at, iterate
+5. EXPORT — Final production PNG → .art-workspace/export/
+6. COMMIT — Copy to gol-project/assets/, commit with art(category): message
+```
 
-### Auto Pipeline (concept → render → evaluate)
+## Workspace Structure
+
 ```
-1. GENERATE — AI creates concept image (Gemini or ComfyUI)
-2. RENDER — Downscale → palette quantize → grid normalize
-3. EVALUATE — Palette compliance, dimensions, silhouette, alpha
-4. ASSEMBLE — Combine frames into sprite sheets (optional)
+.art-workspace/
+├── concepts/    # AI-generated concept images (Gemini/ComfyUI)
+│   ├── <name>.prompt
+│   └── <name>.original.png
+├── aseprite/    # Aseprite source files (agent-edited)
+│   ├── <name>.aseprite
+│   └── <name>.preview.png
+└── export/      # Final production PNGs
+    └── <name>.png
 ```
 
-### Drawing Mode (agent draws pixel-by-pixel via Aseprite)
-```
-1. CREATE — New indexed sprite with GOL palette
-2. DRAW — Agent writes JSON instructions → Aseprite executes
-3. PREVIEW — Export preview, agent inspects via look_at
-4. ITERATE — Repeat draw→preview until satisfied
-5. EXPORT — Final production PNG
-```
+Work-in-progress images go to `.art-workspace/` (gitignored). Only commit final `.png` files to `gol-project/assets/`.
 
 ## Prerequisites
 
+- **Aseprite**: `/Applications/Aseprite.app/Contents/MacOS/aseprite` (installed via DMG)
+- **ComfyUI**: `/Applications/ComfyUI.app/` with Sprites_64.safetensors LoRA
 - **Gemini backend**: `GEMINI_API_KEY` env var (set in `.env` at project root). Get key: https://aistudio.google.com/apikey
 - **ComfyUI backend**: Local ComfyUI server running at `http://127.0.0.1:8188` with SD 1.5 + Sprites_64 LoRA. Set `COMFYUI_URL` env var for custom address.
-- **Drawing mode**: Aseprite installed. Set `ASEPRITE_PATH` env var. See `gol-tools/pixel-art/docs/aseprite-setup.md` for compilation guide.
 
 ## Quick Start
 
 ```bash
-# Full pipeline (most common)
+# Generate concept
 node gol-tools/pixel-art/pixel-art.mjs pipeline \
   --prompt "A weathered wooden supply crate" \
-  --type box \
-  --backend gemini \
-  --output .debug/art-workspace/new_box
+  --type box --backend gemini \
+  --output .art-workspace/concepts/new_box
 
-# Step-by-step
-node gol-tools/pixel-art/pixel-art.mjs generate \
-  --prompt "A small healing potion bottle" \
-  --backend gemini \
-  --output /tmp/potion_concept
+# Create sprite
+node gol-tools/pixel-art/pixel-art.mjs draw create \
+  --type box --output .art-workspace/aseprite/new_box
 
-node gol-tools/pixel-art/pixel-art.mjs render \
-  --input /tmp/potion_concept.original.png \
-  --type item \
-  --output gol-project/assets/sprites/items/potion.png
+# Draw (agent writes JSON instructions referencing concept)
+# ... draw apply ...
 
+# Export final
+node gol-tools/pixel-art/pixel-art.mjs draw export \
+  --sprite .art-workspace/aseprite/new_box.aseprite \
+  --output .art-workspace/export/new_box.png
+
+# Evaluate
 node gol-tools/pixel-art/pixel-art.mjs evaluate \
-  --image gol-project/assets/sprites/items/potion.png \
-  --type item
+  --image .art-workspace/export/new_box.png --type box
+
+# Commit to game
+cp .art-workspace/export/new_box.png gol-project/assets/sprite_sheets/boxes/new_box.png
 ```
 
 ## Asset Types
@@ -89,47 +99,35 @@ node gol-tools/pixel-art/pixel-art.mjs evaluate \
 - No dithering — flat, clean colors
 - Transparent background (RGBA PNG)
 
-## Artifact Pattern
+## Drawing Subagent
 
-Every generated asset produces three files:
+Pixel art drawing requires creative visual reasoning. Delegate to an `artistry` category subagent:
+
 ```
-<name>.prompt       — Generation prompt text
-<name>.original.png — Raw AI concept (1024×1024)
-<name>.png          — Production pixel art (target dimensions)
-```
-
-## Workspace
-
-Work-in-progress images go to `.debug/art-workspace/` (gitignored). Only commit final `.png` files to `gol-project/assets/`.
-
-```bash
-# Generate to workspace (default)
-node gol-tools/pixel-art/pixel-art.mjs pipeline \
-  --prompt "A healing potion bottle" \
-  --type item --backend gemini \
-  --output .debug/art-workspace/potion
-
-# After review, copy final to gol-project
-cp .debug/art-workspace/potion.png gol-project/assets/sprites/items/potion.png
+task(
+  category="artistry",
+  load_skills=["gol-pixel-art"],
+  run_in_background=false,
+  description="Draw [asset] pixel art",
+  prompt="..."
+)
 ```
 
-## Evaluation Protocol
-
-When using the skill as an orchestrator:
-
-1. Run `pipeline` command to generate + render
-2. Use `look_at` tool on the rendered `.png` to visually inspect
-3. Check: Does the sprite match the prompt intent? Is the silhouette readable? Does it fit GOL's muted aesthetic?
-4. If rejected: regenerate with adjusted prompt
-5. If accepted: move to final asset location in `gol-project/assets/`
+The drawing subagent should:
+1. Read the concept image via `look_at` tool
+2. Plan the sprite composition (which colors, shapes, layers)
+3. Write JSON drawing instructions
+4. Apply via `draw apply`, preview via `look_at`, iterate until satisfied
+5. Export final PNG via `draw export`
 
 ## Drawing Workflow (Aseprite)
 
-For pixel-level control, use the `draw` commands instead of the auto pipeline:
+For pixel-level control, use the `draw` commands:
 
 ```bash
 # 1. Create a new sprite
-node gol-tools/pixel-art/pixel-art.mjs draw create --type box --output .debug/art-workspace/my_box
+node gol-tools/pixel-art/pixel-art.mjs draw create \
+  --type box --output .art-workspace/aseprite/my_box
 
 # 2. Write JSON instructions (agent generates this)
 cat > /tmp/ops.json << 'EOF'
@@ -144,15 +142,15 @@ EOF
 
 # 3. Apply instructions
 node gol-tools/pixel-art/pixel-art.mjs draw apply \
-  --sprite .debug/art-workspace/my_box.aseprite \
+  --sprite .art-workspace/aseprite/my_box.aseprite \
   --instructions /tmp/ops.json
 
 # 4. Inspect preview (agent uses look_at on .preview.png)
 # 5. Iterate: write new ops.json, apply again
 # 6. Export final
 node gol-tools/pixel-art/pixel-art.mjs draw export \
-  --sprite .debug/art-workspace/my_box.aseprite \
-  --output gol-project/assets/sprite_sheets/boxes/my_box.png
+  --sprite .art-workspace/aseprite/my_box.aseprite \
+  --output .art-workspace/export/my_box.png
 ```
 
 ### Drawing Operations
@@ -178,7 +176,7 @@ Use local Stable Diffusion with the 2D Pixel Toolkit LoRA:
 node gol-tools/pixel-art/pixel-art.mjs generate \
   --prompt "A supply crate" \
   --backend comfyui \
-  --output .debug/art-workspace/crate
+  --output .art-workspace/concepts/crate
 ```
 
 Requires ComfyUI server running locally. Workflow template at `gol-tools/pixel-art/workflows/pixel_art_txt2img.json` — edit to change model, LoRA strength, or generation parameters.
