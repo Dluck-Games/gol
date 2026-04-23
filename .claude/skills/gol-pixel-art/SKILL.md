@@ -16,21 +16,30 @@ AI-driven pipeline that generates concept art (Gemini/ComfyUI), evaluates it aga
 
 ## Pipeline Overview
 
+Two modes of operation:
+
+### Auto Pipeline (concept → render → evaluate)
 ```
-1. GENERATE — AI creates concept image (1024×1024)
-   └── Gemini (default) or ComfyUI (local LoRA)
-2. EVALUATE — Automated checks + visual review
-   └── Palette compliance, dimensions, silhouette, alpha
-3. RENDER — Convert concept to production pixel art
-   └── Downscale → palette quantize → grid normalize
+1. GENERATE — AI creates concept image (Gemini or ComfyUI)
+2. RENDER — Downscale → palette quantize → grid normalize
+3. EVALUATE — Palette compliance, dimensions, silhouette, alpha
 4. ASSEMBLE — Combine frames into sprite sheets (optional)
-   └── Horizontal strips matching Godot SpriteFrames
+```
+
+### Drawing Mode (agent draws pixel-by-pixel via Aseprite)
+```
+1. CREATE — New indexed sprite with GOL palette
+2. DRAW — Agent writes JSON instructions → Aseprite executes
+3. PREVIEW — Export preview, agent inspects via look_at
+4. ITERATE — Repeat draw→preview until satisfied
+5. EXPORT — Final production PNG
 ```
 
 ## Prerequisites
 
-- `GEMINI_API_KEY` environment variable (set in `.env` at project root, or export in shell)
-- Get a key at: https://aistudio.google.com/apikey
+- **Gemini backend**: `GEMINI_API_KEY` env var (set in `.env` at project root). Get key: https://aistudio.google.com/apikey
+- **ComfyUI backend**: Local ComfyUI server running at `http://127.0.0.1:8188` with SD 1.5 + Sprites_64 LoRA. Set `COMFYUI_URL` env var for custom address.
+- **Drawing mode**: Aseprite installed. Set `ASEPRITE_PATH` env var. See `gol-tools/pixel-art/docs/aseprite-setup.md` for compilation guide.
 
 ## Quick Start
 
@@ -113,6 +122,66 @@ When using the skill as an orchestrator:
 3. Check: Does the sprite match the prompt intent? Is the silhouette readable? Does it fit GOL's muted aesthetic?
 4. If rejected: regenerate with adjusted prompt
 5. If accepted: move to final asset location in `gol-project/assets/`
+
+## Drawing Workflow (Aseprite)
+
+For pixel-level control, use the `draw` commands instead of the auto pipeline:
+
+```bash
+# 1. Create a new sprite
+node gol-tools/pixel-art/pixel-art.mjs draw create --type box --output .debug/art-workspace/my_box
+
+# 2. Write JSON instructions (agent generates this)
+cat > /tmp/ops.json << 'EOF'
+{"operations": [
+  {"op": "clear", "color": 10},
+  {"op": "rect", "x1": 4, "y1": 4, "x2": 27, "y2": 27, "color": 6, "filled": true},
+  {"op": "rect", "x1": 4, "y1": 4, "x2": 27, "y2": 27, "color": 8, "filled": false},
+  {"op": "line", "x1": 4, "y1": 15, "x2": 27, "y2": 15, "color": 7},
+  {"op": "pixels", "data": [[8,8,2],[9,8,2],[8,9,2],[9,9,2]]}
+]}
+EOF
+
+# 3. Apply instructions
+node gol-tools/pixel-art/pixel-art.mjs draw apply \
+  --sprite .debug/art-workspace/my_box.aseprite \
+  --instructions /tmp/ops.json
+
+# 4. Inspect preview (agent uses look_at on .preview.png)
+# 5. Iterate: write new ops.json, apply again
+# 6. Export final
+node gol-tools/pixel-art/pixel-art.mjs draw export \
+  --sprite .debug/art-workspace/my_box.aseprite \
+  --output gol-project/assets/sprite_sheets/boxes/my_box.png
+```
+
+### Drawing Operations
+
+| Op | Fields | Description |
+|----|--------|-------------|
+| `pixel` | x, y, color | Single pixel |
+| `rect` | x1, y1, x2, y2, color, filled | Rectangle |
+| `line` | x1, y1, x2, y2, color | Line |
+| `fill` | x, y, color | Flood fill |
+| `clear` | color | Clear entire canvas |
+| `layer_new` | name | Create new layer |
+| `layer_select` | name | Switch active layer |
+| `pixels` | data: [[x,y,color],...] | Batch pixels |
+
+Colors are palette indices: 0-9 = GOL palette, 10 = transparent.
+
+## ComfyUI Backend
+
+Use local Stable Diffusion with the 2D Pixel Toolkit LoRA:
+
+```bash
+node gol-tools/pixel-art/pixel-art.mjs generate \
+  --prompt "A supply crate" \
+  --backend comfyui \
+  --output .debug/art-workspace/crate
+```
+
+Requires ComfyUI server running locally. Workflow template at `gol-tools/pixel-art/workflows/pixel_art_txt2img.json` — edit to change model, LoRA strength, or generation parameters.
 
 ## Sprite Sheet Assembly
 
