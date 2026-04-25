@@ -1,11 +1,11 @@
 ---
 name: gol-debug
-description: AI Debug Bridge for God of Lego - Execute debug commands, capture screenshots, run GDScript, and refresh game assets
+description: AI Debug Bridge for God of Lego - Execute debug commands, capture screenshots, run GDScript, refresh game assets, and profile performance
 ---
 
 # gol-debug
 
-AI debugging toolkit - capture screenshots, execute commands, run scripts, control game state, refresh assets.
+AI debugging toolkit - capture screenshots, execute commands, run scripts, control game state, refresh assets, profile performance.
 
 ## Features
 
@@ -19,6 +19,10 @@ AI debugging toolkit - capture screenshots, execute commands, run scripts, contr
 | Run Script | `node gol-tools/ai-debug/ai-debug.mjs script <file.gd>` |
 | Refresh Assets | `node gol-tools/ai-debug/ai-debug.mjs refresh [what]` |
 | Reimport | `node gol-tools/ai-debug/ai-debug.mjs reimport` |
+| **Perf Snapshot** | `node gol-tools/ai-debug/ai-debug.mjs perf` |
+| **Perf Systems** | `node gol-tools/ai-debug/ai-debug.mjs perf systems` |
+| **Perf Entities** | `node gol-tools/ai-debug/ai-debug.mjs perf entities` |
+| **Perf Memory** | `node gol-tools/ai-debug/ai-debug.mjs perf memory` |
 
 ## Screenshots
 
@@ -87,6 +91,52 @@ node gol-tools/ai-debug/ai-debug.mjs eval "1 + 1"
 
 # Note: Variable access is limited
 ```
+
+## Performance Profiling
+
+Collect runtime performance data from the running game. Returns JSON for agent parsing.
+
+### Quick Snapshot (most common)
+
+```bash
+# Full performance snapshot — FPS, frame time, system timing, entity counts, memory
+node gol-tools/ai-debug/ai-debug.mjs perf
+# Same as:
+node gol-tools/ai-debug/ai-debug.mjs perf snapshot
+```
+
+Returns JSON with: `fps`, `frame_time_ms`, `process_time_ms`, `physics_time_ms`, `object_count`, `memory_mib`, `entity_count`, `archetype_count`, `system_count`, `systems` (array sorted by execution_time_ms desc), `query_cache`.
+
+### Per-System Timing
+
+```bash
+# Detailed per-system execution times (sorted slowest first)
+node gol-tools/ai-debug/ai-debug.mjs perf systems
+```
+
+Returns JSON array: `[{name, group, execution_time_ms, entity_count, archetype_count, active, parallel}, ...]`
+
+### Entity Distribution
+
+```bash
+# Entity counts by archetype + top 20 most common components
+node gol-tools/ai-debug/ai-debug.mjs perf entities
+```
+
+Returns JSON: `{total, archetypes: [{signature, entity_count, component_count}], by_component: {name: count}}`
+
+### Memory Stats
+
+```bash
+# Memory and object counts
+node gol-tools/ai-debug/ai-debug.mjs perf memory
+```
+
+Returns JSON: `{static_memory_mib, object_count, resource_count, node_count, orphan_node_count}`
+
+### Note on ECS Debug Mode
+
+System timing data (`execution_time_ms`, `entity_count` per system) requires `ECS.debug = true` in Godot project settings (`gecs/debug_mode`). When disabled, the `systems` array returns `[{"debug_mode": false, "note": "..."}]`. FPS, memory, and entity counts are always available.
 
 ## Debug Script Sandbox
 

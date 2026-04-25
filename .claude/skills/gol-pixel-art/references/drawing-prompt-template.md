@@ -1,6 +1,10 @@
 # Drawing Subagent Prompt Template
 
-Use this template when delegating pixel art drawing to an artistry subagent. Fill in the `{{placeholders}}` with asset-specific values.
+NOTE: Most sprites should use the `normalize` command first (concept → normalize → evaluate).
+This template is for TOUCH-UP work on normalized sprites, or for manual drawing from scratch
+when normalize output needs significant adjustment.
+
+Use this template when delegating pixel art touch-up or drawing to an artistry subagent. Fill in the `{{placeholders}}` with asset-specific values.
 
 ## Template
 

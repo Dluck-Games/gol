@@ -5,7 +5,7 @@ description: "Production pixel art asset creation pipeline for God of Lego. Use 
 
 # gol-pixel-art
 
-AI-driven pipeline that generates concept art (Gemini/ComfyUI) and produces production-ready pixel art through Aseprite drawing. Concept downscaling is not used, it produces blurry unusable results. Only Aseprite drawing produces usable art.
+AI-driven pipeline that generates concept art (Gemini/ComfyUI) and produces production-ready pixel art through a normalize-first workflow. The primary path now converts concept art into indexed sprites automatically via downscale + palette mapping, with manual Aseprite touch-ups only when evaluation finds issues or extra polish is needed.
 
 ## When to Use
 
@@ -17,10 +17,10 @@ AI-driven pipeline that generates concept art (Gemini/ComfyUI) and produces prod
 ## Pipeline Overview
 
 ```
-1. GENERATE — AI creates concept image → .art-workspace/concepts/
-2. CREATE — New indexed sprite with GOL palette → .art-workspace/aseprite/
-3. DRAW — Agent draws pixel art referencing concept (artistry category subagent)
-4. PREVIEW — Export preview, inspect via look_at, iterate
+1. CONCEPT — AI generates concept image → .art-workspace/concepts/
+2. NORMALIZE — Downscale + palette map + Aseprite indexed → .art-workspace/aseprite/
+3. EVALUATE — Automated quality checks → PASS or FAIL
+4. TOUCH-UP (if needed) — Human opens .aseprite, edits manually
 5. EXPORT — Final production PNG → .art-workspace/export/
 6. COMMIT — Copy to gol-project/assets/, commit with art(category): message
 ```
@@ -51,31 +51,30 @@ Work-in-progress images go to `.art-workspace/` (gitignored). Only commit final 
 ## Quick Start
 
 ```bash
-# Generate concept
-node gol-tools/pixel-art/pixel-art.mjs pipeline \
-  --prompt "A weathered wooden supply crate" \
-  --type box --backend gemini \
-  --output .art-workspace/concepts/new_box
+# Step 1: Generate concept
+node gol-tools/pixel-art/pixel-art.mjs concept test_crate --type box --prompt "A weathered wooden supply crate"
 
-# Create sprite
-node gol-tools/pixel-art/pixel-art.mjs draw create \
-  --type box --output .art-workspace/aseprite/new_box
+# Step 2: Normalize (downscale + palette map + evaluate — all in one)
+node gol-tools/pixel-art/pixel-art.mjs normalize test_crate --type box
 
-# Draw (agent writes JSON instructions referencing concept)
-# ... draw apply ...
+# If evaluation passes → done! Copy to game:
+cp .art-workspace/export/test_crate.png gol-project/assets/sprite_sheets/boxes/test_crate.png
 
-# Export final
-node gol-tools/pixel-art/pixel-art.mjs draw export \
-  --sprite .art-workspace/aseprite/new_box.aseprite \
-  --output .art-workspace/export/new_box.png
-
-# Evaluate
-node gol-tools/pixel-art/pixel-art.mjs evaluate \
-  --image .art-workspace/export/new_box.png --type box
-
-# Commit to game
-cp .art-workspace/export/new_box.png gol-project/assets/sprite_sheets/boxes/new_box.png
+# If evaluation fails → open in Aseprite for touch-up:
+open .art-workspace/aseprite/test_crate.aseprite
+# After editing, re-export and evaluate:
+node gol-tools/pixel-art/pixel-art.mjs export test_crate
+node gol-tools/pixel-art/pixel-art.mjs evaluate test_crate --type box
 ```
+
+## Normalize Command
+
+`normalize` is the primary workflow. It takes a concept PNG and runs it through the simplified production pipeline: Python BOX downsample → Aseprite CIELAB palette mapping → indexed `.aseprite` output.
+
+- **What it does:** Converts concept art into a production-ready indexed sprite, including automatic background removal for common AI-generated white, gray, or checkerboard backgrounds.
+- **Options:** Use `--no-outline` to skip outline generation, or `--no-evaluate` to skip the automatic evaluation pass.
+- **Output:** Writes `.art-workspace/aseprite/NAME.aseprite`, `.art-workspace/aseprite/NAME.preview.png`, and `.art-workspace/export/NAME.png`.
+- **Background removal:** Detects and removes AI-generated backgrounds automatically via corner-based flood fill before palette mapping.
 
 ## Asset Types
 
@@ -101,33 +100,36 @@ cp .art-workspace/export/new_box.png gol-project/assets/sprite_sheets/boxes/new_
 
 ## Drawing Subagent
 
-Pixel art drawing requires creative visual reasoning. Delegate to an `artistry` category subagent:
+Most sprites should go through `normalize` first. It usually produces 80-90% quality sprites automatically, and many assets will not need touch-ups at all. Only delegate to an `artistry` category subagent when evaluation fails or when a specific visual detail needs targeted adjustment on the normalized output:
 
 ```
 task(
   category="artistry",
   load_skills=["gol-pixel-art"],
   run_in_background=false,
-  description="Draw [asset] pixel art",
+  description="Touch up [asset] pixel art",
   prompt="..."
 )
 ```
 
-The drawing subagent should:
-1. Read the concept image via `look_at` tool
-2. Plan the sprite composition (which colors, shapes, layers)
-3. Write JSON drawing instructions
+The touch-up subagent should:
+1. Inspect the normalized preview and evaluation result
+2. Identify only the failing or weak areas that need adjustment
+3. Write targeted JSON drawing instructions against the normalized `.aseprite` file
 4. Apply via `draw apply`, preview via `look_at`, iterate until satisfied
 5. Export final PNG via `draw export`
 
-## Drawing Workflow (Aseprite)
+Touch-ups use the existing JSON ops workflow on top of normalized output rather than redrawing from scratch.
+
+## Manual Drawing Workflow (Alternative)
+
+This is the legacy approach for drawing from scratch in Aseprite. Keep it for cases where full manual creation is preferred, but use `normalize` by default.
 
 For pixel-level control, use the `draw` commands:
 
 ```bash
 # 1. Create a new sprite
-node gol-tools/pixel-art/pixel-art.mjs draw create \
-  --type box --output .art-workspace/aseprite/my_box
+node gol-tools/pixel-art/pixel-art.mjs create my_box --type box
 
 # 2. Write JSON instructions (agent generates this)
 cat > /tmp/ops.json << 'EOF'
@@ -141,16 +143,12 @@ cat > /tmp/ops.json << 'EOF'
 EOF
 
 # 3. Apply instructions
-node gol-tools/pixel-art/pixel-art.mjs draw apply \
-  --sprite .art-workspace/aseprite/my_box.aseprite \
-  --instructions /tmp/ops.json
+node gol-tools/pixel-art/pixel-art.mjs apply my_box --instructions /tmp/ops.json
 
 # 4. Inspect preview (agent uses look_at on .preview.png)
 # 5. Iterate: write new ops.json, apply again
 # 6. Export final
-node gol-tools/pixel-art/pixel-art.mjs draw export \
-  --sprite .art-workspace/aseprite/my_box.aseprite \
-  --output .art-workspace/export/my_box.png
+node gol-tools/pixel-art/pixel-art.mjs export my_box
 ```
 
 ### Drawing Operations
