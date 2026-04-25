@@ -5,7 +5,7 @@ description: "Production pixel art asset creation pipeline for God of Lego. Use 
 
 # gol-pixel-art
 
-AI-driven pipeline that generates concept art (Gemini/ComfyUI) and produces production-ready pixel art through a normalize-first workflow. The primary path now converts concept art into indexed sprites automatically via downscale + palette mapping, with manual Aseprite touch-ups only when evaluation finds issues or extra polish is needed.
+AI-driven pipeline that generates concept art (Gemini/ComfyUI) and produces production-ready pixel art through a normalize-first workflow. The primary path now converts concept art into indexed `.aseprite` source files automatically via downscale + palette mapping, with manual Aseprite touch-ups only when evaluation finds issues or extra polish is needed.
 
 ## When to Use
 
@@ -17,29 +17,26 @@ AI-driven pipeline that generates concept art (Gemini/ComfyUI) and produces prod
 ## Pipeline Overview
 
 ```
-1. CONCEPT — AI generates concept image → .art-workspace/concepts/
-2. NORMALIZE — Downscale + palette map + Aseprite indexed → .art-workspace/aseprite/
+1. CONCEPT — AI generates concept image → gol-arts/artworks/
+2. NORMALIZE — Downscale + palette map + Aseprite indexed → gol-arts/assets/<type>/
 3. EVALUATE — Automated quality checks → PASS or FAIL
 4. TOUCH-UP (if needed) — Human opens .aseprite, edits manually
-5. EXPORT — Final production PNG → .art-workspace/export/
-6. COMMIT — Copy to gol-project/assets/, commit with art(category): message
+5. EXPORT (user-invoked) — Export .aseprite to production PNG → gol-project/assets/
 ```
 
-## Workspace Structure
+## Source File Structure
 
 ```
-.art-workspace/
-├── concepts/    # AI-generated concept images (Gemini/ComfyUI)
+gol-arts/
+├── artworks/    # AI-generated images + prompts
+│   ├── <name>.png
 │   ├── <name>.prompt
-│   └── <name>.original.png
-├── aseprite/    # Aseprite source files (agent-edited)
-│   ├── <name>.aseprite
-│   └── <name>.preview.png
-└── export/      # Final production PNGs
-    └── <name>.png
+│   └── <category>/   # Nested by game asset path
+└── assets/      # Aseprite sources (mirrors gol-project/assets/)
+    └── <type>/<name>.aseprite
 ```
 
-Work-in-progress images go to `.art-workspace/` (gitignored). Only commit final `.png` files to `gol-project/assets/`.
+Art source files are version-controlled in `gol-arts/` (Git LFS). Production PNGs are exported separately to `gol-project/assets/` via the explicit `export` command.
 
 ## Prerequisites
 
@@ -52,19 +49,19 @@ Work-in-progress images go to `.art-workspace/` (gitignored). Only commit final 
 
 ```bash
 # Step 1: Generate concept
-node gol-tools/pixel-art/pixel-art.mjs concept test_crate --type box --prompt "A weathered wooden supply crate"
+node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate"
+# → saves to gol-arts/artworks/wood_box.png + wood_box.prompt
 
-# Step 2: Normalize (downscale + palette map + evaluate — all in one)
-node gol-tools/pixel-art/pixel-art.mjs normalize test_crate --type box
+# Step 2: Normalize (downscale + palette map — produces .aseprite)
+node gol-tools/pixel-art/pixel-art.mjs normalize wood_box --type box
+# → saves gol-arts/assets/sprites/boxes/wood_box.aseprite + .preview.png
 
-# If evaluation passes → done! Copy to game:
-cp .art-workspace/export/test_crate.png gol-project/assets/sprite_sheets/boxes/test_crate.png
+# Step 3: (Optional) Touch up in Aseprite
+open gol-arts/assets/sprites/boxes/wood_box.aseprite
 
-# If evaluation fails → open in Aseprite for touch-up:
-open .art-workspace/aseprite/test_crate.aseprite
-# After editing, re-export and evaluate:
-node gol-tools/pixel-art/pixel-art.mjs export test_crate
-node gol-tools/pixel-art/pixel-art.mjs evaluate test_crate --type box
+# Step 4: Export to game project (when ready)
+node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/sprites/boxes/wood_box.aseprite
+# → exports to gol-project/assets/sprites/boxes/wood_box.png
 ```
 
 ## Normalize Command
@@ -72,9 +69,20 @@ node gol-tools/pixel-art/pixel-art.mjs evaluate test_crate --type box
 `normalize` is the primary workflow. It takes a concept PNG and runs it through the simplified production pipeline: Python BOX downsample → Aseprite CIELAB palette mapping → indexed `.aseprite` output.
 
 - **What it does:** Converts concept art into a production-ready indexed sprite, including automatic background removal for common AI-generated white, gray, or checkerboard backgrounds.
-- **Options:** Use `--no-outline` to skip outline generation, or `--no-evaluate` to skip the automatic evaluation pass.
-- **Output:** Writes `.art-workspace/aseprite/NAME.aseprite`, `.art-workspace/aseprite/NAME.preview.png`, and `.art-workspace/export/NAME.png`.
+- **Options:** Use `--no-outline` to skip outline generation.
+- **Output:** Writes `gol-arts/assets/<type>/NAME.aseprite` and `NAME.preview.png`.
 - **Background removal:** Detects and removes AI-generated backgrounds automatically via corner-based flood fill before palette mapping.
+
+## Export Command
+
+Export an Aseprite file from gol-arts to the matched path in gol-project:
+
+```bash
+node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/sprites/boxes/wood_box.aseprite
+# → gol-project/assets/sprites/boxes/wood_box.png
+```
+
+The export command takes one argument: the path to an `.aseprite` file in `gol-arts/assets/`. It automatically mirrors the path to `gol-project/assets/` with `.png` extension. No other options.
 
 ## Asset Types
 
@@ -148,7 +156,7 @@ node gol-tools/pixel-art/pixel-art.mjs apply my_box --instructions /tmp/ops.json
 # 4. Inspect preview (agent uses look_at on .preview.png)
 # 5. Iterate: write new ops.json, apply again
 # 6. Export final
-node gol-tools/pixel-art/pixel-art.mjs export my_box
+node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/sprites/boxes/my_box.aseprite
 ```
 
 ### Drawing Operations
@@ -174,7 +182,7 @@ Use local Stable Diffusion with the 2D Pixel Toolkit LoRA:
 node gol-tools/pixel-art/pixel-art.mjs generate \
   --prompt "A supply crate" \
   --backend comfyui \
-  --output .art-workspace/concepts/crate
+  --output gol-arts/artworks/crate
 ```
 
 Requires ComfyUI server running locally. Workflow template at `gol-tools/pixel-art/workflows/pixel_art_txt2img.json` — edit to change model, LoRA strength, or generation parameters.

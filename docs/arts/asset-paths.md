@@ -46,47 +46,33 @@ Logic types: road, grassground
 
 ## Artifact Pattern
 
-The pixel art pipeline produces files across three workspace directories:
+The pixel art pipeline stores source artifacts in `gol-arts/`:
 
 ```
-.art-workspace/
-├── concepts/           # AI-generated concept images (Gemini/ComfyUI)
+gol-arts/
+├── artworks/           # AI-generated images + prompts
 │   ├── <name>.prompt       — Generation prompt text
-│   └── <name>.original.png — Raw AI concept (1024×1024)
-├── aseprite/           # Aseprite source files (agent-edited)
-│   ├── <name>.aseprite     — Editable source sprite
-│   └── <name>.preview.png  # Latest preview export
-└── export/             # Final production PNGs (ready to commit)
-    └── <name>.png          — Production pixel art
+│   └── <name>.png          — Raw AI image (concept art, key art)
+└── assets/              # Aseprite source files (mirrors gol-project/assets/)
+    └── <type>/<name>.aseprite  — Editable source sprite
 ```
 
-Only files from `.art-workspace/export/` get committed to `gol-project/assets/`.
+Normalize writes source files to `gol-arts/`. Production PNGs are exported separately to `gol-project/assets/` via the explicit `export` command.
 
 ## Workspace
 
-All art work-in-progress lives in `.art-workspace/` (gitignored):
-
 ```bash
 # 1. Generate concept
-node gol-tools/pixel-art/pixel-art.mjs pipeline \
-  --prompt "A healing potion bottle" \
-  --type item --backend gemini \
-  --output .art-workspace/concepts/potion
+node gol-tools/pixel-art/pixel-art.mjs concept potion --type item --prompt 'A healing potion bottle'
+# → saves to gol-arts/artworks/potion.png + potion.prompt
 
-# 2. Create sprite and draw in Aseprite
-node gol-tools/pixel-art/pixel-art.mjs draw create \
-  --type item --output .art-workspace/aseprite/potion
+# 2. Normalize (produces .aseprite source file)
+node gol-tools/pixel-art/pixel-art.mjs normalize potion --type item
+# → saves gol-arts/assets/sprites/items/potion.aseprite + .preview.png
 
-# 3. Agent draws pixel art (referencing concept)
-# ... draw apply with JSON instructions ...
-
-# 4. Export final
-node gol-tools/pixel-art/pixel-art.mjs draw export \
-  --sprite .art-workspace/aseprite/potion.aseprite \
-  --output .art-workspace/export/potion.png
-
-# 5. Copy to game assets
-cp .art-workspace/export/potion.png gol-project/assets/sprites/items/potion.png
+# 3. Export to game project (when ready)
+node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/sprites/items/potion.aseprite
+# → exports to gol-project/assets/sprites/items/potion.png
 ```
 
 ## SpriteFrames Resources

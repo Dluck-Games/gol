@@ -94,8 +94,8 @@ SELF-EVALUATION (check BEFORE declaring done):
 
 COMMANDS (working directory: /Users/dluck/Documents/GitHub/gol):
   Apply:   node gol-tools/pixel-art/pixel-art.mjs apply {{NAME}} --instructions /tmp/ops.json
-  Preview: look_at .art-workspace/aseprite/{{NAME}}.preview.png (auto-generated after apply)
-  Export:  node gol-tools/pixel-art/pixel-art.mjs export {{NAME}}
+  Preview: look_at gol-arts/assets/<type>/{{NAME}}.preview.png (auto-generated after apply)
+  Export:  node gol-tools/pixel-art/pixel-art.mjs export {{NAME}}  # exports production PNG directly to gol-project/assets/
 
 JSON FORMAT:
 Write ops to /tmp/ops.json then apply. Use "pixels" op for detailed work:
@@ -118,7 +118,7 @@ task(
 
     Asset: {name}
     Type: {asset_type} ({width}x{height})
-    Concept: .art-workspace/concepts/{name}.original.png
+    Concept: gol-arts/artworks/{name}.png
     """
 )
 ```

@@ -24,8 +24,8 @@ Each file in `prompts/` is a self-contained template for generating assets of th
 1. Choose the asset category → read the matching `prompts/*.md`
 2. Craft a prompt using the template
 3. Generate via `node gol-tools/pixel-art/pixel-art.mjs pipeline`
-4. Concepts go to `.art-workspace/concepts/`, Aseprite sources to `.art-workspace/aseprite/`, exports to `.art-workspace/export/`
-5. Review and accept → move final .png to the path specified in `asset-paths.md`
+4. Artworks go to `gol-arts/artworks/`, Aseprite sources to `gol-arts/assets/`
+5. Review and accept → pipeline exports directly to `gol-project/assets/`
 6. Commit following `commit-convention.md`
 
 ## Relationship to Skill

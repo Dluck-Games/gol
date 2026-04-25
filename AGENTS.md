@@ -7,7 +7,7 @@ God of Lego (GOL) — 2D survival game, Godot 4.6, GDScript.
 - `gol/` — Management repo (this repo)
 - `gol-project/` — Game code submodule (actual development happens here)
 - `gol-tools/` — Tooling submodule (AI agents, LSP bridge, debug tools)
-- `gol-arts/` — Art assets submodule (original artworks, Aseprite sources, concepts, exports)
+- `gol-arts/` — Art assets submodule (Aseprite sources, AI-generated artworks, prompts — Git LFS)
 
 ## AGENTS.md maps
 
@@ -32,12 +32,15 @@ gol/                               # Management repo (YOU ARE HERE)
 │   ├── gds-lsp/                   # GDScript LSP stdio-TCP bridge (npm: godot-lsp-stdio-bridge)
 │   ├── ai-debug/                  # AI Debug Bridge: runtime screenshots, commands, script injection
 │   └── pixel-art/                 # AI pixel art pipeline: Gemini/ComfyUI → render → evaluate
-└── gol-arts/                      # Art assets submodule
-    ├── artworks/                  # High-res original/concept art (title screens, key art)
-    ├── sprite_sources/            # Source files for sprite sheets (pre-pipeline)
-    ├── aseprite/                  # Aseprite source files (editable sprites)
-    ├── concepts/                  # AI-generated concept images
-    └── export/                    # Final production PNGs (ready for gol-project/assets/)
+└── gol-arts/                      # Art assets submodule (Git LFS)
+    ├── AGENTS.md                  # Path mapping convention
+    ├── artworks/                  # AI-generated images + prompts
+    │   └── <category>/            # Nested by game asset path
+    └── assets/                    # Aseprite sources (mirrors gol-project/assets/)
+        ├── sprites/
+        ├── sprite_sheets/
+        ├── tiles/
+        └── ...
 ```
 
 ## Architectural principles
