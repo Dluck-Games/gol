@@ -4,3 +4,6 @@
 [submodule "gol-project"]
 	path = gol-project
 	url = https://github.com/Dluck-Games/god-of-lego.git
+[submodule "gol-arts"]
+	path = gol-arts
+	url = https://github.com/Dluck-Games/gol-arts.git

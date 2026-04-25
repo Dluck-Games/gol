@@ -7,6 +7,7 @@ God of Lego (GOL) — 2D survival game, Godot 4.6, GDScript.
 - `gol/` — Management repo (this repo)
 - `gol-project/` — Game code submodule (actual development happens here)
 - `gol-tools/` — Tooling submodule (AI agents, LSP bridge, debug tools)
+- `gol-arts/` — Art assets submodule (original artworks, Aseprite sources, concepts, exports)
 
 ## AGENTS.md maps
 
@@ -26,11 +27,17 @@ gol/                               # Management repo (YOU ARE HERE)
 │   │   ├── services/AGENTS.md     # Service layer
 │   │   └── ui/AGENTS.md           # UI / MVVM
 │   └── tests/AGENTS.md            # Testing patterns and hierarchy
-└── gol-tools/                     # Tooling submodule
-    ├── foreman/                   # AI daemon: GitHub issue → PR automation pipeline
-    ├── gds-lsp/                   # GDScript LSP stdio-TCP bridge (npm: godot-lsp-stdio-bridge)
-    ├── ai-debug/                  # AI Debug Bridge: runtime screenshots, commands, script injection
-    └── pixel-art/                 # AI pixel art pipeline: Gemini/ComfyUI → render → evaluate
+├── gol-tools/                     # Tooling submodule
+│   ├── foreman/                   # AI daemon: GitHub issue → PR automation pipeline
+│   ├── gds-lsp/                   # GDScript LSP stdio-TCP bridge (npm: godot-lsp-stdio-bridge)
+│   ├── ai-debug/                  # AI Debug Bridge: runtime screenshots, commands, script injection
+│   └── pixel-art/                 # AI pixel art pipeline: Gemini/ComfyUI → render → evaluate
+└── gol-arts/                      # Art assets submodule
+    ├── artworks/                  # High-res original/concept art (title screens, key art)
+    ├── sprite_sources/            # Source files for sprite sheets (pre-pipeline)
+    ├── aseprite/                  # Aseprite source files (editable sprites)
+    ├── concepts/                  # AI-generated concept images
+    └── export/                    # Final production PNGs (ready for gol-project/assets/)
 ```
 
 ## Architectural principles
@@ -86,7 +93,7 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 
 **VCS workflow**
 
-1. Finish work in submodules (`gol-project/` for game code, `gol-tools/` for tooling)
+1. Finish work in submodules (`gol-project/` for game code, `gol-tools/` for tooling, `gol-arts/` for art assets)
 2. When isolation is needed, create the submodule worktree under `gol/.worktrees/<name>/` from inside the submodule repo (for example, run `git worktree add` in `gol-project/` and point it at `gol/.worktrees/<name>`)
 3. Do all code edits, tests, and branch operations inside that submodule worktree, not in the management repo root
 4. Push submodule changes first (`git push origin main` in submodule)
@@ -97,7 +104,7 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 - All worktree checkouts live under `gol/.worktrees/`, organized by source:
   - `gol/.worktrees/manual/` — interactive agent or manual work (e.g. `manual/issue-188`)
   - `gol/.worktrees/foreman/` — foreman daemon auto-created (e.g. `foreman/ws_20260328_abcd1234`)
-- Create worktrees from the submodule repository you are changing (`gol-project/` or `gol-tools/`), never from the management repo root
+- Create worktrees from the submodule repository you are changing (`gol-project/`, `gol-tools/`, or `gol-arts/`), never from the management repo root
 - Treat each worktree as disposable local state: do not stage or commit any path under `gol/.worktrees/` in the management repo, and clean them up after the task is merged or abandoned
 - If a worktree needs Godot import/cache state for local testing, keep that setup local and out of version control
 
@@ -121,7 +128,7 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
   - **NEVER** create game files (scripts/, assets/, scenes/) at this root.
   - **NEVER** run Godot from this directory — always work inside `gol-project/`.
   - **NEVER** create branches in the main repo (`gol/`) — all development happens in `gol-project/` submodule.
-  - **NEVER** create a worktree for the management repo itself inside `gol/.worktrees/`; that directory holds only submodule checkouts from `gol-project/` or `gol-tools/`.
+  - **NEVER** create a worktree for the management repo itself inside `gol/.worktrees/`; that directory holds only submodule checkouts from `gol-project/`, `gol-tools/`, or `gol-arts/`.
 
 ## Reference
 
