@@ -23,17 +23,18 @@ If neither matches, report the file as unsupported.
 
 ## Execution Commands
 
-Run from the Godot project root (the `<project-directory>` from the task block).
+Run from any directory within the project tree.
 
 ```bash
 # Unit (gdUnit4)
-$GODOT --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --add res://tests/unit/$FILE --ignoreHeadlessMode
+gol test unit
 
 # Integration (SceneConfig)
-$GODOT --headless --path . --scene scenes/tests/test_main.tscn -- --config=res://tests/integration/$FILE
-```
+gol test integration
 
-`$GODOT` resolves to the Godot binary on PATH.
+# All tests
+gol test
+```
 
 ## Modes
 

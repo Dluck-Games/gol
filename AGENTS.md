@@ -83,7 +83,7 @@ Main agents NEVER write, run, or playtest directly. Always dispatch via skill:
 
 Shell hooks enforce tier isolation (wrong base class = blocked).
 
-**Running all tests:** `run-tests.command` in repo root (combined ASCII report, both phases).
+**Running all tests:** `gol test` (combined ASCII report, both phases).
 
 ### CI/CD
 

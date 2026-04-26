@@ -7,28 +7,32 @@ description: AI Debug Bridge for God of Lego - Execute debug commands, capture s
 
 AI debugging toolkit - capture screenshots, execute commands, run scripts, control game state, refresh assets, profile performance.
 
+> When debugging, prefer `gol run game` (headless) over `--windowed`. Headless is faster, uses less resources, and allows `gol debug` commands for inspection.
+
 ## Features
 
 | Feature | Command |
 |---------|---------|
-| Screenshot | `node gol-tools/ai-debug/ai-debug.mjs screenshot` |
-| Execute Command | `node gol-tools/ai-debug/ai-debug.mjs console <cmd>` |
-| Expression Evaluation | `node gol-tools/ai-debug/ai-debug.mjs eval <expr>` |
-| Get State | `node gol-tools/ai-debug/ai-debug.mjs get <property>` |
-| Set State | `node gol-tools/ai-debug/ai-debug.mjs set <prop> <val>` |
-| Run Script | `node gol-tools/ai-debug/ai-debug.mjs script <file.gd>` |
-| Refresh Assets | `node gol-tools/ai-debug/ai-debug.mjs refresh [what]` |
-| Reimport | `node gol-tools/ai-debug/ai-debug.mjs reimport` |
-| **Perf Snapshot** | `node gol-tools/ai-debug/ai-debug.mjs perf` |
-| **Perf Systems** | `node gol-tools/ai-debug/ai-debug.mjs perf systems` |
-| **Perf Entities** | `node gol-tools/ai-debug/ai-debug.mjs perf entities` |
-| **Perf Memory** | `node gol-tools/ai-debug/ai-debug.mjs perf memory` |
+| Screenshot | `gol debug screenshot` |
+| Execute Command | `gol debug console <cmd>` |
+| Expression Evaluation | `gol debug eval <expr>` |
+| Get State | `gol debug get <property>` |
+| Set State | `gol debug set <prop> <val>` |
+| Run Script | `gol debug script <file.gd>` |
+| Refresh Assets | `gol debug refresh [what]` |
+| Reimport | `gol reimport` |
+| Boot Game | `gol run game` |
+| Stop Game | `gol stop` |
+| Perf Snapshot | `gol debug perf` |
+| Perf Systems | `gol debug perf systems` |
+| Perf Entities | `gol debug perf entities` |
+| Perf Memory | `gol debug perf memory` |
 
 ## Screenshots
 
 ```bash
 cd /Users/dluckdu/Documents/Github/gol
-node gol-tools/ai-debug/ai-debug.mjs screenshot
+gol debug screenshot
 ```
 
 ## Debug Commands
@@ -37,57 +41,57 @@ node gol-tools/ai-debug/ai-debug.mjs screenshot
 
 ```bash
 # Heal player
-node gol-tools/ai-debug/ai-debug.mjs console heal full
+gol debug console heal full
 
 # Teleport to location
-node gol-tools/ai-debug/ai-debug.mjs console tp 100 200
+gol debug console tp 100 200
 
 # Set time
-node gol-tools/ai-debug/ai-debug.mjs console time 12
-node gol-tools/ai-debug/ai-debug.mjs console day
-node gol-tools/ai-debug/ai-debug.mjs console night
+gol debug console time 12
+gol debug console day
+gol debug console night
 
 # God mode
-node gol-tools/ai-debug/ai-debug.mjs console god
+gol debug console god
 
 # List entities
-node gol-tools/ai-debug/ai-debug.mjs console list enemy
+gol debug console list enemy
 
 # Kill entities
-node gol-tools/ai-debug/ai-debug.mjs console kill enemy
+gol debug console kill enemy
 ```
 
 ### Get Game State
 
 ```bash
 # Get player position
-node gol-tools/ai-debug/ai-debug.mjs get player.pos
+gol debug get player.pos
 
 # Get player HP
-node gol-tools/ai-debug/ai-debug.mjs get player.hp
+gol debug get player.hp
 
 # Get current time
-node gol-tools/ai-debug/ai-debug.mjs get time
+gol debug get time
 
 # Get entity count
-node gol-tools/ai-debug/ai-debug.mjs get entity_count
+gol debug get entity_count
 ```
 
 ### Set Game State
 
 ```bash
 # Set time to midnight
-node gol-tools/ai-debug/ai-debug.mjs set time 0
+gol debug set time 0
 
 # Set to noon
-node gol-tools/ai-debug/ai-debug.mjs set time 12
+gol debug set time 12
 ```
 
 ### Expression Evaluation
 
 ```bash
 # Simple calculation
-node gol-tools/ai-debug/ai-debug.mjs eval "1 + 1"
+gol debug eval "1 + 1"
 
 # Note: Variable access is limited
 ```
@@ -100,9 +104,9 @@ Collect runtime performance data from the running game. Returns JSON for agent p
 
 ```bash
 # Full performance snapshot — FPS, frame time, system timing, entity counts, memory
-node gol-tools/ai-debug/ai-debug.mjs perf
+gol debug perf
 # Same as:
-node gol-tools/ai-debug/ai-debug.mjs perf snapshot
+gol debug perf snapshot
 ```
 
 Returns JSON with: `fps`, `frame_time_ms`, `process_time_ms`, `physics_time_ms`, `object_count`, `memory_mib`, `entity_count`, `archetype_count`, `system_count`, `systems` (array sorted by execution_time_ms desc), `query_cache`.
@@ -111,7 +115,7 @@ Returns JSON with: `fps`, `frame_time_ms`, `process_time_ms`, `physics_time_ms`,
 
 ```bash
 # Detailed per-system execution times (sorted slowest first)
-node gol-tools/ai-debug/ai-debug.mjs perf systems
+gol debug perf systems
 ```
 
 Returns JSON array: `[{name, group, execution_time_ms, entity_count, archetype_count, active, parallel}, ...]`
@@ -120,7 +124,7 @@ Returns JSON array: `[{name, group, execution_time_ms, entity_count, archetype_c
 
 ```bash
 # Entity counts by archetype + top 20 most common components
-node gol-tools/ai-debug/ai-debug.mjs perf entities
+gol debug perf entities
 ```
 
 Returns JSON: `{total, archetypes: [{signature, entity_count, component_count}], by_component: {name: count}}`
@@ -129,7 +133,7 @@ Returns JSON: `{total, archetypes: [{signature, entity_count, component_count}],
 
 ```bash
 # Memory and object counts
-node gol-tools/ai-debug/ai-debug.mjs perf memory
+gol debug perf memory
 ```
 
 Returns JSON: `{static_memory_mib, object_count, resource_count, node_count, orphan_node_count}`
@@ -157,7 +161,7 @@ System timing data (`execution_time_ms`, `entity_count` per system) requires `EC
 ### Workflow
 
 1. Write debug scripts to `.debug/scripts/<descriptive_name>.gd`
-2. Execute via: `node gol-tools/ai-debug/ai-debug.mjs script .debug/scripts/<descriptive_name>.gd`
+2. Execute via: `gol debug script .debug/scripts/<descriptive_name>.gd`
 3. The CLI reads the script, copies content to the Godot signal directory, and sends the execute command
 
 ### Example
@@ -167,7 +171,7 @@ System timing data (`execution_time_ms`, `entity_count` per system) requires `EC
 # (Write .debug/scripts/check_enemy_count.gd)
 
 # 2. Execute
-node gol-tools/ai-debug/ai-debug.mjs script .debug/scripts/check_enemy_count.gd
+gol debug script .debug/scripts/check_enemy_count.gd
 ```
 
 ## Dynamic Script Execution
@@ -195,7 +199,7 @@ func run():
 ### 2. Execute Script
 
 ```bash
-node gol-tools/ai-debug/ai-debug.mjs script .debug/scripts/check_enemy_count.gd
+gol debug script .debug/scripts/check_enemy_count.gd
 ```
 
 ### Script Requirements
@@ -211,16 +215,16 @@ node gol-tools/ai-debug/ai-debug.mjs script .debug/scripts/check_enemy_count.gd
 
 ```bash
 # Reload entity recipes
-node gol-tools/ai-debug/ai-debug.mjs refresh recipes
+gol debug refresh recipes
 
 # Refresh config
-node gol-tools/ai-debug/ai-debug.mjs refresh config
+gol debug refresh config
 
 # Refresh UI
-node gol-tools/ai-debug/ai-debug.mjs refresh ui
+gol debug refresh ui
 
 # Refresh all
-node gol-tools/ai-debug/ai-debug.mjs refresh all
+gol debug refresh all
 ```
 
 ### Reimport Assets
@@ -228,7 +232,7 @@ node gol-tools/ai-debug/ai-debug.mjs refresh all
 Used to resolve uid file update issues or reimport after resource changes:
 
 ```bash
-node gol-tools/ai-debug/ai-debug.mjs reimport
+gol debug reimport
 ```
 
 ## How It Works
@@ -284,14 +288,14 @@ Check if AIDebugBridge is loaded: Look for "AIDebugBridge ready" in Godot output
 
 When creating new `.gd` files, run import to generate `.uid` sidecar files:
 
-    node gol-tools/ai-debug/lib/godot-import.mjs ensure gol-project
+    gol reimport ensure gol-project
 
 To check for missing UIDs without importing:
 
-    node gol-tools/ai-debug/lib/godot-import.mjs check-uids gol-project
+    gol reimport check-uids gol-project
 
 To clean orphaned `.uid` files after deleting scripts:
 
-    node gol-tools/ai-debug/lib/godot-import.mjs clean-uids gol-project
+    gol reimport clean-uids gol-project
 
 For worktrees, replace `gol-project` with the worktree path.

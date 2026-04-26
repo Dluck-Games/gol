@@ -30,6 +30,10 @@ if [[ ! -f "$GODOT_IMPORT" ]]; then
   exit 0
 fi
 
-node "$GODOT_IMPORT" ensure "$GOL_PROJECT" --force 2>&1 | while IFS= read -r line; do
-  echo "[godot-import] $line" >&2
-done
+if command -v gol &>/dev/null; then
+  gol reimport 2>&1 | while IFS= read -r line; do
+    echo "[gol-reimport] $line" >&2
+  done
+else
+  echo "[godot-hook] WARNING: gol CLI not found. Run 'gol install' to set up." >&2
+fi
