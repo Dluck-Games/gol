@@ -44,7 +44,7 @@ Extract from the issue:
 - **Specifics**: file paths, class names, method names mentioned in the issue body
 - **Labels**: reuse for PR labels when applicable
 
-If the issue is tagged `foreman:*` or references gol-tools, stop and ask the user — this skill only handles `gol-project` issues.
+If the issue references gol-tools (not gol-project), stop and ask the user — this skill only handles `gol-project` issues.
 
 ## Phase 2 — Setup
 

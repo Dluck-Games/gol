@@ -213,9 +213,6 @@ Body 使用 Markdown，中文为主，技术标识符用英文内联代码。
 | 标签 | 用途 |
 |------|------|
 | `need testing` | 需要手动验证（如测试验证类 issue） |
-| `foreman:plan` | 已有实现计划（通常不手动设置） |
-
-**不要手动设置的标签**：`foreman:assign`, `foreman:build`, `foreman:testing`, `foreman:done`, `foreman:rework`, `foreman:blocked`, `shiori:rework`（这些由 Foreman 管理）。
 
 ### Step 6: 提交
 
