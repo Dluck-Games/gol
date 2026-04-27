@@ -25,7 +25,7 @@ gol/                      ← 管理仓库（不在此创建 issue）
 | 如果 issue 涉及... | 目标仓库 | `-R` 参数 |
 |---|---|---|
 | 游戏逻辑 / 场景 / 资源 / UI / 系统(ECS) / 组件 / 测试(gdUnit4) | **gol-project** | `Dluck-Games/god-of-lego` |
-| Foreman daemon / AI Debug Bridge / GDS LSP Bridge / 工具链脚本 / CI/CD | **gol-tools** | `Dluck-Games/gol-tools` |
+| Foreman / AI Debug Bridge / GDS LSP Bridge / 工具链脚本 / CI/CD | **gol-tools** | `Dluck-Games/gol-tools` |
 | 管理流程 / 文档规范 / AGENTS.md 本身（罕见） | 在对应子模块创建并 cross-reference | — |
 
 **判断方法**：
@@ -215,7 +215,7 @@ Body 使用 Markdown，中文为主，技术标识符用英文内联代码。
 | `need testing` | 需要手动验证（如测试验证类 issue） |
 | `foreman:plan` | 已有实现计划（通常不手动设置） |
 
-**不要手动设置的标签**：`foreman:assign`, `foreman:build`, `foreman:testing`, `foreman:done`, `foreman:rework`, `foreman:blocked`, `shiori:rework`（这些由 Foreman daemon 管理）。
+**不要手动设置的标签**：`foreman:assign`, `foreman:build`, `foreman:testing`, `foreman:done`, `foreman:rework`, `foreman:blocked`, `shiori:rework`（这些由 Foreman 管理）。
 
 ### Step 6: 提交
 
