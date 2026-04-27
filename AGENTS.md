@@ -28,7 +28,7 @@ gol/                               # Management repo (YOU ARE HERE)
 │   │   └── ui/AGENTS.md           # UI / MVVM
 │   └── tests/AGENTS.md            # Testing patterns and hierarchy
 ├── gol-tools/                     # Tooling submodule
-│   ├── foreman/                   # AI daemon: GitHub issue → PR automation pipeline
+│   ├── foreman/                   # AI task execution CLI: spawn coding agents with templated prompts
 │   ├── gds-lsp/                   # GDScript LSP stdio-TCP bridge (npm: godot-lsp-stdio-bridge)
 │   ├── ai-debug/                  # AI Debug Bridge: runtime screenshots, commands, script injection
 │   └── pixel-art/                 # AI pixel art pipeline: Gemini/ComfyUI → render → evaluate
@@ -138,7 +138,7 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 
 - All worktree checkouts live under `gol/.worktrees/`, organized by source:
   - `gol/.worktrees/manual/` — interactive agent or manual work (e.g. `manual/issue-188`)
-  - `gol/.worktrees/foreman/` — foreman daemon auto-created (e.g. `foreman/ws_20260328_abcd1234`)
+  - `gol/.worktrees/foreman/` — foreman auto-created worktrees (e.g. `foreman/ws_20260328_abcd1234`)
 - Create worktrees from the submodule repository you are changing (`gol-project/`, `gol-tools/`, or `gol-arts/`), never from the management repo root
 - Treat each worktree as disposable local state: do not stage or commit any path under `gol/.worktrees/` in the management repo, and clean them up after the task is merged or abandoned
 - If a worktree needs Godot import/cache state for local testing, keep that setup local and out of version control
@@ -182,7 +182,7 @@ docs/
 ├── superpowers/          # Feature specs, plans, and key design decisions
 │   ├── plans/            # Implementation plans (date-prefixed: YYYY-MM-DD-topic.md)
 │   └── specs/            # Design specs and technical blueprints (date-prefixed)
-├── foreman/              # Foreman daemon per-issue work logs (organized by issue number)
+├── foreman/              # Foreman per-issue work logs (organized by issue number)
 ├── arts/                 # Art standards SSOT (style guide, asset paths, prompt templates)
 │   ├── style-guide.md   # Palette, aesthetic rules, animation conventions
 │   ├── asset-paths.md   # Where each asset type goes in gol-project/
@@ -202,7 +202,7 @@ docs/
 | Folder | Created by | Committed by |
 |---|---|---|
 | `superpowers/` | Planning agents | Planning agent (with the plan commit) |
-| `foreman/` | Foreman daemon | Foreman daemon (auto-commits after each task) |
+| `foreman/` | Foreman | Foreman (auto-commits after each task) |
 | `arts/` | Any agent | Agent that created it (atomic commit with the work) |
 | `reports/` | Any agent | Agent that created it (atomic commit with the work) |
 | `handoff/` | Any agent | Agent that created it (atomic commit with the work) |
