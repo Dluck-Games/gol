@@ -105,10 +105,12 @@ If the scenario needs recipe entities or a realized ECS world, report back that 
 ## Execution Command (for self-verification)
 
 ```bash
-$GODOT --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd --add res://tests/unit/$FILE --ignoreHeadlessMode
+gol test unit
 ```
 
 Results are written to `reports/results.xml`.
+
+**NEVER invoke the Godot binary directly.** Always use `gol` CLI commands.
 
 ## Workflow
 

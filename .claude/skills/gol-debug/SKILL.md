@@ -271,7 +271,7 @@ AI/CLI                              Godot Game
 
 ```bash
 # Start the game
-/Applications/Godot.app/Contents/MacOS/Godot --path gol-project
+gol run game
 ```
 
 ### Command Unresponsive

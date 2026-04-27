@@ -59,6 +59,38 @@ gol/                               # Management repo (YOU ARE HERE)
 - **AI Debug Bridge:** Runtime tool that allows AI agents to capture screenshots, execute commands, and inject scripts for debugging purposes.
 - **Pixel Art Pipeline:** AI-driven asset creation tool that generates concept art (Gemini/ComfyUI), renders production pixel art with GOL's 10-color palette, and evaluates quality. See `gol-pixel-art` skill.
 
+## GOL CLI Tool
+
+All Godot and debug bridge interactions MUST go through the `gol` CLI binary. The CLI handles Godot binary discovery, project path resolution, PID management, and logging automatically.
+
+**NEVER invoke the Godot binary (`godot`, `/Applications/Godot.app/...`) directly.**
+**NEVER invoke `node ai-debug/ai-debug.mjs` directly.**
+**Always use `gol` CLI commands.**
+
+### Command Reference
+
+| Intent | Command | Replaces |
+|--------|---------|----------|
+| Run game (headless) | `gol run game` | `godot --headless --path .` |
+| Run game (windowed) | `gol run game --windowed` | `godot --path . --windowed` |
+| Run editor | `gol run editor` | `godot --editor --path .` |
+| Stop game/editor | `gol stop` | `pkill godot` / manual kill |
+| Run unit tests | `gol test unit` | `godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd ...` |
+| Run integration tests | `gol test integration` | `godot --headless --path . --scene scenes/tests/test_main.tscn ...` |
+| Run all tests | `gol test` | Both unit + integration |
+| Reimport assets | `gol reimport` | `godot --headless --import --path .` |
+| Debug commands | `gol debug <cmd>` | `node ai-debug/ai-debug.mjs <cmd>` |
+| Debug screenshot | `gol debug screenshot` | `node ai-debug/ai-debug.mjs screenshot` |
+| Debug eval | `gol debug eval <expr>` | `node ai-debug/ai-debug.mjs eval <expr>` |
+| Debug script | `gol debug script <file>` | `node ai-debug/ai-debug.mjs script <file>` |
+| Error/parse check | `gol test` | `godot --headless --quit --path . 2>&1 \| grep ...` |
+
+### Path Resolution
+
+The `gol` CLI resolves paths automatically — no manual path construction needed:
+- **Godot binary**: `GODOT_PATH` env → platform defaults → `godot` on PATH
+- **Project path**: `--path` flag → `GOL_PROJECT_PATH` env → auto-detect from CWD
+
 ## Development
 
 ### Testing

@@ -10,34 +10,32 @@ You boot the game, verify a feature works by running commands and checking state
 
 You have access to: Bash, Read, Glob, Grep.
 
-`ai-debug.mjs` is your only Godot interaction tool. Located relative to the working directory at `gol-tools/ai-debug/ai-debug.mjs` (from management repo root) or find it via the CWD provided in the task block.
+The `gol` CLI is your only Godot interaction tool. It handles path resolution, PID management, and logging automatically.
 
-### ai-debug subcommand reference
+### gol CLI command reference
 
 | Command | Purpose |
 |---------|---------|
-| `boot [--path <dir>]` | Kill existing Godot, reimport if needed, launch, poll until ready |
-| `teardown` | Clean kill of Godot |
-| `console <cmd>` | Run a debug console command |
-| `get <key>` | Get game state (`player.pos`, `player.hp`, `time`, `entity_count`) |
-| `set <key> <value>` | Set game state |
-| `screenshot` | Capture screenshot, returns file path |
-| `eval <expr>` | Evaluate GDScript expression |
-| `script <file>` | Execute a GDScript file |
-| `spawn <recipe> [count] [x] [y]` | Spawn entities |
-| `recipes [filter]` | List available recipes |
+| `gol run game` | Launch game (headless by default), poll until ready |
+| `gol stop` | Clean shutdown of running game |
+| `gol debug console <cmd>` | Run a debug console command |
+| `gol debug get <key>` | Get game state (`player.pos`, `player.hp`, `time`, `entity_count`) |
+| `gol debug set <key> <value>` | Set game state |
+| `gol debug screenshot` | Capture screenshot, returns file path |
+| `gol debug eval <expr>` | Evaluate GDScript expression |
+| `gol debug script <file>` | Execute a GDScript file |
+| `gol debug spawn <recipe> [count] [x] [y]` | Spawn entities |
+| `gol debug refresh [what]` | Refresh game data (recipes, config, ui, all) |
+| `gol reimport` | Reimport assets and generate missing UIDs |
 
-All commands are run as:
-```bash
-node <path-to-ai-debug>/ai-debug.mjs <command> [args...]
-```
+**NEVER invoke the Godot binary directly.** **NEVER invoke `node ai-debug.mjs` directly.** Always use `gol` CLI commands.
 
 ## Workflow
 
 ### 1. Boot
 
 ```bash
-node <ai-debug-path>/ai-debug.mjs boot --path <project-path>
+gol run game
 ```
 
 Wait for `READY`. If `TIMEOUT` or `CRASH`, report FAIL immediately with the diagnostic output.
@@ -55,7 +53,7 @@ Use your knowledge of game mechanics (ECS, components, systems) to design meanin
 ### 3. Teardown
 
 ```bash
-node <ai-debug-path>/ai-debug.mjs teardown
+gol stop
 ```
 
 **Always run teardown**, even on failure. If teardown itself fails, note it but don't let it block your report.

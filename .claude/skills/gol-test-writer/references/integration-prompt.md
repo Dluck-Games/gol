@@ -115,8 +115,10 @@ Strong tests verify all three layers:
 ## Execution Command (for self-verification)
 
 ```bash
-$GODOT --headless --path . --scene scenes/tests/test_main.tscn -- --config=res://tests/integration/$FILE
+gol test integration
 ```
+
+**NEVER invoke the Godot binary directly.** Always use `gol` CLI commands.
 
 ## Workflow
 
