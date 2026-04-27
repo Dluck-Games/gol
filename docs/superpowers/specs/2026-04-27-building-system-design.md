@@ -297,7 +297,7 @@ The NPC alternates between delivery plans and construction plans based on the gh
 | Placement overlaps existing collision | PLACING state detects collision, red preview, blocks placement |
 | Stockpile lacks required materials | NPC PickupBuildMaterial fails → plan interrupts → idle → re-plans when materials available |
 | Multiple ghosts simultaneously | FindBuildSite picks nearest; different NPCs may target different ghosts |
-| Player cancels ghost while NPC en route | Ghost destroyed → NPC perform finds invalid target → plan interrupts → re-plans |
+| Player cancels ghost while NPC en route | Ghost destroyed → NPC build plan invalidates (target gone) → re-plans on next tick → if NPC is carrying materials (`is_carrying=true`), existing Work goal's DepositResource action takes over → NPC returns materials to stockpile naturally. Zero new code needed. |
 | Cancel ghost with deposited materials | Materials spawn as pickup entities at ghost position |
 | NPC dies while carrying build materials | CCarrying resources drop via existing CLootDrop mechanism |
 | NPC gets hungry during construction | Hunger goal has higher priority → interrupts construction → eats → resumes |
