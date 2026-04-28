@@ -73,6 +73,7 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 |--------|---------|----------|
 | Run game (headless) | `gol run game` | `godot --headless --path .` |
 | Run game (windowed) | `gol run game --windowed` | `godot --path . --windowed` |
+| Run game (skip menu) | `gol run game --windowed -- --skip-menu` | Direct to gameplay |
 | Run editor | `gol run editor` | `godot --editor --path .` |
 | Stop game/editor | `gol stop` | `pkill godot` / manual kill |
 | Run unit tests | `gol test unit` | `godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd ...` |
@@ -87,6 +88,20 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 | Debug eval | `gol debug eval <expr>` | `node ai-debug/ai-debug.mjs eval <expr>` |
 | Debug script | `gol debug script <file>` | `node ai-debug/ai-debug.mjs script <file>` |
 | Error/parse check | `gol test` | `godot --headless --quit --path . 2>&1 \| grep ...` |
+
+### Argument Pass-Through
+
+`gol run game` supports passing arbitrary arguments to Godot via `--` separator:
+
+    gol run game --windowed -- --skip-menu --custom-arg=value
+
+Arguments after `--` are forwarded directly to Godot. The game reads them via `OS.get_cmdline_user_args()`.
+
+| Game Argument  | Description                                |
+|----------------|--------------------------------------------|
+| `--skip-menu`  | Skip title screen, go directly to gameplay |
+
+All test commands (`gol test unit`, `gol test integration`, `gol test`) automatically inject `--skip-menu`. No manual action needed.
 
 ### Path Resolution
 
