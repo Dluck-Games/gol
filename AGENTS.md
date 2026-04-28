@@ -78,6 +78,9 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 | Run unit tests | `gol test unit` | `godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd ...` |
 | Run integration tests | `gol test integration` | `godot --headless --path . --scene scenes/tests/test_main.tscn ...` |
 | Run all tests | `gol test` | Both unit + integration |
+| Run specific suites | `gol test unit --suite pcg,ai` | Run only pcg + ai unit tests |
+| Run tests with detail | `gol test --verbose` | Full suite table + raw gdunit4 output |
+| Run suites verbosely | `gol test unit --suite system -v` | Detailed output for system tests only |
 | Reimport assets | `gol reimport` | `godot --headless --import --path .` |
 | Debug commands | `gol debug <cmd>` | `node ai-debug/ai-debug.mjs <cmd>` |
 | Debug screenshot | `gol debug screenshot` | `node ai-debug/ai-debug.mjs screenshot` |
@@ -115,7 +118,7 @@ Main agents NEVER write, run, or playtest directly. Always dispatch via skill:
 
 Shell hooks enforce tier isolation (wrong base class = blocked).
 
-**Running all tests:** `gol test` (combined ASCII report, both phases).
+**Running all tests:** `gol test` (simplified output by default — failures + summary only). Use `--verbose` for full suite table. Use `--suite pcg,ai` to run only specific test suites.
 
 ### CI/CD
 

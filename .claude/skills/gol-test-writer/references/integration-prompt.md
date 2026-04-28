@@ -115,7 +115,14 @@ Strong tests verify all three layers:
 ## Execution Command (for self-verification)
 
 ```bash
+# Run all integration tests (simplified output)
 gol test integration
+
+# Run only tests for a specific suite (e.g., pcg)
+gol test integration --suite pcg
+
+# Run with detailed output
+gol test integration --verbose
 ```
 
 **NEVER invoke the Godot binary directly.** Always use `gol` CLI commands.

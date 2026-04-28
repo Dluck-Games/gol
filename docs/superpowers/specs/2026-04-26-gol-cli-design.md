@@ -97,9 +97,13 @@ Kill sequence: SIGTERM → wait 5s → SIGKILL. Windows: `taskkill /PID` → `ta
 
 Output: `"Stopped game (PID <pid>)"` / `"Stopped editor (PID <pid>)"` or `"No Godot process found"`.
 
-### `gol test [unit|integration]`
+### `gol test [unit|integration] [flags]`
 
 No args = run both phases sequentially. Exit code: 0 if all pass, 1 if any fail.
+
+**Flags:**
+- `--suite <names>` — comma-separated suite names to run (e.g. `pcg,ai,system`). Maps to subdirectories under `tests/unit/` and `tests/integration/`. Empty = all suites.
+- `--verbose` / `-v` — detailed output with per-suite table and raw gdunit4 output. Default is simplified: failures + summary only.
 
 **Phase 1 — gdUnit4 (unit):**
 

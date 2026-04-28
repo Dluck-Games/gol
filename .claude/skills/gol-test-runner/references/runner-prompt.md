@@ -36,6 +36,45 @@ gol test integration
 gol test
 ```
 
+### Suite Filtering
+
+Run only specific test suites by directory name. This is useful for targeted runs after modifying a particular subsystem.
+
+```bash
+# Run only PCG unit tests
+gol test unit --suite pcg
+
+# Run PCG + AI unit tests
+gol test unit --suite pcg,ai
+
+# Run PCG integration tests
+gol test integration --suite pcg
+
+# Run PCG tests in both tiers
+gol test --suite pcg
+```
+
+Suite names map to subdirectories under `tests/unit/` and `tests/integration/`:
+`ai`, `debug`, `pcg`, `service`, `system`, `flow`, `creatures`
+
+Root-level `.gd` test files are NOT matched by suite filters — they only run when `--suite` is empty (full run).
+
+### Output Modes
+
+By default, `gol test` shows **simplified output**: only failure details and summary totals. This is the recommended mode for agents.
+
+```bash
+# Default: simplified (failures + summary only)
+gol test unit
+
+# Verbose: full suite table with per-suite details + raw gdunit4 output
+gol test unit --verbose
+# or
+gol test unit -v
+```
+
+When all tests pass in simplified mode, only the summary line is shown. When any tests fail, failure details are listed before the summary.
+
 ## Modes
 
 ### Single test
