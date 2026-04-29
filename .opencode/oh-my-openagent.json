@@ -8,48 +8,6 @@
       }
     }
   },
-  "agents": {
-    "hephaestus": {
-      "model": "github-copilot/gpt-5.4",
-      "variant": "medium"
-    },
-    "metis": {
-      "model": "github-copilot/claude-opus-4.6"
-    },
-    "momus": {
-      "model": "github-copilot/gpt-5.4",
-      "variant": "high"
-    },
-    "oracle": {
-      "model": "github-copilot/gpt-5.4",
-      "variant": "high"
-    },
-    "superpowers:code-reviewer": {
-      "model": "github-copilot/gpt-5.4",
-      "variant": "high"
-    },
-    "console-playtester": {
-      "model": "codebuddy/kimi-k2.5-ioa",
-      "permission": {
-        "bash": { "node *": "allow", "godot *": "allow", "pkill *": "allow", "sleep *": "allow", "pgrep *": "allow", "*": "ask"
-        }
-      }
-    }
-  },
-  "categories": {
-    "ultrabrain": {
-      "model": "github-copilot/gpt-5.4"
-    },
-    "deep": {
-      "model": "github-copilot/gpt-5.4"
-    },
-    "artistry": {
-      "model": "github-copilot/gemini-3.1-pro-preview"
-    },
-    "unspecified-high": {
-      "model": "github-copilot/gpt-5.4"
-    }
-  },
   "claude_code": {
     "agents": true,
     "hooks": true
