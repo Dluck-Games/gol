@@ -135,15 +135,30 @@ static func clear_profile_data() -> void
 ### 1. Search Efficiency
 
 | Metric | Unit | Description |
+### 1. Planning Time
+
+All timing measured at `build_plan_for_goal()` entry/exit (includes cache lookup or A* search).
+
+| Metric | Unit | Description |
 |--------|------|-------------|
-| `avg_search_time_us` | µs | Mean A* search time per plan |
-| `p99_search_time_us` | µs | 99th percentile search time |
-| `max_search_time_us` | µs | Worst case search time |
+| `avg_plan_time_us` | µs | Mean time per plan call (all calls) |
+| `max_plan_time_us` | µs | Worst case plan call time |
+| `avg_search_time_us` | µs | Mean time per cache-miss call (A* search only) |
+| `max_search_time_us` | µs | Worst case A* search time |
+| `avg_cache_hit_time_us` | µs | Mean time per cache-hit call (validation + construct) |
+| `max_cache_hit_time_us` | µs | Worst case cache-hit time |
+
+### 2. Search Efficiency
+
+Only measured on cache-miss calls (actual A* searches).
+
+| Metric | Unit | Description |
+|--------|------|-------------|
 | `avg_iterations` | count | Mean node expansions per search |
 | `max_iterations` | count | Worst case expansions (cap: 256) |
 | `plan_found_rate` | % | Searches that produced a valid plan |
 
-### 2. Cache Performance
+### 3. Cache Performance
 
 | Metric | Unit | Description |
 |--------|------|-------------|
@@ -154,7 +169,7 @@ static func clear_profile_data() -> void
 | `eviction_count` | count | Cache full-clear events |
 | `cache_entries_peak` | count | Max simultaneous cache entries |
 
-### 3. Decision Scheduling
+### 4. Decision Scheduling
 
 | Metric | Unit | Description |
 |--------|------|-------------|
@@ -257,13 +272,16 @@ func get_budgets() -> Dictionary:
 Concise plain text, minimal characters. Output to stdout by default.
 
 ```
-GOAP Eval: mixed | 30 agents | 900f (15.0s) | warmup 60f
+GOAP Eval: mixed | 30 agents | 900f (15.0s)
 
-SEARCH
-  avg 42us  p99 189us  max 312us  iter avg 23.4 max 156/256  found 94.1%
+PLANNING TIME
+  all: avg 12us  max 312us  |  miss: avg 42us  max 312us  |  hit: avg 3us  max 8us
+
+SEARCH (cache-miss only)
+  iter avg 23.4  max 156/256  found 94.1%
 
 CACHE
-  hit 83.2%  miss: cold 112 ttl 41 precond 16  evict 3  peak 48 entries
+  hit 83.2%  miss: cold 112 ttl 41 precond 16  evict 3  peak 48
 
 SCHEDULING
   dec/f 2.1  avg 0.71ms  p99 1.82ms  deferred 2.7%  replans 156
@@ -275,7 +293,7 @@ QUALITY
 SCOPE
   state-vars 18  actions 23  goals 4  planning-keys 32
 
-BUDGET 12/12 PASS
+BUDGET 14/14 PASS
 ```
 
 When a budget fails:
