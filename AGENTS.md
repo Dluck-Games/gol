@@ -74,6 +74,8 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 | Run game (headless) | `gol run game` | `godot --headless --path .` |
 | Run game (windowed) | `gol run game --windowed` | `godot --path . --windowed` |
 | Run game (skip menu) | `gol run game --windowed -- --skip-menu` | Direct to gameplay |
+| Run game (detached) | `gol run game --detach` | `godot --headless --path . &` |
+| Run game (detached, windowed) | `gol --detach --windowed` | `godot --path . --windowed &` |
 | Run editor | `gol run editor` | `godot --editor --path .` |
 | Stop game/editor | `gol stop` | `pkill godot` / manual kill |
 | Run unit tests | `gol test unit` | `godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd ...` |
@@ -102,6 +104,29 @@ Arguments after `--` are forwarded directly to Godot. The game reads them via `O
 | `--skip-menu`  | Skip title screen, go directly to gameplay |
 
 All test commands (`gol test unit`, `gol test integration`, `gol test`) automatically inject `--skip-menu`. No manual action needed.
+
+### Detached Mode
+
+`--detach` launches the game in the background, redirects all output to a log file, and returns immediately. This is designed for **AI agents** whose Bash tool blocks on streaming stdout.
+
+    gol run game --detach
+    gol --detach --windowed -- --skip-menu
+
+When detached, the command prints the PID and log file path, then exits:
+
+    Game started (PID 12345, detached)
+    Log: /path/to/gol-project/logs/game/game-20260429-094727.log
+
+**When to use `--detach`:**
+- Calling `gol run game` from an AI agent's Bash tool (opencode, claude code, etc.)
+- Any context where the caller needs the shell to return immediately
+
+**When NOT to use `--detach`:**
+- Interactive terminal sessions where you want to see live Godot output
+- When you need Ctrl+C to stop the game (use `gol stop` instead)
+
+**To check logs after detached launch:** `cat <log-path>` or `tail -f <log-path>`
+**To stop a detached game:** `gol stop`
 
 ### Path Resolution
 
