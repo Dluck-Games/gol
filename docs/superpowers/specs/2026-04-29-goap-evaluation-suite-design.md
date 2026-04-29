@@ -15,7 +15,7 @@ Standalone benchmark framework for the GOAP AI system. Measures planner internal
 ## Architecture
 
 ```
-gol test goap [scenario] [--json] [--budget=<path>] [--duration=<sec>]
+gol test goap [scenario] [--json] [--duration=<sec>]
       │
       ▼
 ┌─────────────────────────────────┐
@@ -26,7 +26,7 @@ gol test goap [scenario] [--json] [--budget=<path>] [--duration=<sec>]
 │ → relay exit code               │
 └────────────┬────────────────────┘
              │ godot --headless --scene goap_eval_main.tscn
-             │       -- --scenario=X [--json] [--budget=P] [--duration=S]
+             │       -- --scenario=X [--json] [--duration=S]
              ▼
 ┌─────────────────────────────────┐
 │ GoapEvalMain (GDScript)         │
@@ -58,9 +58,6 @@ gol test goap realworld --duration=300
 # With JSON export
 gol test goap mixed --json
 
-# Custom budget file
-gol test goap --budget=my_budgets.json
-
 # List available scenarios
 gol test goap --list
 ```
@@ -71,7 +68,6 @@ gol test goap --list
 |-----|---------|-------------|
 | `[scenario]` | all | Scenario name or `all` |
 | `--json` | off | Export JSON to `logs/tests/<timestamp>-goap-<scenario>.json` |
-| `--budget=<path>` | auto | Budget file path; auto-calibrates if missing |
 | `--duration=<sec>` | per-scenario | Override collection duration in seconds |
 | `--warmup=<frames>` | 60 (synthetic), 300 (realworld) | Warm-up frames before collection starts |
 | `--list` | — | Print available scenarios and exit |
@@ -221,45 +217,41 @@ The `realworld` scenario:
 
 ## Budget System
 
-### Default Budgets (Auto-Calibrated)
+Budgets are hardcoded in the scenario class hierarchy. Base class defines global defaults, subclasses override per-scenario.
 
-On first run without a budget file:
-1. Execute all scenarios normally
-2. Record all metrics
-3. Generate `goap_eval_budget.json` with measured values + 20% headroom
-4. Report results without pass/fail (calibration run)
+### Location
 
-On subsequent runs:
-- Load budget file → compare → mark PASS/FAIL per metric
-- `--budget=<path>` overrides auto-generated file
-
-### Budget File Format
-
-```json
-{
-  "global": {
-    "avg_decision_time_ms": 1.0,
-    "p99_decision_time_ms": 3.0,
-    "cache_hit_rate_min": 0.75,
-    "thrash_rate_max": 0.05,
-    "avg_iterations_max": 80,
-    "plan_found_rate_min": 0.85,
-    "plan_completion_rate_min": 0.70
-  },
-  "scenario": {
-    "stress": {
-      "avg_decision_time_ms": 2.0,
-      "p99_decision_time_ms": 5.0
-    },
-    "realworld": {
-      "avg_decision_time_ms": 1.5,
-      "p99_decision_time_ms": 4.0
-    }
-  }
+```gdscript
+# eval_scenario_base.gd
+const DEFAULT_BUDGETS := {
+  "avg_search_time_us": 100,
+  "p99_search_time_us": 500,
+  "cache_hit_rate_min": 0.75,
+  "thrash_rate_max": 0.05,
+  "avg_decision_time_ms": 1.0,
+  "p99_decision_time_ms": 3.0,
+  "plan_found_rate_min": 0.85,
+  "plan_completion_rate_min": 0.70,
+  "avg_iterations_max": 80,
 }
+
+func get_budgets() -> Dictionary:
+  return DEFAULT_BUDGETS
+
+# eval_scenario_stress.gd
+func get_budgets() -> Dictionary:
+  var b := DEFAULT_BUDGETS.duplicate()
+  b["avg_decision_time_ms"] = 2.0
+  b["p99_decision_time_ms"] = 5.0
+  return b
 ```
 
-Per-scenario budgets override global defaults for that scenario only.
+### Rationale
+
+- Budget lives next to the scenario config — change one, see the other
+- Budget changes show up in git diff for easy before/after comparison
+- Zero configuration — no external files, no auto-calibration magic
+- Same pattern as `SceneConfig` subclass overrides elsewhere in the codebase
 
 ---
 
@@ -330,7 +322,6 @@ gol-project/
     goap_eval_main.tscn           # Eval entry scene
   scripts/tests/goap_eval/
     goap_eval_main.gd             # Main controller
-    goap_eval_config.gd           # Budget and parameter config
     goap_eval_report.gd           # Text + JSON report generation
     goap_metrics_collector.gd     # Metrics aggregator (consumes planner/SAI hooks)
     scenarios/
