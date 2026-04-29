@@ -33,8 +33,8 @@ gol test goap [scenario] [--json] [--duration=<sec>]
 │ 1. Parse CLI args               │
 │ 2. Load scenario config         │
 │ 3. Setup world + agents         │
-│ 4. Warm-up phase                │
-│ 5. Collection phase (N frames)  │
+│ 4. Wait for systems ready       │
+│ 5. Collection phase             │
 │ 6. Generate report              │
 │ 7. Optional JSON export         │
 │ 8. Budget check → exit code     │
@@ -57,9 +57,6 @@ gol test goap realworld --duration=300
 
 # With JSON export
 gol test goap mixed --json
-
-# List available scenarios
-gol test goap --list
 ```
 
 ### Arguments
@@ -69,8 +66,8 @@ gol test goap --list
 | `[scenario]` | all | Scenario name or `all` |
 | `--json` | off | Export JSON to `logs/tests/<timestamp>-goap-<scenario>.json` |
 | `--duration=<sec>` | per-scenario | Override collection duration in seconds |
-| `--warmup=<frames>` | 60 (synthetic), 300 (realworld) | Warm-up frames before collection starts |
-| `--list` | — | Print available scenarios and exit |
+
+Available scenarios: `combat`, `worker`, `ecosystem`, `mixed`, `stress`, `realworld`.
 
 ---
 
@@ -209,7 +206,7 @@ static func clear_profile_data() -> void
 The `realworld` scenario:
 1. Calls `GOL.setup()` with production config
 2. Runs `ServiceContext.pcg().generate()` for real map
-3. Waits for all systems to stabilize (warm-up = 300 frames / ~5s at 60fps)
+3. Waits for all systems to initialize (internal — caller does not configure this)
 4. Collects metrics for the specified duration
 5. Reports include a time-series breakdown (per-minute stats if duration > 60s)
 
@@ -360,6 +357,7 @@ gol-project/
 ### Scenario Isolation
 
 - Each scenario calls `GoapPlanner.reset_caches()` + `reset_cache_stats()` + `clear_profile_data()` before starting
+- Each scenario internally waits for systems to be ready before enabling profiling and collecting data
 - ECS World is rebuilt per scenario (via `GOL.setup()` or direct `World.new()`)
 - No state leaks between scenarios
 
@@ -368,6 +366,6 @@ gol-project/
 - Uses `GOL.setup()` → full production boot path
 - PCG generation creates real map with natural spawn points
 - Agent count depends on map/spawn config (not fixed)
-- Warm-up = 300 frames (~5s at 60fps, configurable via `--warmup`)
+- Internally waits for system initialization before collecting
 - Supports time-series output: metrics reported per-minute when duration > 60s
 - `--duration` parameter controls collection window (default 60s)
