@@ -146,6 +146,8 @@ var behavior_template: BehaviorTemplate
 
 Each strategic action owns a `BehaviorTemplate` — a predefined sequence of atomic steps. Templates are **not searched**; they execute in order.
 
+**Design reference: KCD2 (GDC 2025, Warhorse Studios).** KCD2 uses GOAP to find state transitions, then executes each action as a "small behavior tree" with enter-loop-exit lifecycle. We adopt this pattern directly, adapted for GOL's 2D ECS context.
+
 #### Template Design
 
 ```gdscript
@@ -154,18 +156,29 @@ class_name BehaviorTemplate extends Resource
 ## Ordered list of step definitions. Executed sequentially.
 @export var steps: Array[BehaviorStep] = []
 
+## Whether this template loops its step sequence. If true, after the last
+## step completes, execution restarts from step 0. The template only ends
+## when SPlanExecution aborts it (higher-priority goal) or a step fails.
+## Example: MeleeCombat loops [ChaseTarget → AttackMelee] until target dies.
+@export var loops: bool = false
+
 ## Called when the strategic action activates this template.
-func begin(agent: CGoapAgent) -> void
+## Resolves variant (e.g., Feed picks grass/bush/pile based on perception).
+## Returns FAILED if preconditions for any variant are not met.
+func begin(agent: CGoapAgent) -> StepResult
 
 ## Called every frame by SPlanExecution.
-## Returns: RUNNING, COMPLETED, FAILED, INTERRUPTED
+## Returns: RUNNING, COMPLETED, FAILED
 func tick(agent: CGoapAgent, delta: float) -> StepResult
 
 ## Called when template is abandoned (higher-priority goal, or failure).
+## MUST run the current step's exit phase before returning.
 func abort(agent: CGoapAgent) -> void
 ```
 
-#### Behavior Step Interface
+#### Behavior Step: Enter-Loop-Exit Lifecycle (KCD2 Pattern)
+
+Each step follows the KCD2 "enter-loop-exit" pattern. This is critical for clean state management — when a step is interrupted, it MUST run its exit phase to restore NPC state (put down held items, cancel animations, release navigation locks).
 
 ```gdscript
 class_name BehaviorStep extends Resource
@@ -176,26 +189,88 @@ class_name BehaviorStep extends Resource
 ## If not met, the template can skip this step or fail.
 @export var entry_conditions: Dictionary[String, bool] = {}
 
-## Called every frame while this step is active.
-func perform(agent: CGoapAgent, delta: float) -> StepResult
+## Phase enum tracks where in the lifecycle this step is.
+enum Phase { ENTERING, LOOPING, EXITING }
 
-## Called once when transitioning into this step.
-func on_enter(agent: CGoapAgent) -> void
+## ENTER: one-time setup. Pick up tools, start transition animation,
+## acquire navigation target. Called once when step becomes active.
+## Returns RUNNING (still entering) or COMPLETED (enter done, move to loop).
+func enter(agent: CGoapAgent, delta: float) -> StepResult
 
-## Called once when transitioning out.
-func on_exit(agent: CGoapAgent) -> void
+## LOOP: the core behavior. Called every frame after enter completes.
+## Returns RUNNING (continue), COMPLETED (step done, trigger exit),
+## or FAILED (abort step, trigger exit).
+## For instant steps (e.g., PickupFood), loop returns COMPLETED immediately.
+func loop(agent: CGoapAgent, delta: float) -> StepResult
+
+## EXIT: cleanup. Put down tools, play transition-out animation,
+## release navigation locks, update world state facts.
+## Called once when loop completes, fails, or when template is aborted.
+## Returns RUNNING (still exiting) or COMPLETED (exit done).
+func exit(agent: CGoapAgent, delta: float) -> StepResult
 ```
 
-`StepResult` enum: `RUNNING`, `COMPLETED`, `FAILED`
+**Step lifecycle state machine:**
+
+```
+begin → [ENTERING] → enter() returns COMPLETED
+           ↓
+       [LOOPING]  → loop() returns COMPLETED or FAILED
+           ↓
+       [EXITING]  → exit() returns COMPLETED → next step (or template done)
+           
+Interrupt at any phase → immediately transition to EXITING
+```
+
+**Why enter-loop-exit matters for GOL:**
+
+| Step | Enter | Loop | Exit |
+|------|-------|------|------|
+| GatherResource | Walk to node, equip pickaxe | Mining animation loop | Put down pickaxe, update `has_gathered_resource` |
+| EatGrass | Walk to grass tile | Eating animation | Update `is_fed`, clear navigation |
+| AttackMelee | Charge animation | Attack swing loop | Sheathe weapon if switching behavior |
+| Patrol | Start walking to waypoint | Walk between waypoints | Stop at current position |
+
+Without the exit phase, interrupting GatherResource mid-loop would leave the pickaxe equipped and the mining animation stuck. KCD2 solves this by guaranteeing the exit phase always runs.
+
+**Data-driven step configuration (KCD2 principle):**
+
+Steps should be configurable via Resource exports as much as possible, minimizing per-step GDScript subclasses. Common patterns become reusable base classes:
+
+```gdscript
+## Reusable step: move to a target identified by a world state fact.
+class_name MoveToTargetStep extends BehaviorStep
+@export var target_fact: String = ""  ## e.g., "sees_grass"
+@export var arrival_fact: String = "" ## e.g., "adjacent_to_grass"
+
+## Reusable step: play an animation loop for a duration.
+class_name TimedActionStep extends BehaviorStep
+@export var duration_seconds: float = 1.0
+@export var completion_fact: String = "" ## set to true on loop complete
+
+## Reusable step: instant state change (e.g., pick up item).
+class_name InstantStep extends BehaviorStep
+@export var facts_to_set: Dictionary[String, bool] = {}
+```
+
+With these 3 base classes, most of the current 22 actions can be configured purely through Resource exports without writing new GDScript.
 
 #### Template Catalog
 
 **Feed Template** (3 variants resolved at runtime based on food source):
 
 ```
-FeedFromGrass:    [MoveToGrass → EatGrass]
-FeedFromBush:     [MoveToHarvestable → HarvestBush]
-FeedFromPile:     [MoveToFoodPile → PickupFood]
+FeedFromGrass:
+  step 0: MoveToTargetStep { target_fact: "sees_grass", arrival_fact: "adjacent_to_grass" }
+  step 1: TimedActionStep   { duration: 1.5, completion_fact: "is_fed" }
+
+FeedFromBush:
+  step 0: MoveToTargetStep { target_fact: "sees_harvestable", arrival_fact: "adjacent_to_harvestable" }
+  step 1: TimedActionStep   { duration: 2.0, completion_fact: "is_fed" }
+
+FeedFromPile:
+  step 0: MoveToTargetStep { target_fact: "sees_food_pile", arrival_fact: "adjacent_to_food_pile" }
+  step 1: InstantStep       { facts_to_set: { "is_fed": true } }
 ```
 
 Template selection: when `Feed.behavior_template.begin(agent)` is called, it checks the agent's world state for which perception fact is true (`sees_grass`, `sees_harvestable`, `sees_food_pile`) and selects the matching variant. Priority when multiple are true: nearest food source by Euclidean distance (cheapest navigation). If none are true, `begin()` immediately returns FAILED — this should not happen because the viability gate prevents Feed from being planned without at least one perception fact. The variant is locked at `begin()` time and does not change mid-template.
@@ -203,73 +278,117 @@ Template selection: when `Feed.behavior_template.begin(agent)` is called, it che
 **Work Template:**
 
 ```
-WorkCycle: [FindWorkTarget → MoveToResourceNode → GatherResource → MoveToStockpile → DepositResource]
+WorkCycle:
+  step 0: FindWorkTargetStep  { completion_fact: "has_work_target" }
+  step 1: MoveToTargetStep    { target_fact: "has_work_target", arrival_fact: "adjacent_to_resource_node" }
+  step 2: TimedActionStep     { duration: 3.0, completion_fact: "has_gathered_resource" }
+  step 3: MoveToTargetStep    { target_fact: "sees_stockpile", arrival_fact: "adjacent_to_stockpile" }
+  step 4: InstantStep         { facts_to_set: { "has_delivered": true } }
 ```
 
 **Build Template:**
 
 ```
-BuildCycle: [Build]
-(Build delegates to SBuildWorker FSM internally — already encapsulated)
+BuildCycle:
+  step 0: BuildStep  { delegates to SBuildWorker FSM, completion_fact: "build_done" }
 ```
 
-**FightMelee Template:**
+**FightMelee Template (loops: true):**
 
 ```
-MeleeCombat: [ChaseTarget → AttackMelee]
-Loop: if target still alive after AttackMelee, repeat from ChaseTarget.
+MeleeCombat:
+  step 0: MoveToTargetStep  { target_fact: "has_threat", arrival_fact: "is_threat_in_attack_range" }
+  step 1: AttackStep         { attack_type: "melee", completion_facts: { "has_threat": false, "is_safe": true } }
+  (loops until target eliminated or template aborted)
 ```
 
-**FightRanged Template:**
+**FightRanged Template (loops: true):**
 
 ```
-RangedCombat: [AdjustShootPosition → AttackRanged]
-Loop: if target still alive, repeat.
+RangedCombat:
+  step 0: PositionStep       { maintain optimal range, sets "ready_ranged_attack" }
+  step 1: AttackStep         { attack_type: "ranged", completion_facts: { "has_threat": false, "is_safe": true } }
+  (loops until target eliminated or template aborted)
 ```
 
 **Flee Template:**
 
 ```
-FleeFromThreat: [Flee]
-(Single step — Flee action handles all navigation internally)
+FleeFromThreat:
+  step 0: FleeStep  { moves away from nearest threat, completion_fact: "is_safe" }
 ```
 
-**Patrol Template:**
+**Patrol Template (loops: true):**
 
 ```
-PatrolRoute: [Patrol]
-(Patrol action manages waypoint navigation internally)
+PatrolRoute:
+  step 0: MoveToTargetStep  { target_fact: waypoint, arrival_fact: "at_waypoint" }
+  (loops through patrol waypoints until aborted)
 ```
 
-**Explore Template:**
+**Explore Template (loops: true):**
 
 ```
-Wander: [Wander]
-(Single step — random movement)
+Wander:
+  step 0: WanderStep  { random movement, sets "is_exploring" }
+  (loops until a higher-priority goal interrupts)
 ```
 
 **Guard Template:**
 
 ```
-GuardPost: [ReturnToCamp]
-(Move to assigned guard post and hold)
+GuardPost:
+  step 0: MoveToTargetStep  { target: guard post position, arrival_fact: "at_guard_post" }
 ```
 
 **Rest Template:**
 
 ```
-RestAction: [Rest]
-(Single step — energy recovery)
+RestAction:
+  step 0: TimedActionStep  { duration: 5.0, completion_fact: "is_rested" }
 ```
 
 #### Template Interruption
 
 When SGoalDecision selects a new strategic action (higher-priority goal changed), SPlanExecution:
-1. Calls `current_template.abort(agent)` — cleanup, cancel navigation, etc.
-2. Loads the new template via `new_action.behavior_template.begin(agent)`
-3. Starts ticking the new template next frame
+1. Calls `current_step.exit(agent, delta)` — guarantees cleanup (KCD2 pattern: always run exit phase)
+2. Waits for exit to return COMPLETED (may take 1-2 frames for exit animation)
+3. Calls `current_template.abort(agent)` — template-level cleanup
+4. Loads the new template via `new_action.behavior_template.begin(agent)`
+5. Starts ticking the new template
+
+For **urgent interruptions** (e.g., Flee from sudden threat), the exit phase can be shortened or skipped via a `force_abort: bool` flag. This trades clean state restoration for responsiveness — acceptable for survival situations.
 
 This replaces the current "replan" mechanism. Replanning happens at Layer 1 (strategic), not within templates.
+
+### 1.3 NPC State as First-Class Citizen (KCD2 Pattern)
+
+KCD2's key insight: GOAP plans transitions between **NPC states**, not just world state booleans. NPC state includes posture (standing/sitting/crouching), presentation state (working/idle/fighting), and held items.
+
+GOL adaptation: introduce a lightweight NPC state struct tracked in `CGoapAgent`:
+
+```gdscript
+## NPC's own behavioral state — distinct from world state facts.
+## World state facts describe the environment; NPC state describes the agent itself.
+## BehaviorSteps update NPC state during enter/exit phases.
+
+@export var posture: StringName = &"standing"  ## standing, crouching, sitting
+@export var held_item: StringName = &"none"    ## none, pickaxe, sword, bow
+@export var activity: StringName = &"idle"     ## idle, working, eating, fighting, fleeing, patrolling
+```
+
+**How NPC state interacts with templates:**
+
+- **Enter phase** sets NPC state: GatherResource.enter() → `held_item = "pickaxe"`, `activity = "working"`
+- **Exit phase** restores NPC state: GatherResource.exit() → `held_item = "none"`, `activity = "idle"`
+- **Interruption safety**: exit phase guarantees NPC state is cleaned up before new template starts
+
+**How NPC state interacts with the planner (future extensibility):**
+
+NPC state is NOT part of GOAP world state in this version — it would expand the search space unnecessarily. Instead, NPC state serves as:
+1. A correctness guard — templates check NPC state in entry_conditions (e.g., "can't mine if already holding sword")
+2. A rendering driver — sprite/animation systems read `activity` and `held_item` to select visuals
+3. A foundation for Phase 4 (hierarchical planner) where posture/activity could become strategic planning dimensions
 
 ### 1.3 System Split: SGoalDecision + SPlanExecution
 
