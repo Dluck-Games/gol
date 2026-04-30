@@ -1,310 +1,504 @@
-# GOAP Planner Performance Optimization Design
+# GOAP Three-Layer Architecture & Planner Optimization Design
 
 ## Problem Statement
 
-The GOAP planner has severe performance issues that block AI system scaling. Adding building-related actions (Build, etc.) caused measurable degradation. Previous mitigations (plan cache, per-frame decision cap) mask the problem without solving root causes.
+The GOAP AI system has a fundamental architecture problem that causes severe performance degradation and blocks scaling to complex NPC behaviors. Adding a few building-related actions pushed the planner past its limits — but the root cause isn't "too many actions." It's that **strategic decisions, tactical sequences, and atomic actions are all flattened into a single A\* search space.**
 
 ### Eval Baseline (2026-04-30, 12 agents, 60s)
 
 | Metric | Value | Budget | Status |
 |--------|-------|--------|--------|
 | avg_search_time_us | 12,862 | 100 | FAIL (128x over) |
-| avg_iterations | 246.3 | 80 | FAIL (打满 256 上限) |
+| avg_iterations | 246.3 | 80 | FAIL (hitting 256 cap) |
 | cache_hit_rate | 3.2% | 75% | FAIL |
 | plan_found_rate | 3.8% | 85% | FAIL |
 | avg_decision_time_ms | 2.80 | 1.00 | FAIL |
 | p99_decision_time_ms | 18.26 | 3.00 | FAIL |
 | thrash_rate | 1.2% | 5% | PASS |
 
-**Root cause**: `feed_self` goal accounts for 93.6% of planning calls (1257/1343), with 0.16% success rate and avg 255 iterations. All three feeding paths are gated behind system-provided perception facts (`sees_grass`, `sees_food_pile`, `sees_harvestable`) that no GOAP action can produce. The planner exhausts 256 iterations proving an unsolvable problem, then repeats every 0.2s because failures aren't cached.
+### Root Causes
 
-### Compounding Factors
+**1. Architecture: flat action space mixes decision levels.** GOAP searches across 22 actions that span three conceptual levels — "should I feed?" (strategic), "walk to grass then eat" (tactical sequence), "execute walk step" (atomic). The planner discovers obvious sequences (MoveToGrass → EatGrass) that a human would never question, wasting search budget on combinatorics that should be predefined.
 
-1. **Wander effect bug** — `wander.gd` sets `effects = { has_threat: true }` instead of `{ is_patrolling: true }`, injecting a full combat sub-tree into every search from non-threat states. Wastes 50-100 iterations per search on irrelevant branches.
-2. **Global action pool** — All 22 actions are visible to all agent types. A rabbit sees Build, DepositResource, AttackMelee, etc. Branching factor is 7-10 when it should be 2-4.
-3. **Heuristic degrades to Dijkstra** — `_calculate_heuristic()` counts unsatisfied goal facts. Most GOL goals have one desired key, so h is always 0 or 1. A* loses all directional signal.
-4. **No negative cache** — Failed plans are never cached. Each tick repeats a full 256-iteration search.
-5. **No SAI backoff** — SAI retries unsatisfied goals every 0.2s with no penalty for consecutive failures.
+**2. Unsolvable problems dominate search time.** `feed_self` accounts for 93.6% of planning calls at 0.16% success rate. All feeding paths are gated behind system-provided perception facts (`sees_grass`, etc.) that no action can produce. The planner exhausts 256 iterations proving impossibility, then repeats every 0.2s.
+
+**3. Compounding bugs and missing safeguards.** `wander.gd` injects `has_threat: true` into every search tree. Failed plans aren't cached. SAI retries impossible goals with no backoff.
+
+### Why This Blocks the Vision
+
+GOL's goal is KCD-level NPC behavior — rich daily routines, dynamic work/social/combat, all driven by runtime planning. The current flat architecture cannot scale: each new action multiplies the search space exponentially. A three-layer architecture is needed to let GOAP focus on what it does best (strategic combination) while predefined templates handle tactical execution.
 
 ---
 
 ## Non-Goals
 
-- Not replacing GOAP with a different AI architecture (behavior trees, utility AI, etc.)
-- Not changing game design or goal/action semantics (beyond fixing the Wander bug)
-- Not implementing hierarchical GOAP (Phase 4 is documented as future direction only)
-- Not optimizing action execution performance (this spec targets planning/decision only)
+- Not replacing GOAP with behavior trees or utility AI — GOAP remains the strategic planner
+- Not adding new NPC behaviors in this spec — this is infrastructure, not content
+- Not optimizing action execution (animation, navigation) — this spec targets planning/decision only
 
 ---
 
-## Design
-
-Four phases, each validated independently via `gol test goap --json`. Phases 1-3 are implementation scope. Phase 4 is a documented future direction.
-
-### Phase 1 — Eliminate Invalid Searches
-
-Goal: reduce planning calls by 90%+ and eliminate wasted iterations on unsolvable problems.
-
-#### 1a. Fix Wander Effect Bug
-
-**File:** `scripts/gameplay/goap/actions/wander.gd`
-
-Change effects from `{ "has_threat": true }` to `{ "is_patrolling": true }`.
-
-Impact: eliminates artificial combat sub-tree injection during non-combat planning. Saves 50-100 iterations per search that currently explores ChaseTarget → AttackMelee/Ranged branches from Wander.
-
-#### 1b. Per-Agent Action Lists
-
-**Current:** `GoapPlanner.get_all_actions()` returns a single global pool of all 22 actions. Every agent's search branching factor includes actions irrelevant to that agent type.
-
-**Change:** Add `@export var allowed_actions: Array[String]` to `CGoapAgent`. The planner filters the global action pool against this whitelist before search. If `allowed_actions` is empty, fall back to the global pool (backward compatible).
-
-Action assignments per agent type:
-
-| Agent Type | Actions | Count |
-|-----------|---------|-------|
-| rabbit | EatGrass, MoveToGrass, Flee, Wander | 4 |
-| Worker | FindWorkTarget, MoveToResourceNode, GatherResource, MoveToStockpile, DepositResource, Build, EatGrass, MoveToGrass, MoveToHarvestable, HarvestBush | 10 |
-| Guard | Patrol, ReturnToCamp, ChaseTarget, AttackMelee, AttackRanged, AdjustShootPosition, Defend, Flee | 8 |
-| Guard_Healer | Patrol, ReturnToCamp, ChaseTarget, AttackMelee, Defend, Flee | 6 |
-| enemy_* | ChaseTarget, AttackMelee, AttackRanged, AdjustShootPosition, Flee, Wander | 6 |
-| ComposerNPC | MarchToCampfire, Wander, Idle | 3 |
-
-The planner's `_plan_for_goal()` accepts an `actions: Array[GoapAction]` parameter (already exists). The change is in `build_plan_for_goal()` which resolves the agent's filtered action list before calling `_plan_for_goal()`.
-
-**Branching factor reduction:** rabbit 7-10 → 2-3, Worker 7-10 → 4-5, Guard 7-10 → 3-4.
-
-#### 1c. Goal Viability Gate
-
-**Problem:** The planner cannot detect unsolvable problems before entering A* search. Goals like `feed_self` are gated behind system-provided perception facts that no action can produce.
-
-**Solution:** Add a `viability_facts` field to `GoapGoal`:
-
-```gdscript
-## At least one of these facts must be true in world state for this goal
-## to be worth planning. If all are absent, skip planning entirely.
-## Empty array = always viable (no gate).
-@export var viability_facts: Array[String] = []
-```
-
-The SAI checks viability before calling `build_plan_for_goal()`. This is an O(K) dictionary lookup where K = number of viability facts (typically 1-3).
-
-Viability fact assignments:
-
-| Goal | viability_facts | Rationale |
-|------|----------------|-----------|
-| feed_self | `["sees_grass", "sees_food_pile", "sees_harvestable"]` | All three feeding paths require one of these perception facts |
-| Work | `["sees_resource_node"]` | Work chain starts with FindWorkTarget which needs resource visibility |
-| Build | `[]` (always viable) | Build action has no system-fact preconditions |
-| Survive / survive_on_sight | `[]` (always viable) | Combat goals should always be plannable when activated |
-| ClearThreat / EliminateThreat | `[]` (always viable) | Same as Survive |
-| Wander | `[]` (always viable) | Fallback goal, always viable |
-| PatrolCamp / GuardDuty | `[]` (always viable) | Guard duties always viable |
-
-#### 1d. Negative Plan Cache
-
-**Current:** Only successful plans are cached. Failed plans repeat full 256-iteration search.
-
-**Change:** Add `_negative_cache: Dictionary[String, int]` to `GoapPlanner`. Key = same cache key format as positive cache. Value = frame number when the failure was recorded.
+## Design Overview
 
 ```
-On plan failure:
-  _negative_cache[cache_key] = Engine.get_process_frames()
-
-On plan request:
-  if cache_key in _negative_cache:
-      frames_since = current_frame - _negative_cache[cache_key]
-      if frames_since < NEGATIVE_CACHE_TTL:
-          return null  # skip search
-      else:
-          _negative_cache.erase(cache_key)  # expired, retry
+┌──────────────────────────────────────────────────────────┐
+│ Layer 1: Life Planner (GOAP A*)                          │
+│                                                          │
+│ "What should I do?"                                      │
+│ Actions: Feed, Work, Build, Fight, Flee, Patrol, Rest,   │
+│          Socialize, Explore (~8-12 coarse actions)       │
+│ Frequency: every 0.5-5s (LOD-adjusted)                   │
+│ Output: selected StrategicAction                         │
+├──────────────────────────────────────────────────────────┤
+│ Layer 2: Behavior Templates (predefined sequences)       │
+│                                                          │
+│ "How do I do it?"                                        │
+│ Each StrategicAction owns a BehaviorTemplate:            │
+│   Feed → [MoveToFoodSource → Eat]                        │
+│   Work → [FindTarget → MoveTo → Gather → Deliver]        │
+│   Fight → [Chase → SelectAttack → Attack]                │
+│ No search — step through predefined sequence             │
+│ Frequency: on strategic action change + step transitions │
+├──────────────────────────────────────────────────────────┤
+│ Layer 3: Atomic Execution (engine interface)             │
+│                                                          │
+│ "Do the thing."                                          │
+│ Navigation, animation, collision, component updates      │
+│ Frequency: every frame                                   │
+│ Output: step complete / step failed / interrupted        │
+└──────────────────────────────────────────────────────────┘
 ```
 
-**TTL:** 30 frames (0.5s at 60fps). Short enough that world state changes (new perception facts) will be picked up quickly. Long enough to prevent the same unsolvable query from running multiple times per second.
+Two ECS systems drive the pipeline:
 
-**Size limit:** Same 64-entry cap as positive cache. LRU eviction when full.
-
-**Profiling:** Negative cache hits tracked separately in eval metrics (`neg_cache_hits` counter).
-
-#### 1e. SAI Goal Backoff
-
-**Current:** SAI retries every unsatisfied goal every decision tick (0.15-0.5s depending on LOD), regardless of failure history.
-
-**Change:** Track consecutive planning failures per goal in `CGoapAgent`:
-
-```gdscript
-var _goal_fail_counts: Dictionary[String, int] = {}
-var _goal_backoff_until: Dictionary[String, int] = {}  # frame number
-```
-
-Backoff schedule:
-- 1st failure: wait 30 frames (0.5s)
-- 2nd failure: wait 60 frames (1.0s)
-- 3rd+ failure: wait 120 frames (2.0s)
-- Cap: 300 frames (5.0s)
-
-**Reset condition:** When any viability fact for the backed-off goal changes from false to true in world state, reset that goal's backoff counter to 0. Detection mechanism: SGoalDecision (or s_ai.gd before the Phase 3 split) stores the previous-tick value of each agent's viability facts in a `_prev_viability: Dictionary[String, bool]`. On each decision tick, compare current vs previous. If any fact flipped false→true, clear all backoff state for goals that list that fact in their `viability_facts`. This adds O(V) work per decision tick where V = total viability facts across all goals (typically 5-8).
+- **SGoalDecision** — runs Layer 1 (rate-limited, max 3 agents/frame, 3ms budget)
+- **SPlanExecution** — runs Layers 2+3 (every frame)
 
 ---
 
-### Phase 2 — Heuristic Upgrade
+## Phase 1 — Three-Layer Architecture (Priority: Immediate)
 
-Goal: reduce search iterations from ~246 to 5-15 for solvable problems, and immediately prune unsolvable branches.
+### 1.1 Strategic Actions (Layer 1)
 
-#### 2a. Delete-Relaxation Heuristic
+Replace the current 22 fine-grained actions with ~8-12 coarse strategic actions. Each strategic action represents a **behavioral intent**, not a physical step.
 
-Replace the current "count unsatisfied conditions" heuristic with a delete-relaxation (FF-style) heuristic.
+#### Strategic Action Catalog
 
-**Algorithm:**
+| Strategic Action | Desired Outcome | Viability Gate | Agent Types |
+|-----------------|----------------|----------------|-------------|
+| Feed | `is_fed = true` | `sees_grass OR sees_food_pile OR sees_harvestable` | rabbit, worker, guard |
+| Work | `has_delivered = true` | `sees_resource_node` | worker |
+| Build | `build_done = true` | (always viable) | worker |
+| FightMelee | `has_threat = false` | `has_threat` | guard, enemy_* |
+| FightRanged | `has_threat = false` | `has_threat AND has_shooter_weapon` | guard, enemy_* |
+| Flee | `is_safe = true` | `has_threat OR is_low_health` | all |
+| Patrol | `is_patrolling = true` | `is_guard` | guard |
+| Rest | `is_rested = true` | `is_low_energy` | all |
+| Explore | `is_exploring = true` | (always viable) | rabbit, composer |
+| Guard | `at_guard_post = true` | `is_guard` | guard |
+
+**Key design change:** Each strategic action carries a **viability gate** — a list of world-state facts that must hold for the action to be worth considering. The planner skips actions whose gate fails, equivalent to the old "viability check" but built into the action itself rather than the goal.
+
+**Costs:** Strategic action costs reflect behavioral preference, not physical effort:
+
+| Action | Cost | Rationale |
+|--------|------|-----------|
+| Flee | 1.0 | Survival always cheapest |
+| FightMelee / FightRanged | 2.0 | React to threats quickly |
+| Feed | 3.0 | Basic need |
+| Work / Build | 5.0 | Productive but deferrable |
+| Patrol / Guard | 5.0 | Duty-based |
+| Rest | 8.0 | Only when needed |
+| Explore | 10.0 | Lowest priority, fallback |
+
+**Search complexity reduction:**
 
 ```
-func _calculate_heuristic(goal, state, actions) -> float:
-    relaxed = state.duplicate()
-    layers = 0
-    
-    while not goal.is_satisfied(relaxed):
-        new_facts = false
-        for action in actions:
-            if action.preconditions_met(relaxed):
-                for key in action.effects:
-                    if not relaxed.has(key) or relaxed[key] != action.effects[key]:
-                        relaxed[key] = action.effects[key]
-                        new_facts = true
-        layers += 1
-        if not new_facts:
-            return INF  # unreachable — prune
-    
-    return float(layers)
+Before: 22 actions, branching factor 7-10, plan depth 2-5
+  → search space: ~10^3 to 10^5 nodes
+
+After: 8-12 actions per agent (filtered by viability), branching factor 2-4, plan depth 1-2
+  → search space: ~4 to 16 nodes
 ```
 
-**Properties:**
-- **Admissible:** Relaxed world is strictly easier than real world (no deletions). Relaxed solution cost ≤ real solution cost. A* optimality preserved.
-- **Informative:** Distinguishes "2 steps away" from "5 steps away", unlike current h=0/1 binary. Gives A* genuine directional signal.
-- **Unreachability detection:** If the relaxed expansion reaches a fixpoint without satisfying the goal, returns INF. The planner can immediately prune that branch or abort the entire search.
+Most plans will be depth 1 (a single strategic action). Depth 2 occurs when one action enables another (e.g., Feed enables Work by removing hunger debuff).
 
-**Performance:** With per-agent action lists (Phase 1b), each relaxation loop iterates over 3-10 actions and 15-26 bool keys. Worst case: 6 layers × 10 actions × 26 keys = 1560 operations. At ~10ns per bool check, that's ~15μs per heuristic call. Acceptable given current 13ms per search.
-
-**Optimization — achievable-facts index:**
-
-Precompute at planner init: for each bool fact, which actions can produce it.
+#### Strategic Action Interface
 
 ```gdscript
-var _fact_achievers: Dictionary[String, Array[GoapAction]]
-# e.g., "is_fed" → [EatGrass, HarvestBush, PickupFood]
+class_name StrategicAction extends Resource
+
+@export var action_name: String
+@export var cost: float = 1.0
+@export var preconditions: Dictionary[String, bool] = {}
+@export var effects: Dictionary[String, bool] = {}
+
+## Facts that must be true in world state for this action to be worth planning.
+## If all are absent, planner skips this action entirely. Empty = always viable.
+@export var viability_gate: Array[String] = []
+
+## The behavior template that executes this action's intent.
+## Resolved at init time from the template registry.
+var behavior_template: BehaviorTemplate
 ```
 
-During relaxation, instead of scanning all actions each layer, only check actions whose effects include a fact not yet in the relaxed state. Reduces inner loop from O(A) to O(relevant actions).
+### 1.2 Behavior Templates (Layer 2)
 
-**Integration with existing heuristic:**
+Each strategic action owns a `BehaviorTemplate` — a predefined sequence of atomic steps. Templates are **not searched**; they execute in order.
 
-The `_calculate_heuristic()` signature changes to include the actions array:
+#### Template Design
 
 ```gdscript
-# Before:
-func _calculate_heuristic(goal: GoapGoal, state: Dictionary[String, bool]) -> float
+class_name BehaviorTemplate extends Resource
 
-# After:
-func _calculate_heuristic(goal: GoapGoal, state: Dictionary[String, bool], actions: Array[GoapAction]) -> float
+## Ordered list of step definitions. Executed sequentially.
+@export var steps: Array[BehaviorStep] = []
+
+## Called when the strategic action activates this template.
+func begin(agent: CGoapAgent) -> void
+
+## Called every frame by SPlanExecution.
+## Returns: RUNNING, COMPLETED, FAILED, INTERRUPTED
+func tick(agent: CGoapAgent, delta: float) -> StepResult
+
+## Called when template is abandoned (higher-priority goal, or failure).
+func abort(agent: CGoapAgent) -> void
 ```
 
-All call sites in `_plan_for_goal()` updated to pass the (already available) filtered action list.
+#### Behavior Step Interface
 
-#### 2b. Reduce MAX_ITERATIONS to 32
+```gdscript
+class_name BehaviorStep extends Resource
 
-**Precondition:** Phase 1 + 2a must be validated first. Only safe after confirming that solvable plans are found in <15 iterations with the new heuristic.
+@export var step_name: String
 
-Change `MAX_ITERATIONS` from 256 to 32. This serves as a safety net — if any search exceeds 32 iterations, it's likely unsolvable or pathological, and should fail fast rather than burn CPU.
+## World state conditions that must hold for this step to begin.
+## If not met, the template can skip this step or fail.
+@export var entry_conditions: Dictionary[String, bool] = {}
 
-The eval suite budget `avg_iterations_max` drops from 80 to 20 to match.
+## Called every frame while this step is active.
+func perform(agent: CGoapAgent, delta: float) -> StepResult
 
----
+## Called once when transitioning into this step.
+func on_enter(agent: CGoapAgent) -> void
 
-### Phase 3 — Architecture Split: Decision / Execution
+## Called once when transitioning out.
+func on_exit(agent: CGoapAgent) -> void
+```
 
-Goal: separate `s_ai.gd` into two independent systems for cleaner profiling, testing, and future optimization.
+`StepResult` enum: `RUNNING`, `COMPLETED`, `FAILED`
 
-#### Current Architecture
+#### Template Catalog
 
-`s_ai.gd` runs a two-pass loop in `process()`:
-- **Pass 1 (every frame):** Execute `running_action.perform(delta)` for all agents with active plans
-- **Pass 2 (rate-limited):** For agents needing decisions, run goal selection + planning (max 3/frame, 3ms budget)
+**Feed Template** (3 variants resolved at runtime based on food source):
 
-Both passes share state through `CGoapAgent` component fields.
+```
+FeedFromGrass:    [MoveToGrass → EatGrass]
+FeedFromBush:     [MoveToHarvestable → HarvestBush]
+FeedFromPile:     [MoveToFoodPile → PickupFood]
+```
 
-#### New Architecture
+Template selection: when `Feed.behavior_template.begin(agent)` is called, it checks the agent's world state for which perception fact is true (`sees_grass`, `sees_harvestable`, `sees_food_pile`) and selects the matching variant. Priority when multiple are true: nearest food source by Euclidean distance (cheapest navigation). If none are true, `begin()` immediately returns FAILED — this should not happen because the viability gate prevents Feed from being planned without at least one perception fact. The variant is locked at `begin()` time and does not change mid-template.
 
-Two new systems replace `s_ai.gd`:
+**Work Template:**
 
-**SPlanExecution** (runs every frame, high priority)
-- Query: entities with `CGoapAgent` where `running_action != null`
-- Responsibilities:
-  - Call `running_action.perform(delta)`
-  - Handle action completion → advance plan or mark agent as needs_decision
-  - Handle action failure → mark agent as needs_decision
-  - Validate current plan's preconditions → invalidate if world changed
-  - Consume `pending_plan` from decision system → call `on_plan_enter()`, begin execution
-- Does NOT call the planner or do goal selection
+```
+WorkCycle: [FindWorkTarget → MoveToResourceNode → GatherResource → MoveToStockpile → DepositResource]
+```
 
-**SGoalDecision** (runs rate-limited, after SPlanExecution)
-- Query: entities with `CGoapAgent` where `needs_decision == true`
-- Responsibilities:
-  - Viability gate check (Phase 1c)
-  - Backoff check (Phase 1e)
-  - Goal selection (priority-sorted, skip satisfied goals)
-  - Call `GoapPlanner.build_plan_for_goal()` with agent's filtered action list
-  - Write result to `CGoapAgent.pending_plan` (consumed by SPlanExecution next frame)
+**Build Template:**
+
+```
+BuildCycle: [Build]
+(Build delegates to SBuildWorker FSM internally — already encapsulated)
+```
+
+**FightMelee Template:**
+
+```
+MeleeCombat: [ChaseTarget → AttackMelee]
+Loop: if target still alive after AttackMelee, repeat from ChaseTarget.
+```
+
+**FightRanged Template:**
+
+```
+RangedCombat: [AdjustShootPosition → AttackRanged]
+Loop: if target still alive, repeat.
+```
+
+**Flee Template:**
+
+```
+FleeFromThreat: [Flee]
+(Single step — Flee action handles all navigation internally)
+```
+
+**Patrol Template:**
+
+```
+PatrolRoute: [Patrol]
+(Patrol action manages waypoint navigation internally)
+```
+
+**Explore Template:**
+
+```
+Wander: [Wander]
+(Single step — random movement)
+```
+
+**Guard Template:**
+
+```
+GuardPost: [ReturnToCamp]
+(Move to assigned guard post and hold)
+```
+
+**Rest Template:**
+
+```
+RestAction: [Rest]
+(Single step — energy recovery)
+```
+
+#### Template Interruption
+
+When SGoalDecision selects a new strategic action (higher-priority goal changed), SPlanExecution:
+1. Calls `current_template.abort(agent)` — cleanup, cancel navigation, etc.
+2. Loads the new template via `new_action.behavior_template.begin(agent)`
+3. Starts ticking the new template next frame
+
+This replaces the current "replan" mechanism. Replanning happens at Layer 1 (strategic), not within templates.
+
+### 1.3 System Split: SGoalDecision + SPlanExecution
+
+Replace `s_ai.gd` with two independent systems.
+
+**SGoalDecision** (runs rate-limited):
+- Query: `CGoapAgent` where `needs_decision == true`
+- For each agent:
+  1. Get sorted goals (priority descending)
+  2. For each unsatisfied goal, call `GoapPlanner.build_plan_for_goal()` with strategic actions (filtered by viability gates)
+  3. If plan found → write to `agent.pending_strategic_action`
+  4. If no plan → apply backoff, try next goal
 - Rate limiting: MAX_DECISIONS_PER_FRAME = 3, DECISION_FRAME_HARD_BUDGET_MS = 3.0
 - LOD-based update intervals preserved
 
-**CGoapAgent changes:**
+**SPlanExecution** (runs every frame):
+- Query: `CGoapAgent` where `active_template != null OR pending_strategic_action != null`
+- For each agent:
+  1. If `pending_strategic_action` exists → abort current template, load new one
+  2. Call `active_template.tick(agent, delta)`
+  3. On COMPLETED → mark `needs_decision = true`
+  4. On FAILED → mark `needs_decision = true`
+  5. On RUNNING → continue next frame
+
+**CGoapAgent component changes:**
 
 ```gdscript
-# New fields
-var pending_plan: GoapPlan = null       # Written by SGoalDecision, consumed by SPlanExecution
-var needs_decision: bool = true         # Set by SPlanExecution when plan completes/fails
+## Layer 1 state (written by SGoalDecision)
+var pending_strategic_action: StrategicAction = null
+var current_goal: GoapGoal = null
+var needs_decision: bool = true
+
+## Layer 2 state (managed by SPlanExecution)  
+var active_template: BehaviorTemplate = null
+var current_step_index: int = 0
+
+## Per-agent action configuration
+@export var allowed_strategic_actions: Array[String] = []
+@export var goals: Array[GoapGoal] = []
 ```
 
-**1-frame plan delivery latency:** A plan produced by SGoalDecision in frame N is consumed by SPlanExecution in frame N+1. At 60fps this is 16ms — negligible compared to the 0.15-0.5s decision interval.
+### 1.4 Action Migration Map
 
-**Eval tool adaptation:** Report two separate metric groups:
+Full migration from current 22 fine-grained actions to strategic actions + template steps:
 
-```
-Execution:
-  actions/frame, action_time_avg, action_time_p99
+| Current Action | → Strategic Action | → Template Step | Notes |
+|---------------|-------------------|-----------------|-------|
+| EatGrass | Feed | FeedFromGrass.step[1] | |
+| MoveToGrass | Feed | FeedFromGrass.step[0] | |
+| HarvestBush | Feed | FeedFromBush.step[1] | |
+| MoveToHarvestable | Feed | FeedFromBush.step[0] | |
+| PickupFood | Feed | FeedFromPile.step[1] | |
+| MoveToFoodPile | Feed | FeedFromPile.step[0] | |
+| FindWorkTarget | Work | WorkCycle.step[0] | |
+| MoveToResourceNode | Work | WorkCycle.step[1] | |
+| GatherResource | Work | WorkCycle.step[2] | |
+| MoveToStockpile | Work | WorkCycle.step[3] | |
+| DepositResource | Work | WorkCycle.step[4] | |
+| Build | Build | BuildCycle.step[0] | Delegates to SBuildWorker |
+| ChaseTarget | FightMelee | MeleeCombat.step[0] | |
+| AttackMelee | FightMelee | MeleeCombat.step[1] | |
+| AdjustShootPosition | FightRanged | RangedCombat.step[0] | |
+| AttackRanged | FightRanged | RangedCombat.step[1] | |
+| Flee | Flee | FleeFromThreat.step[0] | |
+| Wander | Explore | Wander.step[0] | Fix: remove has_threat effect |
+| Patrol | Patrol | PatrolRoute.step[0] | Fix: perform() must complete |
+| ReturnToCamp | Guard | GuardPost.step[0] | |
+| MarchToCampfire | (remove) | — | Unused, no agent assignment |
+| Rest | Rest | RestAction.step[0] | |
 
-Decision:
-  decisions/frame, decision_time_avg, decision_time_p99, planning_time_avg
-```
+**Actions to remove:** MarchToCampfire (no agent uses it), AdjustAttackPosition (redundant with ChaseTarget), React (unused), Idle (replaced by Explore fallback), Search (unused), Defend (merged into FightMelee template logic).
 
-The existing scheduling metrics (`avg_decision_time_ms`, `p99_decision_time_ms`) map directly to the new SGoalDecision metrics.
+### 1.5 Per-Agent Strategic Action Assignments
+
+| Agent Type | Strategic Actions | Count |
+|-----------|------------------|-------|
+| rabbit | Feed, Flee, Explore | 3 |
+| Worker | Feed, Work, Build, Flee | 4 |
+| Guard | FightMelee, FightRanged, Flee, Patrol, Guard, Feed | 6 |
+| Guard_Healer | FightMelee, Flee, Patrol, Guard | 4 |
+| enemy_* | FightMelee, FightRanged, Flee, Explore | 4 |
+| ComposerNPC | Explore, Flee | 2 |
+
+Maximum branching factor: 6 (Guard). With viability gates, effective branching is typically 2-3.
 
 ---
 
-### Phase 4 — Future Direction: Hierarchical Decision Making (Not In Scope)
+## Phase 2 — Eval Tool Adaptation (Priority: Immediate, alongside Phase 1)
 
-Documented here for future reference. Not implemented in this spec.
+The eval tool must be updated to measure the new two-system architecture.
 
-When action count grows to 40+ or goal interdependencies become complex, introduce two decision layers:
+### New Metric Groups
 
 ```
-Strategic Layer (rule-based, O(1)):
-  "What should I be doing?" → selects goal category (feed/fight/work/idle)
-  Runs every 1-5 seconds
-  No planner involvement
+Decision (SGoalDecision):
+  decisions/frame           — how many agents decided per frame
+  decision_time_avg_us      — avg time per decision tick
+  decision_time_p99_us      — tail latency
+  strategic_action_selected — distribution of which actions are chosen
+  viability_gate_skips      — how many actions skipped by gate
+  backoff_skips             — how many goals skipped by backoff
 
-Tactical Layer (GOAP A*):
-  "How do I accomplish this goal?" → plans action chain
-  Runs on demand when strategic layer selects a goal
-  Uses Phase 2 heuristic with per-agent action lists
+Execution (SPlanExecution):
+  templates_active          — how many agents have running templates
+  step_completions/s        — template throughput
+  step_failures/s           — template failure rate
+  template_interruptions/s  — how often higher-priority goals interrupt
+  avg_template_lifetime_s   — how long a template runs before completion/interruption
+
+Planning (GoapPlanner, Layer 1 only):
+  avg_search_time_us        — per A* search (strategic actions only)
+  avg_iterations            — iterations per search
+  plan_found_rate           — success rate
+  max_iterations            — worst case
+
+Cache (if smart cache is implemented in Phase 3):
+  hit_rate, miss_reasons, negative_hits
 ```
 
-**Trigger condition:** Phase 1-3 complete, eval data shows goal selection itself (not planning) is a bottleneck.
+### Updated Performance Budgets
+
+| Metric | Budget | Rationale |
+|--------|--------|-----------|
+| avg_search_time_us | < 50 | 8-12 strategic actions, depth 1-2, should be trivial |
+| avg_iterations | < 10 | Most plans are depth 1 |
+| plan_found_rate | > 90% | Viability gates prevent unsolvable searches |
+| decision_time_avg_us | < 200 | Gate checks + shallow search |
+| decision_time_p99_us | < 1000 | Worst case with full search |
+| step_failures/s | < 1.0 | Templates should rarely fail |
+| template_interruptions/s | < 2.0 | Frequent interruptions indicate goal instability |
+
+### Benchmark Scenarios
+
+Update `goap_planner_bench.gd` to use strategic actions:
+
+| Scenario | Agent | Goal | Expected |
+|----------|-------|------|----------|
+| rabbit/feed | rabbit | feed_self (sees_grass=true) | Feed, 1 step, <5 iter |
+| rabbit/feed_blocked | rabbit | feed_self (sees_grass=false) | gate skip, 0 iter |
+| worker/work | worker | Work (sees_resource=true) | Work, 1 step, <5 iter |
+| guard/combat | guard | EliminateThreat (has_threat=true) | FightMelee or FightRanged, <5 iter |
+| guard/no_threat | guard | EliminateThreat (has_threat=false) | gate skip, 0 iter |
+
+---
+
+## Phase 3 — Smart Cache & Planner Refinements (Priority: Deferred)
+
+Implement **after** Phase 1+2 are validated. Only if eval data shows remaining performance issues.
+
+### 3a. Smart Cache (Unified Positive + Negative, Template Key)
+
+Each goal declares `cache_key_facts: Array[String]` — only these facts appear in the cache key. Positive and negative results share the same cache with a `success: bool` flag.
+
+```
+Cache key format:  goal_name | fact1=val, fact2=val, ...
+                   (only cache_key_facts, not all 26 planning keys)
+
+Cache entry:       { success: bool, plan: GoapPlan or null, stored_frame: int }
+```
+
+feed_self example:
+```
+feed_self | sees_grass=false, sees_food=false, sees_harv=false  → { success: false }
+feed_self | sees_grass=true, sees_food=false, sees_harv=false   → { success: true, plan: Feed }
+```
+
+With 3 binary facts, there are only 8 possible keys. After 8 searches, **every future query is a cache hit**.
+
+### 3b. Delete-Relaxation Heuristic
+
+If A* search over strategic actions still shows high iteration counts (unlikely with 8-12 actions), replace the "count unsatisfied conditions" heuristic with delete-relaxation (FF-style).
+
+Given the expected search space (branching 2-4, depth 1-2), the current heuristic may be sufficient. Validate with eval data before implementing.
+
+### 3c. SAI Goal Backoff
+
+Track consecutive planning failures per goal with exponential backoff: 0.5s → 1s → 2s → cap 5s. Reset when viability-gate-relevant facts change. May not be needed if viability gates + smart cache catch all unsolvable cases.
+
+### 3d. MAX_ITERATIONS Reduction
+
+Reduce from 256 to 32 after validating that all legitimate plans complete in <10 iterations with the new architecture.
+
+---
+
+## Phase 4 — Future Directions (Not In Scope)
+
+Documented for reference. Not implemented in this spec.
+
+### 4a. Hierarchical Life Planner
+
+When agent behavioral complexity grows (40+ strategic actions, schedule-based daily routines), introduce a strategic layer above GOAP:
+
+```
+Schedule Layer (rule-based):
+  "It's morning → Work mode" / "Threat nearby → Combat mode"
+  Runs every 5-10 seconds, selects a behavioral mode
+  
+Tactical Layer (GOAP):
+  Within the selected mode, plan which strategic action to take
+  Runs every 0.5-5 seconds, searches over mode-relevant actions only
+```
+
+### 4b. Contextual Template Selection
+
+Templates can be parameterized based on agent traits or world state:
+
+```
+Fight template for a cautious NPC:  [Assess → Flee if outnumbered → Fight if advantage]
+Fight template for an aggressive NPC: [Charge → Attack → Pursue]
+```
+
+Same strategic action (Fight), different behavioral expression.
+
+### 4c. Effect Pollution Detection Tool
+
+Extend the feasibility checker to detect suspicious effect declarations:
+
+```
+⚠ Wander declares effects = {has_threat: true}
+  → This makes Wander a precondition provider for ChaseTarget, AttackMelee, AttackRanged
+  → In a feed_self search, this injects the entire combat sub-tree
+  Confirm this is intentional? [Y/n]
+```
 
 ---
 
 ## Action Catalog Reference
 
-Full action table as of 2026-04-30. The eval reports 22 registered actions (`available_action_count: 22`); the table below includes 26 known action definitions — 4 may be defined but not yet registered in the global pool (AdjustAttackPosition, Defend, React, Idle). Per-agent action lists (Phase 1b) should reference only registered actions.
+### Current Actions (pre-migration, 22 registered)
 
 | Action | Cost | Preconditions | Effects |
 |--------|------|---------------|---------|
@@ -324,37 +518,89 @@ Full action table as of 2026-04-30. The eval reports 22 registered actions (`ava
 | AttackMelee | 1.0 | `has_threat`, `ready_melee_attack` | `has_threat: false`, `is_safe` |
 | AttackRanged | 1.0 | `has_threat`, `ready_ranged_attack` | `has_threat: false`, `is_safe` |
 | AdjustShootPosition | 1.0 | `has_threat`, `has_weapon`, `attack_range` | `ready_ranged_attack` |
-| AdjustAttackPosition | 1.0 | `has_threat`, `ready_melee_attack` | `ready_melee_attack` |
-| Defend | 1.0 | `has_threat`, `ready_melee_attack` | `is_threat_contained` |
-| React | 1.0 | `has_threat` | `reacted_to_threat` |
-| Search | 5.0 | `heard_threat` ★ | `found_threat` |
 | Flee | 1.0 | `is_low_health` ★ | `is_safe` |
 | Rest | 10.0 | `is_low_energy` ★ | `is_rested` |
-| Wander | 10.0 | (none) | `is_patrolling` (post-fix) |
+| Wander | 10.0 | (none) | `has_threat` ⚠ BUG |
 | MarchToCampfire | 10.0 | (none) | `at_campfire` |
 | Patrol | 1.0 | (none) | `is_patrolling` |
-| Idle | 10.0 | (none) | `is_idle` |
+| ReturnToCamp | 1.0 | (none) | `at_guard_post` |
 
-★ = system-provided fact (written by perception/health/energy systems, not producible by any GOAP action)
+★ = system-provided fact (perception/health/energy, not producible by any action)
+
+### Post-Migration Strategic Actions (Layer 1)
+
+| Action | Cost | Preconditions | Effects | Viability Gate |
+|--------|------|---------------|---------|----------------|
+| Feed | 3.0 | `is_fed: false` | `is_fed: true` | sees_grass OR sees_food_pile OR sees_harvestable |
+| Work | 5.0 | `has_delivered: false` | `has_delivered: true` | sees_resource_node |
+| Build | 5.0 | `build_done: false` | `build_done: true` | (always) |
+| FightMelee | 2.0 | `has_threat: true` | `has_threat: false, is_safe: true` | has_threat |
+| FightRanged | 2.0 | `has_threat: true, has_shooter_weapon: true` | `has_threat: false, is_safe: true` | has_threat AND has_shooter_weapon |
+| Flee | 1.0 | (none) | `is_safe: true` | has_threat OR is_low_health |
+| Patrol | 5.0 | `is_guard: true` | `is_patrolling: true` | is_guard |
+| Guard | 5.0 | `is_guard: true` | `at_guard_post: true` | is_guard |
+| Rest | 8.0 | `is_low_energy: true` | `is_rested: true` | is_low_energy |
+| Explore | 10.0 | (none) | `is_exploring: true` | (always) |
+
+---
+
+## World State Fact Inventory
+
+### System-Provided Facts (written by perception/health/energy systems)
+
+| Fact | Source System | Purpose |
+|------|-------------|---------|
+| `sees_grass` | SPerception | Grass in vision range |
+| `sees_food_pile` | SPerception | Food pile in vision range |
+| `sees_harvestable` | SPerception | Harvestable bush in vision range |
+| `sees_resource_node` | SPerception | Resource node in vision range |
+| `sees_stockpile` | SPerception | Stockpile in vision range |
+| `has_threat` | SSemanticTranslation | Hostile entity visible |
+| `is_safe` | SSemanticTranslation | No threat in safety radius |
+| `is_low_health` | SSemanticTranslation | HP below threshold |
+| `has_shooter_weapon` | SSemanticTranslation | Has ranged weapon component |
+| `is_guard` | SSemanticTranslation | Has guard component |
+| `is_low_energy` | SSemanticTranslation | Energy below threshold |
+
+### Action-Managed Facts (written by template steps during execution)
+
+| Fact | Updated By | Purpose |
+|------|-----------|---------|
+| `is_fed` | EatGrass, HarvestBush, PickupFood steps | Hunger satisfied |
+| `has_delivered` | DepositResource step | Work cycle complete |
+| `build_done` | SBuildWorker system | Construction complete |
+| `is_patrolling` | Patrol step | On patrol route |
+| `at_guard_post` | ReturnToCamp step | At assigned post |
+| `is_rested` | Rest step | Energy restored |
+| `is_exploring` | Wander step | Exploring/idle |
 
 ---
 
 ## Verification Strategy
 
-Run `gol test goap --json --duration=60` after each phase. Compare against baseline:
+### Phase 1+2 Validation (run after architecture migration)
 
-| Metric | Baseline | Phase 1 Target | Phase 2 Target | Phase 3 Target |
-|--------|----------|---------------|---------------|---------------|
-| avg_search_time_us | 12,862 | < 2,000 | < 100 | < 100 |
-| avg_iterations | 246.3 | < 100 | < 15 | < 15 |
-| cache_hit_rate | 3.2% | > 50% | > 75% | > 75% |
-| plan_found_rate | 3.8% | > 60% | > 85% | > 85% |
-| p99_decision_time_ms | 18.26 | < 5.0 | < 3.0 | < 3.0 |
-| avg_decision_time_ms | 2.80 | < 1.5 | < 1.0 | < 1.0 |
-| thrash_rate | 1.2% | < 5% | < 5% | < 5% |
+`gol test goap --json --duration=60`
 
-Phase 3 targets are same as Phase 2 — the architecture split should not regress performance. The split enables better profiling granularity (separate decision vs execution metrics) for future optimization.
+| Metric | Baseline | Phase 1+2 Target |
+|--------|----------|-----------------|
+| avg_search_time_us | 12,862 | < 50 |
+| avg_iterations | 246.3 | < 10 |
+| plan_found_rate | 3.8% | > 90% |
+| decision_time_avg_us | 2,800 | < 200 |
+| decision_time_p99_us | 18,260 | < 1,000 |
+| step_failures/s | N/A | < 1.0 |
 
-### Known Issue: Patrol Action
+### Phase 3 Validation (run after cache/heuristic changes, if implemented)
 
-`patrol.gd` always returns `false` from `perform()`, never completing. Effects declare `is_patrolling: true` but are never applied. This violates the GOAP completion contract. Fix is out of scope for this spec but should be tracked separately.
+Only proceed with Phase 3 items if Phase 1+2 targets are not fully met, or if profiling reveals specific remaining bottlenecks.
+
+### Known Issues to Fix During Migration
+
+| Issue | Fix | Phase |
+|-------|-----|-------|
+| Wander effects `has_threat: true` bug | Remove — Explore strategic action uses `is_exploring` | 1 |
+| Patrol `perform()` never returns true | Fix in PatrolRoute template step | 1 |
+| MarchToCampfire unused | Remove entirely | 1 |
+| Failed plans not cached | Addressed by smart cache if needed | 3 |
+| SAI no backoff on failure | Addressed by backoff if needed | 3 |
