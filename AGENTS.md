@@ -80,16 +80,16 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 | Stop game/editor | `gol stop` | `pkill godot` / manual kill |
 | Run unit tests | `gol test unit` | `godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd ...` |
 | Run integration tests | `gol test integration` | `godot --headless --path . --scene scenes/tests/test_main.tscn ...` |
-| Run all tests | `gol test` | Both unit + integration |
+| Run all tests | `gol test --all` | Both unit + integration |
 | Run specific suites | `gol test unit --suite pcg,ai` | Run only pcg + ai unit tests |
-| Run tests with detail | `gol test --verbose` | Full suite table + raw gdunit4 output |
+| Run tests with detail | `gol test unit --verbose` | Full suite table + raw gdunit4 output |
 | Run suites verbosely | `gol test unit --suite system -v` | Detailed output for system tests only |
 | Reimport assets | `gol reimport` | `godot --headless --import --path .` |
 | Debug commands | `gol debug <cmd>` | `node ai-debug/ai-debug.mjs <cmd>` |
 | Debug screenshot | `gol debug screenshot` | `node ai-debug/ai-debug.mjs screenshot` |
 | Debug eval | `gol debug eval <expr>` | `node ai-debug/ai-debug.mjs eval <expr>` |
 | Debug script | `gol debug script <file>` | `node ai-debug/ai-debug.mjs script <file>` |
-| Error/parse check | `gol test` | `godot --headless --quit --path . 2>&1 \| grep ...` |
+| Error/parse check | `gol test unit` | `godot --headless --quit --path . 2>&1 \| grep ...` |
 
 ### Argument Pass-Through
 
@@ -158,7 +158,13 @@ Main agents NEVER write, run, or playtest directly. Always dispatch via skill:
 
 Shell hooks enforce tier isolation (wrong base class = blocked).
 
-**Running all tests:** `gol test` (simplified output by default — failures + summary only). Use `--verbose` for full suite table. Use `--suite pcg,ai` to run only specific test suites.
+**Running tests:** `gol test` requires an explicit tier (`unit` or `integration`) or `--all`. Use `--verbose` for full suite table and slow-test warnings. Use `--suite pcg,ai` to run only specific test suites.
+
+Examples:
+- `gol test unit` — run unit tests only
+- `gol test integration` — run integration tests only
+- `gol test --all` — run both unit and integration
+- `gol test unit --suite ai,system -v` — verbose, filtered to ai + system suites
 
 ### CI/CD
 
