@@ -142,19 +142,20 @@ Three-tier test architecture (unit / integration / playtest). See `gol-project/t
 
 **v4 Test Harness — subagent-driven (two skills):**
 
-Main agents NEVER write, run, or playtest directly. Always dispatch via skill:
+Main agents NEVER write tests or playtest directly. Fast unit-test execution is allowed directly through `gol test unit`; integration, all-test, and playtest work still dispatch via skill:
 
 1. Load the appropriate skill
 2. Determine tier from decision matrix
-3. Dispatch subagent with the matching prompt template
+3. For quick unit tests, run `gol test unit` directly; otherwise dispatch subagent with the matching prompt template
 4. Receive report, decide next action
 
 | Need | Skill | Tier → Prompt | Model |
 |------|-------|---------------|-------|
 | Write unit test | gol-test-writer | unit → unit-prompt.md | sonnet |
 | Write integration test | gol-test-writer | integration → integration-prompt.md | sonnet |
-| Run existing tests | gol-test-runner | runner → runner-prompt.md | haiku |
-| Verify feature in game (playtest) | gol-test-runner | playtest → playtest-prompt.md | sonnet |
+| Run quick unit tests | gol-test-runner | direct `gol test unit` | main agent |
+| Run integration/all tests | gol-test-runner | runner → runner-prompt.md | haiku / OMO quick |
+| Verify feature in game (playtest) | gol-test-runner | playtest → playtest-prompt.md | haiku / OMO unspecified-low |
 
 Shell hooks enforce tier isolation (wrong base class = blocked).
 
