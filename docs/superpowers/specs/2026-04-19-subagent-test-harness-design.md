@@ -4,6 +4,8 @@
 **Status:** Draft
 **Scope:** Unified test skill architecture + ai-debug enhancements + playtest tier
 
+> Current usage note (2026-05-02): this design predates the `gol` CLI wrapper becoming the supported AI surface. Use `gol run game`, `gol stop`, `gol debug ...`, and `gol debug input ...` in current prompts. Raw `node ai-debug.mjs boot/teardown` references below are historical design context.
+
 ## Problem
 
 The current test harness (v3) has three issues:
@@ -130,25 +132,26 @@ New content:
 
 **Identity:** You are a playtester for God of Lego. You verify game features by running the game and interacting with it via the AI debug bridge.
 
-**Tools:** `ai-debug.mjs` is your only Godot interaction tool. Located at `<CWD>/gol-tools/ai-debug/ai-debug.mjs`. Full subcommand reference:
+**Tools:** `gol` is your only Godot interaction tool. Use `gol debug help` for the live debug command list. Core playtest commands:
 
 | Command | Purpose |
 |---------|---------|
-| `boot [--path <dir>]` | Kill existing Godot, reimport if needed, launch, poll until ready |
-| `teardown` | Clean kill of Godot |
-| `console <cmd>` | Run a debug console command |
-| `get <key>` | Get game state (player.pos, player.hp, time, entity_count) |
-| `set <key> <value>` | Set game state |
-| `screenshot` | Capture screenshot, returns file path |
-| `eval <expr>` | Evaluate GDScript expression |
-| `script <file>` | Execute a GDScript file |
-| `spawn <recipe> [count] [x] [y]` | Spawn entities |
-| `recipes [filter]` | List available recipes |
+| `gol run game --detach -- --skip-menu` | Launch game for agent-friendly playtest |
+| `gol stop` | Clean kill of Godot |
+| `gol debug console <cmd>` | Run a debug console command |
+| `gol debug get <key>` | Get game state (player.pos, player.hp, time, entity_count) |
+| `gol debug set <key> <value>` | Set game state |
+| `gol debug screenshot` | Capture screenshot, returns file path |
+| `gol debug eval <expr>` | Evaluate GDScript expression |
+| `gol debug input <op> [action]` | Simulate player input (`actions`, `tap`, `press`, `release`, `hold`) |
+| `gol debug script <file>` | Execute a GDScript file from `.debug/scripts/` |
+| `gol debug spawn <recipe> [count] [x] [y]` | Spawn entities |
+| `gol debug recipes [filter]` | List available recipes |
 
 **Workflow:**
-1. Boot: `node ai-debug.mjs boot --path <project-path>`
+1. Boot: `gol run game --detach -- --skip-menu`
 2. Verify: use commands above to verify the feature. You decide which commands, what state to check, what screenshots to take.
-3. Teardown: `node ai-debug.mjs teardown` — always, even on failure.
+3. Teardown: `gol stop` — always, even on failure.
 
 **Verification approach:** You receive a feature-level description. You design the verification — which commands to run, what state to check before and after, what screenshots to capture. Use your knowledge of game mechanics (ECS, components, systems) to design meaningful checks.
 

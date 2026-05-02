@@ -1,5 +1,7 @@
 # 集成测试框架端到端验证方案
 
+> Current usage note (2026-05-02): this historical validation plan predates the `gol` CLI wrapper. For current AI workflows, use `gol test integration`, `gol run game`, `gol stop`, and `gol debug ...` instead of direct Godot binary or raw `node ai-debug.mjs` commands.
+
 > **目标：** 从用户视角全面验证新的 Config-Driven 集成测试框架的功能、边界和健壮性。
 > **性质：** 纯测试方案，不涉及代码编写。按测试场景执行并记录结果。
 > **前置条件：** `002` 和 `003` 计划均已完成实施。

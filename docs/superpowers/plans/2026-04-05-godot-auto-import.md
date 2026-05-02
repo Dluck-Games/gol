@@ -899,7 +899,7 @@ Expected: All tests PASS.
 
 ```bash
 cd gol
-node gol-tools/ai-debug/ai-debug.mjs reimport gol-project
+gol reimport gol-project
 ```
 
 Expected: Import completes, `.godot/` exists, no errors.

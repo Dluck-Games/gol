@@ -119,11 +119,11 @@ Candidate explanations (ordered by static-analysis plausibility):
 
 ## Proposed diagnostic script (not yet saved to disk)
 
-To be run via AI Debug Bridge (`node gol-tools/ai-debug/ai-debug.mjs script scripts/debug/debug_stuck_enemy.gd`) **at the moment the bug is observed live**. Dumps everything relevant to disambiguate (a)-(e) above.
+To be run via AI Debug Bridge (`gol debug script .debug/scripts/debug_stuck_enemy.gd`) **at the moment the bug is observed live**. Dumps everything relevant to disambiguate (a)-(e) above. Debug scripts should live in the management repo's `.debug/scripts/` sandbox, not under `gol-project/scripts/`.
 
 ```gdscript
-# scripts/debug/debug_stuck_enemy.gd
-# Usage: node gol-tools/ai-debug/ai-debug.mjs script scripts/debug/debug_stuck_enemy.gd
+# .debug/scripts/debug_stuck_enemy.gd
+# Usage: gol debug script .debug/scripts/debug_stuck_enemy.gd
 # Picks the enemy nearest the player and dumps everything relevant to the stuck-enemy bug.
 
 extends Node

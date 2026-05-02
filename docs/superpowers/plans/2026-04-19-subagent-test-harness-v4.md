@@ -1,5 +1,7 @@
 # Subagent-Driven Test Harness v4 — Implementation Plan
 
+> Current usage note (2026-05-02): this historical plan predates the `gol` CLI wrapper becoming the supported AI surface. Current playtest flows use `gol run game`, `gol stop`, `gol debug ...`, and `gol debug input ...`; raw `node ai-debug.mjs boot/teardown` references below are superseded.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Restructure the test harness from three separate skills into two subagent-driven skills (gol-test-writer, gol-test-runner), add `boot`/`teardown` commands and `--path` support to ai-debug, migrate foreman off shell wrappers, and retire obsolete files.

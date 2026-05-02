@@ -75,7 +75,7 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 | Run game (windowed) | `gol run game --windowed` | `godot --path . --windowed` |
 | Run game (skip menu) | `gol run game --windowed -- --skip-menu` | Direct to gameplay |
 | Run game (detached) | `gol run game --detach` | `godot --headless --path . &` |
-| Run game (detached, windowed) | `gol --detach --windowed` | `godot --path . --windowed &` |
+| Run game (detached, windowed) | `gol run game --detach --windowed` | `godot --path . --windowed &` |
 | Run editor | `gol run editor` | `godot --editor --path .` |
 | Stop game/editor | `gol stop` | `pkill godot` / manual kill |
 | Run unit tests | `gol test unit` | `godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd ...` |
@@ -89,6 +89,7 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 | Debug screenshot | `gol debug screenshot` | `node ai-debug/ai-debug.mjs screenshot` |
 | Debug eval | `gol debug eval <expr>` | `node ai-debug/ai-debug.mjs eval <expr>` |
 | Debug script | `gol debug script <file>` | `node ai-debug/ai-debug.mjs script <file>` |
+| Debug input injection | `gol debug input <op> [action]` | Temporary debug scripts for basic player input |
 | Error/parse check | `gol test unit` | `godot --headless --quit --path . 2>&1 \| grep ...` |
 
 ### Argument Pass-Through
@@ -110,7 +111,7 @@ All test commands (`gol test unit`, `gol test integration`, `gol test`) automati
 `--detach` launches the game in the background, redirects all output to a log file, and returns immediately. This is designed for **AI agents** whose Bash tool blocks on streaming stdout.
 
     gol run game --detach
-    gol --detach --windowed -- --skip-menu
+    gol run game --detach --windowed -- --skip-menu
 
 When detached, the command prints the PID and log file path, then exits:
 

@@ -1,5 +1,7 @@
 # AI Debug Screenshot Upgrade — Design Spec
 
+> Current usage note (2026-05-02): examples in this historical protocol spec may use raw `node ai-debug.mjs`. For current AI workflows, use the supported wrapper: `gol debug screenshot`, `gol debug <cmd> --screenshot`, and `gol debug fetch <capture_id>`.
+
 ## Problem
 
 The current ai-debug screenshot tool has two usability issues:

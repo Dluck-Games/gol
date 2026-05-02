@@ -27,6 +27,11 @@ The `gol` CLI is your only Godot interaction tool. It handles path resolution, P
 | `gol debug set <key> <value>` | Set game state |
 | `gol debug screenshot` | Capture screenshot, returns file path |
 | `gol debug eval <expr>` | Evaluate GDScript expression |
+| `gol debug input actions` | List injectable player/gameplay actions |
+| `gol debug input tap <action>` | Press an action for one frame, then release |
+| `gol debug input press <action>` | Press and hold an action until released |
+| `gol debug input release <action>` | Release a previously pressed action |
+| `gol debug input hold <action> <seconds>` | Hold an action for a duration |
 | `gol debug script <file>` | Execute a GDScript file |
 | `gol debug spawn <recipe> [count] [x] [y]` | Spawn entities |
 | `gol debug refresh [what]` | Refresh game data (recipes, config, ui, all) |
@@ -53,6 +58,8 @@ Use the commands above to verify the feature. You decide:
 - How many frames/seconds to wait between actions
 
 Use your knowledge of game mechanics (ECS, components, systems) to design meaningful checks. Don't just check existence — verify behavior and state transitions.
+
+For player-driven features, prefer `gol debug input ...` over temporary script injection. Use scripts only when you need multi-step inspection or state setup that cannot be expressed with debug commands. Example: capture `player.pos`, run `gol debug input hold player_right 0.5`, then confirm the position changed.
 
 ### 3. Teardown
 

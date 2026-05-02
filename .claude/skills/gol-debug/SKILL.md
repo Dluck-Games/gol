@@ -1,11 +1,11 @@
 ---
 name: gol-debug
-description: AI Debug Bridge for God of Lego - Execute debug commands, capture screenshots, run GDScript, refresh game assets, and profile performance
+description: AI Debug Bridge for God of Lego - Execute debug commands, inject player input, capture screenshots, run GDScript, refresh game assets, and profile performance
 ---
 
 # gol-debug
 
-AI debugging toolkit - capture screenshots, execute commands, run scripts, control game state, refresh assets, profile performance.
+AI debugging toolkit - capture screenshots, execute commands, inject player input, run scripts, control game state, refresh assets, profile performance.
 
 > When debugging, prefer `gol run game` (headless) over `--windowed`. Headless is faster, uses less resources, and allows `gol debug` commands for inspection.
 
@@ -18,6 +18,7 @@ AI debugging toolkit - capture screenshots, execute commands, run scripts, contr
 | Expression Evaluation | `gol debug eval <expr>` |
 | Get State | `gol debug get <property>` |
 | Set State | `gol debug set <prop> <val>` |
+| Inject Input | `gol debug input <op> [action]` |
 | Run Script | `gol debug script <file.gd>` |
 | Refresh Assets | `gol debug refresh [what]` |
 | Reimport | `gol reimport` |
@@ -31,7 +32,7 @@ AI debugging toolkit - capture screenshots, execute commands, run scripts, contr
 ## Screenshots
 
 ```bash
-cd /Users/dluckdu/Documents/Github/gol
+cd /Users/dluck/Documents/GitHub/gol/gol-project
 gol debug screenshot
 ```
 
@@ -96,6 +97,31 @@ gol debug eval "1 + 1"
 # Note: Variable access is limited
 ```
 
+### Simulate Player Input
+
+Use input injection when the AI needs to operate the live game like a player instead of mutating state directly.
+
+```bash
+# Discover available project actions
+gol debug input actions
+
+# One-frame action, good for interact/build_menu/player_fire
+gol debug input tap interact
+
+# Hold movement or another action across multiple observations
+gol debug input press player_right
+gol debug get player.pos
+gol debug input release player_right
+
+# Press and release after a duration
+gol debug input hold player_down 1.5
+
+# Command-specific help
+gol debug help input
+```
+
+`input` calls both Godot `Input.action_press/action_release` and the game's `Service_Input.simulate_action_pressed/simulate_action_released`, so it works for systems reading `Input.is_action_*` and systems consuming `ServiceContext.input()` events. Invalid action names return an error and non-zero exit code.
+
 ## Performance Profiling
 
 Collect runtime performance data from the running game. Returns JSON for agent parsing.
@@ -148,7 +174,7 @@ System timing data (`execution_time_ms`, `entity_count` per system) requires `EC
 
 ```bash
 # Repository root path (management repo)
-# macOS: /Users/dluckdu/Documents/Github/gol/
+# macOS: /Users/dluck/Documents/GitHub/gol/
 # The sandbox directory: <repo-root>/.debug/scripts/
 ```
 
@@ -232,7 +258,7 @@ gol debug refresh all
 Used to resolve uid file update issues or reimport after resource changes:
 
 ```bash
-gol debug reimport
+gol reimport
 ```
 
 ## How It Works
