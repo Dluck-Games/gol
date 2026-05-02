@@ -83,5 +83,5 @@ Animation definitions live in `gol-project/resources/sprite_frames/`:
 |----------|-----------|
 | `player.tres` | death (22f@14fps), idle (2f@2fps), walk (4f@7fps) |
 | `enemy.tres` | idle (2f@2fps), walk (4f@7fps) |
-| `claw.tres` | (empty — needs animation setup) |
+| `claw.tres` | slash (7f@28fps, non-looping) |
 | `campfire.tres` | (empty — needs animation setup) |
