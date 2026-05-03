@@ -5,7 +5,7 @@ description: "Production pixel art asset creation pipeline for God of Lego. Use 
 
 # gol-pixel-art
 
-AI-driven pipeline that generates concept art (GPT semi-manual / Gemini Nano Banana / ComfyUI) and produces production-ready pixel art through a normalize-first workflow. The default path is GPT semi-manual: the agent prepares an optimized prompt, the user generates/downloads the image in ChatGPT, then the agent continues with normalization. Automatic Gemini and ComfyUI paths remain available when requested.
+AI-driven pipeline that generates concept art (CodeBuddy ImageGen / GPT semi-manual / GPT assisted by Playwright / Gemini Nano Banana / ComfyUI) and produces production-ready pixel art through a normalize-first workflow. The default path is CodeBuddy ImageGen because it is low-cost and quota-friendly: the agent runs the local CodeBuddy CLI with Gemini 3 Pro as the agent model and Gemini 3.1 Flash Image as the text-to-image model, then continues with normalization. GPT semi-manual, Gemini, and ComfyUI paths remain available when requested.
 
 ## When to Use
 
@@ -17,9 +17,9 @@ AI-driven pipeline that generates concept art (GPT semi-manual / Gemini Nano Ban
 ## Pipeline Overview
 
 ```
-1. CHOOSE CONCEPT PATH — default GPT semi-manual; optional Gemini or ComfyUI automatic
+1. CHOOSE CONCEPT PATH — default CodeBuddy ImageGen; optional GPT semi-manual, Gemini, or ComfyUI
 2. CONCEPT — image saved to gol-arts/artworks/<name>.original.png
-3. NORMALIZE — Downscale + palette map + Aseprite indexed → gol-arts/assets/<name>.aseprite
+3. NORMALIZE — Downscale + either source colors or indexed palette → gol-arts/assets/<name>.aseprite
 4. EVALUATE — Automated quality checks → PASS or FAIL
 5. TOUCH-UP (if needed) — Human opens .aseprite, edits manually
 6. EXPORT (user-invoked) — Export .aseprite to production PNG → gol-project/assets/
@@ -27,13 +27,39 @@ AI-driven pipeline that generates concept art (GPT semi-manual / Gemini Nano Ban
 
 ## Concept Path Choice
 
-When this skill is triggered for art creation, ask the user which concept-generation path to use unless they already specified one. Use the interactive question tool when available. Present these choices in this order, with GPT semi-manual as the default/recommended option:
+When this skill is triggered for art creation, ask the user which concept-generation path to use unless they already specified one. Use the interactive question tool when available. Present these choices in this order, with CodeBuddy ImageGen as the default/recommended option:
 
-1. **GPT semi-manual (default)** — Agent prints an optimized prompt and ChatGPT link. User manually generates the image with their GPT Pro subscription, downloads it, and saves it to the target `gol-arts/artworks/<name>.original.png` path. This avoids API costs and browser automation.
-2. **Gemini Nano Banana automatic** — Agent runs the Gemini backend (`--backend gemini`) using `GEMINI_API_KEY`. Use when the user wants a fully automatic cloud path.
-3. **ComfyUI automatic** — Agent runs local ComfyUI (`--backend comfyui`) with the Sprites_64 LoRA. Use when the local server and model stack are ready.
+1. **CodeBuddy ImageGen (default)** — Agent runs the local CodeBuddy CLI through `--backend codebuddy`. It uses `gemini-3.1-pro` as the CodeBuddy agent model and `gemini-3.1-flash-image` as the text-to-image model by default. Use this first because it is low-cost and quota-friendly.
+2. **GPT semi-manual** — Agent prints an optimized prompt and ChatGPT link. When the user asks to open or submit ChatGPT prompts, use the `playwright` skill to open ChatGPT, verify login state, and submit the prompt; stop for user login if ChatGPT requires authentication. The user downloads the image and saves it to the target `gol-arts/artworks/<name>.original.png` path. This avoids API costs while still allowing browser-assisted prompting.
+3. **Gemini Nano Banana automatic** — Agent runs the Gemini backend (`--backend gemini`) using `GEMINI_API_KEY`. Use when the user wants a fully automatic cloud path.
+4. **ComfyUI automatic** — Agent runs local ComfyUI (`--backend comfyui`) with the Sprites_64 LoRA. Use when the local server and model stack are ready.
 
-If the user gives no preference, use GPT semi-manual. If the user says Gemini, Nano Banana, 纳米香蕉, 纳米橡胶, or automatic cloud generation, use `--backend gemini`. If the user says ComfyUI or local generation, use `--backend comfyui`.
+If the user gives no preference, use CodeBuddy ImageGen. If the user says CodeBuddy, CB, ImageGen, or low-cost generation, use `--backend codebuddy`. If the user says GPT, ChatGPT, browser-assisted, or manual handoff, use `--backend gpt`. If the user says Gemini, Nano Banana, 纳米香蕉, 纳米橡胶, or automatic cloud generation, use `--backend gemini`. If the user says ComfyUI or local generation, use `--backend comfyui`.
+
+## CodeBuddy ImageGen Flow
+
+Use this default flow when no other concept source is requested:
+
+1. Run `concept NAME --type TYPE --backend codebuddy --prompt "..."`. The backend writes the prompt to `gol-arts/artworks/<name>.prompt`, runs local CodeBuddy ImageGen, and saves the generated image as `gol-arts/artworks/<name>.original.png`.
+2. Default models are `GOL_CODEBUDDY_MAIN_MODEL=gemini-3.1-pro` and `GOL_CODEBUDDY_IMAGE_MODEL=gemini-3.1-flash-image`. Override only when the user asks or the default model is unavailable.
+3. The backend uses `--allowedTools ImageGen`; do not replace it with `--tools ImageGen`, because `ImageGen` is a deferred CodeBuddy tool that must remain discoverable.
+4. Continue with `normalize NAME --type TYPE` after the `.original.png` file exists.
+
+Reference: `docs/reports/2026-05-03-codebuddy-image-generation-cli.md`.
+
+## GPT + Playwright Assisted Flow
+
+Use this optional flow when the user wants the agent to open ChatGPT URLs, paste prompts, or submit image-generation requests directly:
+
+1. Run `concept NAME --type TYPE --backend gpt --prompt "..."` first so the `.prompt` file and exact `.original.png` target path are recorded.
+2. Load the `playwright` skill before any browser interaction.
+3. Open `https://chatgpt.com/` or the generated `https://chatgpt.com/?q=...` URL.
+4. Check whether ChatGPT is logged in and image generation is available. If the page shows login/register prompts, stop and ask the user to log in; do not try to handle credentials.
+5. Submit one prompt per chat or tab. Keep the mapping between chat, asset name, and target path explicit.
+6. After generation, ask the user to download each PNG to the exact target path unless a safe direct browser download path is available.
+7. Continue with `normalize NAME --type TYPE` only after the `.original.png` file exists in `gol-arts/artworks/`.
+
+Playwright login state usually persists within the same browser profile, but it is not a durable contract. Be ready to pause for login again if the MCP browser session or ChatGPT cookies are reset.
 
 ## Source File Structure
 
@@ -52,6 +78,7 @@ Art source files are version-controlled in `gol-arts/` (Git LFS). Production PNG
 ## Prerequisites
 
 - **Aseprite**: `/Applications/Aseprite.app/Contents/MacOS/aseprite` (installed via DMG)
+- **CodeBuddy backend**: local `codebuddy` or `cbc` CLI authenticated and able to run `ImageGen`. Optional overrides: `CODEBUDDY_BIN`, `GOL_CODEBUDDY_MAIN_MODEL`, `GOL_CODEBUDDY_IMAGE_MODEL`.
 - **ComfyUI**: `/Applications/ComfyUI.app/` with Sprites_64.safetensors LoRA
 - **GPT semi-manual backend**: GPT Pro subscription in ChatGPT; no API key required because the user generates/downloads the image manually
 - **Gemini backend**: `GEMINI_API_KEY` env var (set in `.env` at project root). Get key: https://aistudio.google.com/apikey
@@ -60,16 +87,17 @@ Art source files are version-controlled in `gol-arts/` (Git LFS). Production PNG
 ## Quick Start
 
 ```bash
-# Step 1: Prepare GPT semi-manual concept prompt (default backend)
+# Step 1: Generate concept with CodeBuddy ImageGen (default backend)
 node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate"
-# → prints ChatGPT instructions; user saves downloaded image to gol-arts/artworks/wood_box.original.png
+# → saves gol-arts/artworks/wood_box.original.png + wood_box.prompt
 
-# Automatic alternatives, only when requested:
+# Alternatives, only when requested:
+node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate" --backend gpt
 node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate" --backend gemini
 node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate" --backend comfyui
 
-# Step 2: Normalize (downscale + palette map — produces .aseprite)
-node gol-tools/pixel-art/pixel-art.mjs normalize wood_box --type box
+# Step 2: Normalize (source colors by default for material fidelity)
+node gol-tools/pixel-art/pixel-art.mjs normalize wood_box --type box --preserve-colors
 # → saves gol-arts/assets/sprites/boxes/wood_box.aseprite + .preview.png
 
 # Step 3: (Optional) Touch up in Aseprite
@@ -82,12 +110,13 @@ node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/sprites/boxes/wood
 
 ## Normalize Command
 
-`normalize` is the primary workflow. It takes a concept PNG and runs it through the simplified production pipeline: Python BOX downsample → Aseprite CIELAB palette mapping → indexed `.aseprite` output.
+`normalize` is the primary workflow. It takes a concept PNG and runs it through the simplified production pipeline: background removal → content crop/pad → downscale → Aseprite `.aseprite` output. Prefer `--preserve-colors` for material assets so the sprite keeps source-derived colors instead of being forced into the GOL 10-color palette.
 
-- **What it does:** Converts concept art into a production-ready indexed sprite, including automatic background removal for common AI-generated white, gray, or checkerboard backgrounds.
-- **Options:** Use `--no-outline` to skip outline generation.
+- **What it does:** Converts concept art into a production-ready sprite, including automatic background removal for common AI-generated white, gray, or checkerboard backgrounds.
+- **Options:** Use `--preserve-colors` to keep source colors; omit it only when exact GOL indexed palette mapping is desired. Use `--resampling nearest` when the concept is already crisp pixel art; use `--resampling box` for smoother downsampling. Use `--no-outline` to skip outline generation.
 - **Output:** Writes `gol-arts/assets/<type>/NAME.aseprite` and `NAME.preview.png`.
 - **Background removal:** Detects and removes AI-generated backgrounds automatically via corner-based flood fill before palette mapping.
+- **Quality gate:** The preview must read correctly at target size. If resize/normalize output loses identity, do a source-referenced hand pixel pass instead of accepting the automated result.
 
 ## Export Command
 
@@ -115,9 +144,10 @@ The export command takes one argument: the path to an `.aseprite` file in `gol-a
 
 ## GOL Art Style
 
-- Muted, desaturated palette (10 colors only)
+- Muted, desaturated palette guided by the GOL reference palette
+- Source-derived colors are allowed when exact palette mapping harms readability or material identity
 - Game Boy-style indie pixel art aesthetic
-- 3-5 tones per sprite, no gradients
+- Compact local palette per sprite, no gradients
 - Strong silhouette, simple geometric shapes
 - No dithering — flat, clean colors
 - Transparent background (RGBA PNG)
