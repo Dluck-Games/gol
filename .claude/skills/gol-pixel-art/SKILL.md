@@ -5,7 +5,7 @@ description: "Production pixel art asset creation pipeline for God of Lego. Use 
 
 # gol-pixel-art
 
-AI-driven pipeline that generates concept art (Gemini/ComfyUI) and produces production-ready pixel art through a normalize-first workflow. The primary path now converts concept art into indexed `.aseprite` source files automatically via downscale + palette mapping, with manual Aseprite touch-ups only when evaluation finds issues or extra polish is needed.
+AI-driven pipeline that generates concept art (GPT semi-manual / Gemini Nano Banana / ComfyUI) and produces production-ready pixel art through a normalize-first workflow. The default path is GPT semi-manual: the agent prepares an optimized prompt, the user generates/downloads the image in ChatGPT, then the agent continues with normalization. Automatic Gemini and ComfyUI paths remain available when requested.
 
 ## When to Use
 
@@ -17,12 +17,23 @@ AI-driven pipeline that generates concept art (Gemini/ComfyUI) and produces prod
 ## Pipeline Overview
 
 ```
-1. CONCEPT — AI generates concept image → gol-arts/artworks/
-2. NORMALIZE — Downscale + palette map + Aseprite indexed → gol-arts/assets/<type>/
-3. EVALUATE — Automated quality checks → PASS or FAIL
-4. TOUCH-UP (if needed) — Human opens .aseprite, edits manually
-5. EXPORT (user-invoked) — Export .aseprite to production PNG → gol-project/assets/
+1. CHOOSE CONCEPT PATH — default GPT semi-manual; optional Gemini or ComfyUI automatic
+2. CONCEPT — image saved to gol-arts/artworks/<name>.original.png
+3. NORMALIZE — Downscale + palette map + Aseprite indexed → gol-arts/assets/<name>.aseprite
+4. EVALUATE — Automated quality checks → PASS or FAIL
+5. TOUCH-UP (if needed) — Human opens .aseprite, edits manually
+6. EXPORT (user-invoked) — Export .aseprite to production PNG → gol-project/assets/
 ```
+
+## Concept Path Choice
+
+When this skill is triggered for art creation, ask the user which concept-generation path to use unless they already specified one. Use the interactive question tool when available. Present these choices in this order, with GPT semi-manual as the default/recommended option:
+
+1. **GPT semi-manual (default)** — Agent prints an optimized prompt and ChatGPT link. User manually generates the image with their GPT Pro subscription, downloads it, and saves it to the target `gol-arts/artworks/<name>.original.png` path. This avoids API costs and browser automation.
+2. **Gemini Nano Banana automatic** — Agent runs the Gemini backend (`--backend gemini`) using `GEMINI_API_KEY`. Use when the user wants a fully automatic cloud path.
+3. **ComfyUI automatic** — Agent runs local ComfyUI (`--backend comfyui`) with the Sprites_64 LoRA. Use when the local server and model stack are ready.
+
+If the user gives no preference, use GPT semi-manual. If the user says Gemini, Nano Banana, 纳米香蕉, 纳米橡胶, or automatic cloud generation, use `--backend gemini`. If the user says ComfyUI or local generation, use `--backend comfyui`.
 
 ## Source File Structure
 
@@ -42,15 +53,20 @@ Art source files are version-controlled in `gol-arts/` (Git LFS). Production PNG
 
 - **Aseprite**: `/Applications/Aseprite.app/Contents/MacOS/aseprite` (installed via DMG)
 - **ComfyUI**: `/Applications/ComfyUI.app/` with Sprites_64.safetensors LoRA
+- **GPT semi-manual backend**: GPT Pro subscription in ChatGPT; no API key required because the user generates/downloads the image manually
 - **Gemini backend**: `GEMINI_API_KEY` env var (set in `.env` at project root). Get key: https://aistudio.google.com/apikey
 - **ComfyUI backend**: Local ComfyUI server running at `http://127.0.0.1:8188` with SD 1.5 + Sprites_64 LoRA. Set `COMFYUI_URL` env var for custom address.
 
 ## Quick Start
 
 ```bash
-# Step 1: Generate concept
+# Step 1: Prepare GPT semi-manual concept prompt (default backend)
 node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate"
-# → saves to gol-arts/artworks/wood_box.png + wood_box.prompt
+# → prints ChatGPT instructions; user saves downloaded image to gol-arts/artworks/wood_box.original.png
+
+# Automatic alternatives, only when requested:
+node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate" --backend gemini
+node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate" --backend comfyui
 
 # Step 2: Normalize (downscale + palette map — produces .aseprite)
 node gol-tools/pixel-art/pixel-art.mjs normalize wood_box --type box
@@ -179,10 +195,7 @@ Colors are palette indices: 0-9 = GOL palette, 10 = transparent.
 Use local Stable Diffusion with the 2D Pixel Toolkit LoRA:
 
 ```bash
-node gol-tools/pixel-art/pixel-art.mjs generate \
-  --prompt "A supply crate" \
-  --backend comfyui \
-  --output gol-arts/artworks/crate
+node gol-tools/pixel-art/pixel-art.mjs concept crate --type box --prompt "A supply crate" --backend comfyui
 ```
 
 Requires ComfyUI server running locally. Workflow template at `gol-tools/pixel-art/workflows/pixel_art_txt2img.json` — edit to change model, LoRA strength, or generation parameters.
@@ -192,8 +205,13 @@ Requires ComfyUI server running locally. Workflow template at `gol-tools/pixel-a
 For animated sprites:
 ```bash
 # Generate individual frames
-node gol-tools/pixel-art/pixel-art.mjs pipeline --prompt "Walking character frame 1" --type character --output /tmp/walk_01
-node gol-tools/pixel-art/pixel-art.mjs pipeline --prompt "Walking character frame 2" --type character --output /tmp/walk_02
+node gol-tools/pixel-art/pixel-art.mjs concept characters/walk_01 --type character --prompt "Walking character frame 1" --backend gemini
+node gol-tools/pixel-art/pixel-art.mjs normalize characters/walk_01 --type character
+node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/characters/walk_01.aseprite
+
+node gol-tools/pixel-art/pixel-art.mjs concept characters/walk_02 --type character --prompt "Walking character frame 2" --backend gemini
+node gol-tools/pixel-art/pixel-art.mjs normalize characters/walk_02 --type character
+node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/characters/walk_02.aseprite
 # ... repeat for all frames
 
 # Assemble into strip
