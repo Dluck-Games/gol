@@ -180,19 +180,24 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 **VCS workflow**
 
 1. Finish work in submodules (`gol-project/` for game code, `gol-tools/` for tooling, `gol-arts/` for art assets)
-2. When isolation is needed, create the submodule worktree under `gol/.worktrees/<name>/` from inside the submodule repo (for example, run `git worktree add` in `gol-project/` and point it at `gol/.worktrees/<name>`)
+2. When isolation is needed, create a submodule worktree directly under `gol/.worktrees/<name>/` from inside the submodule repo (for example, run `git worktree add` in `gol-project/` and point it at `gol/.worktrees/<name>`)
 3. Do all code edits, tests, and branch operations inside that submodule worktree, not in the management repo root
-4. Push submodule changes first (`git push origin main` in submodule)
-5. Update the main repo's submodule pointer (`git add gol-project/`), commit, and push main repo changes
+4. Push submodule changes first (`git push origin main` or the active feature branch in the submodule)
+5. Update the main repo's submodule pointer (`git add gol-project/`, `git add gol-tools/`, or `git add gol-arts/`), commit, and push main repo changes
 
 **Worktree workflow**
 
-- All worktree checkouts live under `gol/.worktrees/`, organized by source:
-  - `gol/.worktrees/manual/` — interactive agent or manual work (e.g. `manual/issue-188`)
-  - `gol/.worktrees/foreman/` — foreman auto-created worktrees (e.g. `foreman/ws_20260328_abcd1234`)
-- Create worktrees from the submodule repository you are changing (`gol-project/`, `gol-tools/`, or `gol-arts/`), never from the management repo root
+- All worktree checkouts live directly under `gol/.worktrees/<name>/`; do not add source buckets such as `manual/` or `foreman/`
+- Create worktrees only from the submodule repository you are changing (`gol-project/`, `gol-tools/`, rarely `gol-arts/`), never from the management repo root
+- Prefer worktrees for `gol-project` feature/issue work and `gol-tools` tooling work. `gol-arts` usually does not need worktrees unless an art task explicitly needs isolation.
 - Treat each worktree as disposable local state: do not stage or commit any path under `gol/.worktrees/` in the management repo, and clean them up after the task is merged or abandoned
 - If a worktree needs Godot import/cache state for local testing, keep that setup local and out of version control
+
+**Branch workflow**
+
+- `gol-project/`: branch-driven development for features, fixes, and Foreman issue work (`feat/...`, `fix/...`, `foreman/...`), followed by PR/merge before updating the parent submodule pointer
+- `gol-tools/`: create branches/worktrees for larger tooling features; small maintenance changes may commit directly to `main`
+- `gol/` management repo and `gol-arts/`: normally commit directly to `main`; do not create management-repo branches or worktrees unless the user explicitly requests an exception
 
 **Agent workflow:**
 
@@ -209,12 +214,12 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 - **MONOREPO RULES**: This root (`gol/`) is strictly for management and coordination.
   - **ALWAYS** Push the submodule first, then update the main repo reference
   - **ALWAYS** Atomic push changes must be atomically pushed after completion without asking.
-  - **ALWAYS** Keep all worktree checkouts under `gol/.worktrees/` (subdirs: `manual/`, `foreman/`), ignored by the management repo
+  - **ALWAYS** Keep all worktree checkouts directly under `gol/.worktrees/<name>/`, ignored by the management repo
   - **ALWAYS** Write AI debug scripts to `.debug/scripts/` — never in `gol-project/scripts/` (Godot imports them) or `/tmp/` (not project-scoped)
   - **NEVER** create game files (scripts/, assets/, scenes/) at this root.
   - **NEVER** run Godot from this directory — always work inside `gol-project/`.
-  - **NEVER** create branches in the main repo (`gol/`) — all development happens in `gol-project/` submodule.
-  - **NEVER** create a worktree for the management repo itself inside `gol/.worktrees/`; that directory holds only submodule checkouts from `gol-project/`, `gol-tools/`, or `gol-arts/`.
+  - **NEVER** create branches in the main repo (`gol/`) for normal development — branch-driven work belongs in submodules, especially `gol-project/`.
+  - **NEVER** create a worktree for the management repo itself inside `gol/.worktrees/`; that directory holds only direct child worktrees from `gol-project/`, `gol-tools/`, or rare `gol-arts/` isolation work.
 
 ## Reference
 
