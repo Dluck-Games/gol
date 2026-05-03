@@ -23,8 +23,8 @@
 
 ```bash
 cd /Users/dluckdu/Documents/Github/gol/gol-project
-git worktree add /Users/dluckdu/Documents/Github/gol/.worktrees/manual/menu-polish -b feature/menu-polish main
-cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/menu-polish
+git worktree add /Users/dluckdu/Documents/Github/gol/.worktrees/menu-polish -b feature/menu-polish main
+cd /Users/dluckdu/Documents/Github/gol/.worktrees/menu-polish
 ```
 
 - [ ] **Step 2: Download Fusion Pixel font**
@@ -32,7 +32,7 @@ cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/menu-polish
 Download the Fusion Pixel 12px proportional Chinese font (OFL licensed) and place it in the worktree:
 
 ```bash
-cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/menu-polish
+cd /Users/dluckdu/Documents/Github/gol/.worktrees/menu-polish
 mkdir -p assets/fonts
 # Download from Fusion Pixel releases
 curl -L "https://github.com/TakWolf/fusion-pixel-font/releases/download/2025.01.22/fusion-pixel-12px-proportional-otf-v2025.01.22.zip" -o /tmp/fusion-pixel.zip

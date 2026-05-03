@@ -15,7 +15,7 @@
 ## Workflow Notes (important — read before starting)
 
 - **Submodule branching.** All code changes happen inside the `gol-project/` submodule. Per project rules: **create a feature branch — never push directly to `main` on the submodule.** The parent management repo (`gol/`) is only updated via submodule pointer commits at the end.
-- **Worktree isolation.** Create a worktree under `gol/.worktrees/manual/poison-redesign/` from inside the submodule. Do all code edits inside that worktree, not in the submodule root checkout.
+- **Worktree isolation.** Create a worktree under `gol/.worktrees/poison-redesign/` from inside the submodule. Do all code edits inside that worktree, not in the submodule root checkout.
 - **Test delegation is mandatory.** Main agents never write or run tests directly. Every test step in this plan is a `task()` delegation to `gol-test-writer-unit`, `gol-test-writer-integration`, or `gol-test-runner`. The delegation prompt in each step contains the full spec the writer needs.
 - **Two logical PRs.** Tasks 2–8 form a "prep" commit group (no player-visible behavior change). Tasks 9–18 form the "activation" commit group (new behavior ships). Both can land as a single feature branch with distinct commits, or split into two PRs depending on reviewer preference. The plan keeps them on one branch for simplicity.
 - **Never skip hooks.** No `--no-verify`. No bypassing signing. If a pre-commit hook fails, fix the issue and create a NEW commit — do not amend.
@@ -86,7 +86,7 @@ Expected: clean status line with a commit hash.
 - [ ] **Step 2: Create worktree dir if missing**
 
 ```bash
-mkdir -p /Users/dluckdu/Documents/Github/gol/.worktrees/manual
+mkdir -p /Users/dluckdu/Documents/Github/gol/.worktrees
 ```
 
 - [ ] **Step 3: Create the worktree from inside the submodule**
@@ -95,7 +95,7 @@ mkdir -p /Users/dluckdu/Documents/Github/gol/.worktrees/manual
 cd /Users/dluckdu/Documents/Github/gol/gol-project
 git fetch origin main
 git worktree add -b feat/poison-redesign \
-    /Users/dluckdu/Documents/Github/gol/.worktrees/manual/poison-redesign \
+    /Users/dluckdu/Documents/Github/gol/.worktrees/poison-redesign \
     origin/main
 ```
 Expected: "Preparing worktree (new branch 'feat/poison-redesign')" and the new directory exists.
@@ -103,7 +103,7 @@ Expected: "Preparing worktree (new branch 'feat/poison-redesign')" and the new d
 - [ ] **Step 4: Verify worktree**
 
 ```bash
-cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/poison-redesign
+cd /Users/dluckdu/Documents/Github/gol/.worktrees/poison-redesign
 git branch --show-current
 ```
 Expected: `feat/poison-redesign`.
@@ -140,7 +140,7 @@ Match whatever existing style is used (explicit `= N` or bare). Do not renumber 
 - [ ] **Step 3: Verify the file parses**
 
 ```bash
-cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/poison-redesign
+cd /Users/dluckdu/Documents/Github/gol/.worktrees/poison-redesign
 # If godot CLI is available:
 godot --headless --check-only --quiet scripts/components/c_elemental_attack.gd 2>&1 || true
 ```
@@ -795,7 +795,7 @@ Expected: all PASS. If an elemental or area-effect test fails, that's a refactor
 - [ ] **Step 2: Verify branch state**
 
 ```bash
-cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/poison-redesign
+cd /Users/dluckdu/Documents/Github/gol/.worktrees/poison-redesign
 git log --oneline origin/main..HEAD
 ```
 Expected: 6 commits (Tasks 2–7, one commit each).
@@ -1011,7 +1011,7 @@ func _queue_damage(entity: Entity, amount: float) -> void:
 Check how existing systems get registered — `scripts/systems/s_area_effect_modifier.gd` and `s_elemental_affliction.gd` must be loaded somewhere (a system loader, autoload, or scene). Grep for the elemental system name:
 
 ```bash
-cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/poison-redesign
+cd /Users/dluckdu/Documents/Github/gol/.worktrees/poison-redesign
 grep -r "SElementalAffliction" --include="*.gd" --include="*.tscn" . | grep -v tests/
 ```
 
@@ -1495,7 +1495,7 @@ SAreaEffectModifier data source."
 - [ ] **Step 1: Create the shader file**
 
 ```bash
-mkdir -p /Users/dluckdu/Documents/Github/gol/.worktrees/manual/poison-redesign/resources
+mkdir -p /Users/dluckdu/Documents/Github/gol/.worktrees/poison-redesign/resources
 ```
 
 Create `resources/poison_icon.gdshader`:
@@ -1743,7 +1743,7 @@ This is a manual agent step. If running autonomously and unable to start Godot, 
 - [ ] **Step 3: Verify branch history**
 
 ```bash
-cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/poison-redesign
+cd /Users/dluckdu/Documents/Github/gol/.worktrees/poison-redesign
 git log --oneline origin/main..HEAD
 ```
 Expected: ~17 commits covering Tasks 2–17 (Task 1 created the branch; Task 18 is housekeeping).
@@ -1789,7 +1789,7 @@ git push origin main
 If the project uses PRs:
 
 ```bash
-cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/poison-redesign
+cd /Users/dluckdu/Documents/Github/gol/.worktrees/poison-redesign
 gh pr create --title "feat(poison): two-layer poison system with dedicated SPoison" --body "$(cat <<'EOF'
 ## Summary
 
@@ -1823,7 +1823,7 @@ EOF
 - **Worktree cleanup** after the PR merges (handle in the next session, not this plan):
   ```bash
   cd /Users/dluckdu/Documents/Github/gol/gol-project
-  git worktree remove /Users/dluckdu/Documents/Github/gol/.worktrees/manual/poison-redesign
+  git worktree remove /Users/dluckdu/Documents/Github/gol/.worktrees/poison-redesign
   ```
 - **Deferred work** (not this plan):
   - Rename `CElementalAffliction` → `CStatusEffects` when a third non-elemental, non-poison status effect is added.

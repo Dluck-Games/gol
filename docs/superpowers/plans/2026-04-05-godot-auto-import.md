@@ -908,14 +908,14 @@ Expected: Import completes, `.godot/` exists, no errors.
 
 ```bash
 cd gol-project
-git worktree add ../../.worktrees/manual/test-import -b test-import origin/main
-ls ../../.worktrees/manual/test-import/.godot/ 2>&1  # Should NOT exist yet
+git worktree add ../../.worktrees/test-import -b test-import origin/main
+ls ../../.worktrees/test-import/.godot/ 2>&1  # Should NOT exist yet
 
-node ../gol-tools/ai-debug/lib/godot-import.mjs ensure ../../.worktrees/manual/test-import
-ls ../../.worktrees/manual/test-import/.godot/  # Should exist now
+node ../gol-tools/ai-debug/lib/godot-import.mjs ensure ../../.worktrees/test-import
+ls ../../.worktrees/test-import/.godot/  # Should exist now
 
 # Cleanup
-git worktree remove ../../.worktrees/manual/test-import --force
+git worktree remove ../../.worktrees/test-import --force
 git branch -D test-import
 ```
 

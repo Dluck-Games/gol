@@ -40,15 +40,15 @@ Before starting Task 1, the implementing agent should read these for orientation
 ```bash
 cd /Users/dluckdu/Documents/Github/gol/gol-project
 git fetch origin main
-git worktree add -b feat/resource-system ../.worktrees/manual/resource-system origin/main
+git worktree add -b feat/resource-system ../.worktrees/resource-system origin/main
 ```
 
-Expected: new directory at `gol/.worktrees/manual/resource-system` containing a gol-project checkout on branch `feat/resource-system`.
+Expected: new directory at `gol/.worktrees/resource-system` containing a gol-project checkout on branch `feat/resource-system`.
 
 - [ ] **Step 2: Verify**
 
 ```bash
-cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/resource-system
+cd /Users/dluckdu/Documents/Github/gol/.worktrees/resource-system
 git status
 git branch --show-current
 ```
@@ -57,7 +57,7 @@ Expected:
 - `git status` clean
 - branch: `feat/resource-system`
 
-**All remaining tasks happen inside `gol/.worktrees/manual/resource-system`.**
+**All remaining tasks happen inside `gol/.worktrees/resource-system`.**
 
 ---
 
@@ -161,7 +161,7 @@ const MAX_STACK: int = 9999
 
 Run in the worktree:
 ```bash
-cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/resource-system
+cd /Users/dluckdu/Documents/Github/gol/.worktrees/resource-system
 # Let Godot compile-check by opening headlessly
 godot --headless --quit --path . 2>&1 | grep -E "(ERROR|SCRIPT ERROR)" || echo "No parse errors"
 ```
@@ -2322,7 +2322,7 @@ If smoke test revealed a real bug (not art), fix it and commit with a clear `fix
 - [ ] **Step 1: Push the feature branch to gol-project origin**
 
 ```bash
-cd /Users/dluckdu/Documents/Github/gol/.worktrees/manual/resource-system
+cd /Users/dluckdu/Documents/Github/gol/.worktrees/resource-system
 git push -u origin feat/resource-system
 ```
 
@@ -2364,7 +2364,7 @@ git push
 
 ```bash
 cd /Users/dluckdu/Documents/Github/gol/gol-project
-git worktree remove ../.worktrees/manual/resource-system
+git worktree remove ../.worktrees/resource-system
 ```
 
 ---
