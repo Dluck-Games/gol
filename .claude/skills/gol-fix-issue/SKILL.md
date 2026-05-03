@@ -56,14 +56,14 @@ Run from inside `gol-project/`:
 cd gol-project/
 git worktree prune
 git worktree add -b fix/issue-<N> \
-  /Users/dluck/Documents/GitHub/gol/.worktrees/manual/issue-<N> \
+  /Users/dluck/Documents/GitHub/gol/.worktrees/issue-<N> \
   origin/main
 ```
 
 All subsequent work uses the worktree path as the project root:
 
 ```
-/Users/dluck/Documents/GitHub/gol/.worktrees/manual/issue-<N>
+/Users/dluck/Documents/GitHub/gol/.worktrees/issue-<N>
 ```
 
 ### Confirm State
@@ -88,7 +88,7 @@ Template for the explore dispatch:
 Issue #{N}: {issue title}
 Issue body summary: {key points from issue}
 Issue type: {bug/feature/adjustment/refactor}
-Working directory: /Users/dluck/Documents/GitHub/gol/.worktrees/manual/issue-<N>
+Working directory: /Users/dluck/Documents/GitHub/gol/.worktrees/issue-<N>
 Parent repo: /Users/dluck/Documents/GitHub/gol
 </task>
 ```
@@ -109,7 +109,7 @@ Template for the implement dispatch:
 <task>
 Issue #{N}: {issue title}
 Fix summary: {what needs to change, based on issue + explore report}
-Working directory: /Users/dluck/Documents/GitHub/gol/.worktrees/manual/issue-<N>
+Working directory: /Users/dluck/Documents/GitHub/gol/.worktrees/issue-<N>
 
 <explore-report>
 {full structured explore report}
@@ -221,7 +221,7 @@ After PR is submitted successfully:
 cd /Users/dluck/Documents/GitHub/gol/gol-project/
 
 # Remove the worktree
-git worktree remove /Users/dluck/Documents/GitHub/gol/.worktrees/manual/issue-<N>
+git worktree remove /Users/dluck/Documents/GitHub/gol/.worktrees/issue-<N>
 
 # Prune any stale worktree references
 git worktree prune
@@ -230,7 +230,7 @@ git worktree prune
 If cleanup fails (e.g., worktree has uncommitted changes), force-remove only after confirming the PR was submitted:
 
 ```bash
-git worktree remove --force /Users/dluck/Documents/GitHub/gol/.worktrees/manual/issue-<N>
+git worktree remove --force /Users/dluck/Documents/GitHub/gol/.worktrees/issue-<N>
 ```
 
 Report the PR URL to the user.
@@ -256,7 +256,7 @@ Report the PR URL to the user.
 ## Validation Checklist
 
 - [ ] Read issue via `gh issue view`
-- [ ] Created worktree `fix/issue-<N>` from `origin/main` inside `gol-project/`
+- [ ] Created worktree `.worktrees/issue-<N>` from `origin/main` inside `gol-project/` on branch `fix/issue-<N>`
 - [ ] All changes confined to the worktree — main working copy untouched
 - [ ] Dispatched explore phase with reference prompt
 - [ ] Dispatched implement phase with explore report

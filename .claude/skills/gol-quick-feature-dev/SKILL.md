@@ -59,12 +59,12 @@ Load `git-master` before any git operation. Never create branches in the managem
 
 ### Worktree mode
 
-Run from inside `gol-project/` only. Prune first, then create the worktree with this exact pattern:
+Run from inside `gol-project/` only. Prune first, then create the worktree directly under `.worktrees/` with this exact pattern:
 
 ```bash
 git worktree prune
 git worktree add -b feat/<feature-name> \
-  /Users/dluck/Documents/GitHub/gol/.worktrees/manual/<feature-name> \
+  /Users/dluck/Documents/GitHub/gol/.worktrees/<feature-name> \
   origin/main
 ```
 
@@ -147,6 +147,7 @@ Load `git-master` again before committing.
 - Run tests directly
 - Create branches in `gol/`
 - Create worktrees from `gol/`
+- Create nested worktree source buckets under `.worktrees/`
 - Create files outside `gol-project/` during implementation
 - Create game files in the management repo
 - Duplicate `gol-test-writer` or `gol-test-runner` logic
