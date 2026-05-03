@@ -1,6 +1,18 @@
 # GOL Art Style Guide
 
-## Color Palette (10 Colors)
+## Color Direction
+
+The GOL palette is a style reference, not a hard production limit for every sprite. Use these colors to guide mood, contrast, and saturation, but preserve or sample concept-art colors when the strict 10-color palette damages readability or material identity.
+
+For small production sprites:
+
+- Prefer a compact local palette of 6-16 colors per sprite.
+- Keep colors muted and desaturated, close in spirit to the GOL palette.
+- Allow source-derived oranges, greens, browns, reds, and other material colors when they make the object recognizable.
+- Avoid smooth gradients; use deliberate pixel clusters and flat color ramps.
+- The final quality gate is visual readability and material identity at target size, not palette compliance alone.
+
+## Reference Palette (10 Colors)
 
 | Hex | RGB | Name | Use |
 |-----|-----|------|-----|
@@ -15,11 +27,11 @@
 | #091018 | (9, 16, 24) | Near black | Outlines, darkest |
 | #b8cccc | (184, 204, 204) | Pale cyan | Lightest highlight |
 
-Use 3-5 colors per sprite. Never exceed 10.
+Use this palette as the default reference for mood and lighting. Use exact indexed mapping only when it preserves the asset's identity.
 
 ## Aesthetic Rules
 
-- Muted, desaturated palette similar to Game Boy-style indie pixel art
+- Muted, desaturated palette similar to Game Boy-style indie pixel art; source-derived colors are allowed when needed for readability
 - Simple geometric shapes with strong silhouettes
 - No gradients or smooth color transitions
 - No dithering — flat, clean color fills only

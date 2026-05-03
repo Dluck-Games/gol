@@ -25,9 +25,11 @@ Each file in `prompts/` is a self-contained template for generating assets of th
 2. Craft a prompt using the template
 3. Generate a concept via `node gol-tools/pixel-art/pixel-art.mjs concept` (default: CodeBuddy ImageGen; alternatives: GPT semi-manual, Gemini, ComfyUI)
 4. Normalize via `node gol-tools/pixel-art/pixel-art.mjs normalize`
-5. Artworks go to `gol-arts/artworks/`, Aseprite sources to `gol-arts/assets/`
-6. Review and accept → export explicitly to `gol-project/assets/`
-7. Commit following `commit-convention.md`
+5. Inspect the `.preview.png` at target size with multimodal review; compare it against the `.original.png`
+6. If identity, silhouette, or material readability is weak, do a source-referenced hand pixel touch-up before accepting
+7. Artworks go to `gol-arts/artworks/`, Aseprite sources to `gol-arts/assets/`
+8. Review and accept → export explicitly to `gol-project/assets/`
+9. Commit following `commit-convention.md`
 
 ## Relationship to Skill
 

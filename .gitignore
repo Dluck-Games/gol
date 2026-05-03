@@ -25,6 +25,10 @@ external/
 !.opencode/oh-my-openagent.jsonc
 .sisyphus/
 .worktrees/
+/.playwright-mcp/
+
+# AI image generation scratch output
+/generated-images/
 
 # Environment variables (secrets)
 .env

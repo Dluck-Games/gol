@@ -9,6 +9,7 @@
 A [item type] pickup item for a 2D survival game.
 [Distinctive shape]. Ground-level perspective.
 Clear silhouette, identifiable at small scale.
+Use colors close to the GOL style guide, but keep natural material colors when needed for readability.
 ```
 
 ## Examples (Existing)
@@ -25,3 +26,4 @@ Clear silhouette, identifiable at small scale.
 - Making items look like terrain or enemies
 - Too much detail for 32×32
 - Unclear what the item represents
+- Forcing colors so hard that the item no longer reads as its real material

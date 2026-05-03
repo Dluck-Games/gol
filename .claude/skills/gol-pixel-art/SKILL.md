@@ -20,8 +20,8 @@ AI-driven pipeline that generates concept art (CodeBuddy ImageGen / GPT semi-man
 1. CHOOSE CONCEPT PATH — default CodeBuddy ImageGen; optional GPT semi-manual, Gemini, or ComfyUI
 2. CONCEPT — image saved to gol-arts/artworks/<name>.original.png
 3. NORMALIZE — Downscale + either source colors or indexed palette → gol-arts/assets/<name>.aseprite
-4. EVALUATE — Automated quality checks → PASS or FAIL
-5. TOUCH-UP (if needed) — Human opens .aseprite, edits manually
+4. EVALUATE — Automated structural checks + visual QC against the concept
+5. TOUCH-UP (if needed) — source-referenced pixel edits until the preview reads clearly
 6. EXPORT (user-invoked) — Export .aseprite to production PNG → gol-project/assets/
 ```
 
@@ -44,6 +44,7 @@ Use this default flow when no other concept source is requested:
 2. Default models are `GOL_CODEBUDDY_MAIN_MODEL=gemini-3.1-pro` and `GOL_CODEBUDDY_IMAGE_MODEL=gemini-3.1-flash-image`. Override only when the user asks or the default model is unavailable.
 3. The backend uses `--allowedTools ImageGen`; do not replace it with `--tools ImageGen`, because `ImageGen` is a deferred CodeBuddy tool that must remain discoverable.
 4. Continue with `normalize NAME --type TYPE` after the `.original.png` file exists.
+5. Before finishing, verify scratch directories such as `generated-images/` and `.playwright-mcp/` are ignored and not staged. Only commit deliverables under `gol-arts/artworks/` and `gol-arts/assets/`.
 
 Reference: `docs/reports/2026-05-03-codebuddy-image-generation-cli.md`.
 
@@ -117,6 +118,16 @@ node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/sprites/boxes/wood
 - **Output:** Writes `gol-arts/assets/<type>/NAME.aseprite` and `NAME.preview.png`.
 - **Background removal:** Detects and removes AI-generated backgrounds automatically via corner-based flood fill before palette mapping.
 - **Quality gate:** The preview must read correctly at target size. If resize/normalize output loses identity, do a source-referenced hand pixel pass instead of accepting the automated result.
+
+## Visual QC Gate
+
+After every normalize or touch-up pass:
+
+1. Inspect `gol-arts/assets/<path>/<name>.preview.png` with the multimodal looker and compare it to `gol-arts/artworks/<path>/<name>.original.png`.
+2. Accept only if the 32x32 preview has a readable silhouette, clear material identity, clean transparent background, and the same core object as the concept.
+3. Treat exact GOL palette compliance and color count as advisory. Preserve source-derived colors when strict mapping harms recognizability.
+4. If the preview is muddy, noisy, cropped badly, or visually unlike the concept, run an `artistry` touch-up pass or hand pixel edit. Do not accept an asset just because `evaluate` passes.
+5. Re-run preview inspection after each touch-up. The manual visual gate is mandatory before export or final delivery.
 
 ## Export Command
 
