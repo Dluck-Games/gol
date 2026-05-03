@@ -2,15 +2,17 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Consolidate all worktree checkouts under `gol/.worktrees/` with source-based subdirectories, so manual and foreman worktrees share a single discoverable root.
+**Status:** Superseded by the current direct-child convention: all submodule worktrees now live directly under `gol/.worktrees/<name>/`; source buckets are no longer used.
 
-**Architecture:** Change foreman's `WorkspaceManager` to write worktrees to `.worktrees/foreman/` instead of `.foreman/workspaces/`. Update safety guards to match the new path. Update AGENTS.md docs to document `manual/` and `foreman/` subdirectory convention. `.foreman/` retains all non-worktree runtime data (state, logs, plans, etc.).
+**Goal:** Consolidate all worktree checkouts under `gol/.worktrees/` so manual and Foreman worktrees share a single discoverable root.
+
+**Architecture:** Change foreman's `WorkspaceManager` to write worktrees to `.worktrees/` instead of `.foreman/workspaces/`. Update safety guards to match the new path. Update AGENTS.md docs to document the direct-child worktree convention. `.foreman/` retains all non-worktree runtime data (state, logs, plans, etc.).
 
 **Tech Stack:** Node.js (foreman), Git worktrees, Markdown docs
 
 ---
 
-### Task 1: Update WorkspaceManager to use `.worktrees/foreman/`
+### Task 1: Update WorkspaceManager to use `.worktrees/`
 
 **Files:**
 - Modify: `gol-tools/foreman/lib/workspace-manager.mjs:18` (wsDir path)
@@ -25,10 +27,10 @@ In `workspace-manager.mjs` line 18, the wsDir is derived from `config.dataDir`:
 this.#wsDir = join(config.dataDir, 'workspaces');
 
 // After
-this.#wsDir = join(config.workDir, '.worktrees', 'foreman');
+this.#wsDir = join(config.workDir, '.worktrees');
 ```
 
-This switches from `.foreman/workspaces/` to `.worktrees/foreman/`. The `config.workDir` is already `/Users/dluckdu/Documents/Github/gol`.
+This switches from `.foreman/workspaces/` to `.worktrees/`. The `config.workDir` is already `/Users/dluckdu/Documents/Github/gol`.
 
 - [ ] **Step 2: Verify destroy safety guard still works**
 
@@ -39,7 +41,7 @@ The `destroy()` method at line 113 checks `wsPath.startsWith(this.#wsDir)`. Sinc
 ```bash
 cd /Users/dluckdu/Documents/Github/gol/gol-tools
 git add foreman/lib/workspace-manager.mjs
-git commit -m "refactor(foreman): move worktrees from .foreman/workspaces/ to .worktrees/foreman/"
+git commit -m "refactor(foreman): move worktrees from .foreman/workspaces/ to .worktrees"
 ```
 
 ---
@@ -81,9 +83,8 @@ Replace the current "Worktree workflow" block (lines 80–85) with:
 ```markdown
 **Worktree workflow**
 
-- All worktree checkouts live under `gol/.worktrees/`, organized by source:
-  - `gol/.worktrees/manual/` — interactive agent or manual work (e.g. `manual/issue-188`)
-  - `gol/.worktrees/foreman/` — foreman daemon auto-created (e.g. `foreman/ws_20260328_abcd1234`)
+- All worktree checkouts live directly under `gol/.worktrees/<name>/`; do not create source buckets.
+- Interactive agent and Foreman worktrees use the same direct-child namespace (for example, `.worktrees/issue-188` or `.worktrees/ws_20260328_abcd1234`).
 - Create worktrees from the submodule repository you are changing (`gol-project/` or `gol-tools/`), never from the management repo root
 - Treat each worktree as disposable local state: do not stage or commit any path under `gol/.worktrees/` in the management repo, and clean them up after the task is merged or abandoned
 - If a worktree needs Godot import/cache state for local testing, keep that setup local and out of version control
@@ -94,7 +95,7 @@ Replace the current "Worktree workflow" block (lines 80–85) with:
 Line 101, update the ALWAYS rule:
 
 ```markdown
-  - **ALWAYS** Keep all worktree checkouts under `gol/.worktrees/` (subdirs: `manual/`, `foreman/`), ignored by the management repo
+  - **ALWAYS** Keep all worktree checkouts directly under `gol/.worktrees/<name>/`, ignored by the management repo
 ```
 
 Line 105, update the NEVER rule:

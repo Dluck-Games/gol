@@ -1,7 +1,7 @@
 # CodeBuddy `--resume` + `-p` Verification
 
 Date: 2026-04-04
-Worktree: `/Users/dluckdu/Documents/Github/gol/.worktrees/manual/multi-phase-resume/foreman`
+Worktree: `/Users/dluckdu/Documents/Github/gol/.worktrees/multi-phase-resume-foreman`
 
 ## Result
 

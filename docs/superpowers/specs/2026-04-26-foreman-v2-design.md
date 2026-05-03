@@ -433,7 +433,7 @@ No queued, no intermediate states. One agent, running or not.
 
 ### Location
 
-`{workDir}/.worktrees/foreman/` (gitignored, same as v1)
+`{workDir}/.worktrees/{name}/` (gitignored). Foreman creates direct children under `.worktrees/`; it must not create source-bucket subdirectories or any management-repo worktree.
 
 ### Naming
 
