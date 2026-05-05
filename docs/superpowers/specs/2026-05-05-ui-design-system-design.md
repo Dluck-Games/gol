@@ -271,3 +271,25 @@ Concept art stored in `gol-arts/artworks/ui-concepts/`:
 | `variant-a-pixel-terminal.png` | Early exploration — pixel terminal style |
 
 Full UI Art Bible: `docs/arts/ui-art-bible.md`
+
+## Implementation Plan
+
+See `.claude-internal/plans/calm-jumping-umbrella.md` for the full 22-step plan, or the summary below:
+
+### Architecture: Config → Builder → Manager
+
+```
+ThemeConfig (Resource)     ← Data: colors, sizes, textures, spacing tokens
+ThemeBuilder (static)      ← Logic: converts config → Godot Theme
+ThemeManager (RefCounted)  ← Runtime: holds current config, applies to root, signals changes
+```
+
+### Phases
+
+1. **Asset Creation** (5 pixel sprites via gol-tools/pixel-art pipeline)
+2. **Theme Architecture** (ThemeConfig, ThemeWasteland, ThemeBuilder, ThemeManager)
+3. **StyleBox Implementation** (9-patch panels/buttons, slider, checkbox)
+4. **Menu & HUD Migration** (remove 44+ scattered overrides across 16 files)
+5. **Testing & Verification** (unit tests + visual verification)
+
+Phase 1 & 2 are independent (parallelizable). Phase 3 requires both. Phase 4→5 sequential.
