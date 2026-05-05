@@ -82,7 +82,7 @@ All spacing values must be multiples of 4:
 
 ## 4. Component Specifications
 
-### 4.1 Button
+### 4.1 Button (Primary)
 
 ```
 Height: 32px
@@ -90,19 +90,32 @@ Horizontal padding: 16px
 Border: 1px pixel 9-patch (inner highlight top-left, shadow bottom-right)
 Corner style: 2px diagonal cut (not rounded)
 Text: Body size (16px), centered
-Selection indicator: ▶ arrow left of text (when focused)
+Selection indicator: ▶ arrow left of text (when focused/active)
 ```
 
 **States:**
 
 | State | Background | Border | Text |
 |-------|-----------|--------|------|
-| Normal | `#c56a44` | 1px highlight/shadow | `--text-primary` |
-| Hover | `#d4784a` (+10% bright) | Highlight brightens | `--text-primary` |
-| Pressed | `#a55a38` (-15% dark) | Shadow darkens | `--text-primary` |
-| Disabled | `#5a5a5a` | `#3a3a3a` flat | `--text-disabled` |
+| Normal | `#2a2a25` (dark) | `#4a4a44` (muted) | `--text-primary` |
+| Hover | `#3a3a34` (lighter) | `#c56a44` (rust orange) | `--text-primary` |
+| Pressed | `#1a1a16` (darkest) | `#a05535` (dark rust) | `--text-primary` |
+| Disabled | `#222220` | `#333330` | `--text-disabled` |
+| Focused | `#2a2a25` | `#c56a44` (rust) | `--text-primary` |
 
-**Secondary button variant:** Uses `--bg-secondary` background with `--border` outline.
+**Design rationale:** Buttons are dark and subdued by default. The rust orange accent appears on hover/focus as the border highlight — drawing attention only when interacted with. This keeps the UI low-key and lets content breathe.
+
+### 4.1b Button (Secondary / Outline)
+
+```
+Same dimensions as primary.
+Background: transparent / #1f1f1f
+Border: 1px #5a5a5a (muted gray)
+Hover border: #8a8a8a (lighter gray)
+Text: --text-muted (normal), --text-primary (hover)
+```
+
+Used for: cancel buttons, less important actions, dialog "No" buttons.
 
 ### 4.2 Panel / Container
 
@@ -200,38 +213,63 @@ Only 5 micro sprites power the entire design system:
 
 ## 6. Implementation in Godot
 
-### Theme Architecture
+### Theme Architecture (Config → Builder → Manager)
 
-All styles centralized in `gol_theme.gd`:
-- Define colors as constants matching this spec
-- Create StyleBoxTexture using 9-patch sprites
-- Create StyleBoxFlat as fallback (for elements without sprites)
-- Apply via Godot Theme resource
+```
+ThemeConfig (Resource)      ← Pure data: all design tokens as @export properties
+    ↓
+ThemeBuilder (static)       ← Converts ThemeConfig → Godot Theme object
+    ↓
+ThemeManager (RefCounted)   ← Runtime: applies theme to root, exposes config, signals changes
+```
+
+- `ThemeConfig` — `class_name ThemeConfig extends Resource`. Holds colors, sizes, textures, spacing, font. A "skin" is an instance of this.
+- `ThemeWasteland` — Factory that creates the approved "Wasteland" ThemeConfig with all values from this spec.
+- `ThemeBuilder` — Static class. `build(config) → Theme`. Uses StyleBoxTexture when textures provided, StyleBoxFlat as fallback.
+- `ThemeManager` — Instantiated in `gol.gd`. `apply_theme(config)` sets root window theme + emits `theme_changed` signal.
 
 ### Key Technical Decisions
 
-1. **StyleBoxTexture** for panels and buttons (9-patch stretching)
-2. **StyleBoxFlat** for simple fills (slider track, toggle track)
-3. **self_modulate** for state color changes (hover/pressed/disabled)
+1. **StyleBoxTexture** for panels and buttons (9-patch stretching with `modulate_color` for state variants)
+2. **StyleBoxFlat** as fallback and for simple fills (slider track, toggle track)
+3. **`modulate_color`** on StyleBoxTexture for button state changes (one texture, multiple colors)
 4. **4px grid** enforced in all Control node sizing
-5. **Pixel font** loaded as BitmapFont or dynamic font with antialiasing=0
+5. **Existing font** — `fusion-pixel-12px.otf` already supports CJK/Chinese characters; no new font needed
+6. **Godot root theme cascade** — theme set on Window root automatically cascades to all Control nodes
+7. **No `.tres` file** — theme built programmatically for flexibility (swap config = swap entire look)
 
 ### File Structure
 
 ```
-assets/ui/
-├── theme/
-│   ├── gol_ui_theme.tres       # Godot Theme resource
-│   └── gol_theme.gd            # Theme constants and helpers
-├── sprites/
-│   ├── ui_panel_9patch.png
-│   ├── ui_button_9patch.png
-│   ├── ui_cursor_arrow.png
-│   ├── ui_slider_handle.png
-│   └── ui_check_icon.png
-└── fonts/
-    └── pixel_cjk.fnt           # Chinese pixel bitmap font
+scripts/ui/
+├── theme_config.gd              # ThemeConfig resource class
+├── theme_builder.gd             # Config → Theme converter
+├── theme_manager.gd             # Runtime manager + signals
+├── themes/
+│   └── theme_wasteland.gd       # "Wasteland" skin factory
+├── gol_theme.gd                 # DEPRECATED — backward-compat shim
+├── viewmodels/                   # (unchanged)
+└── views/                        # (unchanged — migrated to use theme cascade)
+
+assets/
+├── fonts/
+│   └── fusion-pixel-12px.otf    # Existing pixel font (CJK-capable)
+└── ui/
+    └── sprites/
+        ├── ui_panel_9patch.png
+        ├── ui_button_9patch.png
+        ├── ui_cursor_arrow.png
+        ├── ui_slider_handle.png
+        └── ui_check_icon.png
 ```
+
+### Theme Switching (Future)
+
+To add a new theme skin:
+1. Create `scripts/ui/themes/theme_<name>.gd` with a `create() -> ThemeConfig` factory
+2. Optionally add new texture sprites
+3. Call `theme_manager.apply_theme(ThemeNewSkin.create())`
+4. All UI updates automatically via Godot's theme cascade + `theme_changed` signal
 
 ## 7. Animation & Feedback Guidelines
 
