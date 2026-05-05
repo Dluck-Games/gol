@@ -260,5 +260,14 @@ assets/ui/
 
 ## Reference Images
 
-- Concept sheet: ChatGPT session `69f9bfce`, Variant H (turn 16)
-- Local screenshots saved during design exploration session
+Concept art stored in `gol-arts/artworks/ui-concepts/`:
+
+| File | Description |
+|------|-------------|
+| `variant-h-minimal-9patch.png` | **SELECTED** — Final design direction |
+| `variant-g-flat-postapoc.png` | Flat reference (same palette, no sprites) |
+| `variant-d-urban-decay.png` | Mood/color reference (too textured) |
+| `variant-f-flat-scifi.png` | Rejected — too cold/sci-fi |
+| `variant-a-pixel-terminal.png` | Early exploration — pixel terminal style |
+
+Full UI Art Bible: `docs/arts/ui-art-bible.md`
