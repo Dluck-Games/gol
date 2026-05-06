@@ -116,7 +116,7 @@ All test commands (`gol test unit`, `gol test integration`, `gol test`) automati
 When detached, the command prints the PID and log file path, then exits:
 
     Game started (PID 12345, detached)
-    Log: /path/to/gol-project/logs/game/game-20260429-094727.log
+    Log: /path/to/gol/logs/game/game-20260429-094727.log
 
 **When to use `--detach`:**
 - Calling `gol run game` from an AI agent's Bash tool (opencode, claude code, etc.)
