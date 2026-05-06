@@ -141,21 +141,22 @@ The `gol` CLI resolves paths automatically — no manual path construction neede
 
 Three-tier test architecture (unit / integration / playtest). See `gol-project/tests/AGENTS.md` for full tier definitions and decision matrix.
 
-**v4 Test Harness — subagent-driven (two skills):**
+**v4 Test Harness — direct automated tests + delegated playtest (two skills):**
 
-Main agents NEVER write tests or playtest directly. Fast unit-test execution is allowed directly through `gol test unit`; integration, all-test, and playtest work still dispatch via skill:
+Main agents NEVER write tests or playtest directly. Automated test execution is direct through `gol test`; only live playtesting dispatches a subagent:
 
 1. Load the appropriate skill
 2. Determine tier from decision matrix
-3. For quick unit tests, run `gol test unit` directly; otherwise dispatch subagent with the matching prompt template
-4. Receive report, decide next action
+3. For unit, integration, or all-test execution, run the matching `gol test ...` command directly
+4. For playtest, dispatch a subagent with the playtest prompt template
+5. Receive report, decide next action
 
 | Need | Skill | Tier → Prompt | Model |
 |------|-------|---------------|-------|
 | Write unit test | gol-test-writer | unit → unit-prompt.md | sonnet |
 | Write integration test | gol-test-writer | integration → integration-prompt.md | sonnet |
-| Run quick unit tests | gol-test-runner | direct `gol test unit` | main agent |
-| Run integration/all tests | gol-test-runner | runner → runner-prompt.md | haiku / OMO quick |
+| Run unit tests | gol-test-runner | direct `gol test unit` | main agent |
+| Run integration/all tests | gol-test-runner | direct `gol test integration` / `gol test --all` | main agent |
 | Verify feature in game (playtest) | gol-test-runner | playtest → playtest-prompt.md | haiku / OMO unspecified-low |
 
 Shell hooks enforce tier isolation (wrong base class = blocked).
