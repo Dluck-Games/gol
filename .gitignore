@@ -19,6 +19,9 @@ external/
 !.claude/hooks/
 !.claude/settings.json
 !.claude/.gitignore
+.codex/*
+!.codex/
+!.codex/hooks.json
 .codebuddy/
 .foreman/
 .opencode/

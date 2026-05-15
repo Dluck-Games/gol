@@ -4,10 +4,13 @@
 
 command -v jq >/dev/null 2>&1 || { echo "ERROR: jq not installed" >&2; exit 1; }
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
+
 INPUT=$(cat)
 
-TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // empty')
-COMMAND=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+TOOL_NAME=$(hook_tool_name "$INPUT")
+COMMAND=$(hook_tool_command "$INPUT")
 
 [[ "$TOOL_NAME" != "Bash" ]] && exit 0
 
