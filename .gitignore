@@ -13,15 +13,21 @@ shaders/
 external/
 
 # AI tool local state
+.agents/*
+!.agents/skills/
+!.agents/skills/**
+!.agents/README.md
 .claude/*
 !.claude/agents/
 !.claude/skills/
+!.claude/skills
 !.claude/hooks/
 !.claude/settings.json
 !.claude/.gitignore
 .codex/*
 !.codex/
 !.codex/hooks.json
+!.codex/skills
 .codebuddy/
 .foreman/
 .opencode/
