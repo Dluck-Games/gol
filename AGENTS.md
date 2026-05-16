@@ -59,6 +59,21 @@ gol/                               # Management repo (YOU ARE HERE)
 - **AI Debug Bridge:** Runtime tool that allows AI agents to capture screenshots, execute commands, and inject scripts for debugging purposes.
 - **Pixel Art Pipeline:** AI-driven asset creation tool that generates concept art (Gemini/ComfyUI), renders production pixel art with GOL's 10-color palette, and evaluates quality. See `gol-pixel-art` skill.
 
+### Maintenance Cleanliness
+
+- Treat recurring test/runtime log noise, including Godot `StringName orphan` and orphan-node exit reports, as a defect by default. Investigate the source and fix it cleanly instead of normalizing the noise.
+- Prefer the most correct, narrow fix over broad output filtering or blanket diagnostic suppression. If an upstream engine bug makes suppression unavoidable, keep it explicit, minimal, tested, and documented with the upstream reason.
+
+### Git History Policy
+
+- Keep every `main` branch linear. Do not introduce merge commits to `main`; use fast-forward, rebase, or squash integration instead.
+- If a branch has a PR, merge it with `gh pr merge --squash` so `main` receives one clean commit and GitHub does not create a merge commit.
+- If a branch has no PR but must be integrated into `main`, use a local squash merge or cherry-pick the final atomic commits into a linear order; do not use a regular merge commit.
+- Direct local work on `main` must only be committed when the user explicitly asks for a `main` commit. When the user does ask, prefer one coherent commit per bug fix or feature.
+- Branch work may use atomic commits while developing; when integrating to `main`, preserve only the intended linear history according to the rules above unless the user explicitly requests otherwise.
+- Match existing commit-message style: concise Conventional Commit prefixes such as `fix(scope): ...`, `feat(scope): ...`, `refactor: ...`, `docs: ...`, and `chore: ...`.
+- If a recent `main` history accidentally contains a merge commit, repair it by rewriting only the affected recent range, verify the resulting graph is linear, and push with `--force-with-lease` only after the user explicitly authorizes the history rewrite.
+
 ## GOL CLI Tool
 
 All Godot and debug bridge interactions MUST go through the `gol` CLI binary. The CLI handles Godot binary discovery, project path resolution, PID management, and logging automatically.
@@ -82,7 +97,7 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 | Run integration tests | `gol test integration` | `godot --headless --path . --scene scenes/tests/test_main.tscn ...` |
 | Run all tests | `gol test --all` | Both unit + integration |
 | Run specific suites | `gol test unit --suite pcg,ai` | Run only pcg + ai unit tests |
-| Run tests with detail | `gol test unit --verbose` | Full suite table + raw gdunit4 output |
+| Run tests with detail | `gol test unit --verbose` | Full parsed suite table without raw Godot noise |
 | Run suites verbosely | `gol test unit --suite system -v` | Detailed output for system tests only |
 | Reimport assets | `gol reimport` | `godot --headless --import --path .` |
 | Debug commands | `gol debug <cmd>` | `node ai-debug/ai-debug.mjs <cmd>` |
