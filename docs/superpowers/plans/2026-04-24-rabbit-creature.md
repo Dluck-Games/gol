@@ -283,7 +283,7 @@ const RESOURCE_PICKUP_LIFETIME: float = 120.0     ## s; pickup despawns if not c
 - [ ] **Step 3: Godot parse check**
 
 ```bash
-godot --headless --quit --path . 2>&1 | grep -E "(ERROR|SCRIPT ERROR)" || echo "No parse errors"
+gol test unit --suite pcg
 ```
 
 - [ ] **Step 4: Commit**
@@ -2310,12 +2310,13 @@ Add to `PHASE_NAMES` array (keep it in sequence — insert after "Zone Smoother"
 ```gdscript
 const PHASE_NAMES: Array[String] = [
 	"Empty",
-	"Irregular Grid",
+	"Region Field",
+	"Evolved Settlement",
 	"Road Rasterizer",
-	"Zone Calculator",
+	"Civilization Zone Grower",
 	"Zone Smoother",
 	"Creature Spawner Placer",   # NEW — after zones are finalized, before POIs
-	"Organic Subdivider",
+	"Plant Placer",
 	"POI Generator",
 	"Tile Resolve",
 	"Tile Decide"
@@ -2327,12 +2328,13 @@ Add to `create_phases()` in the same sequence position:
 ```gdscript
 static func create_phases() -> Array[PCGPhase]:
 	var phases: Array[PCGPhase] = []
-	phases.append(IrregularGridGenerator.new())
+	phases.append(RegionFieldGenerator.new())
+	phases.append(EvolvedSettlementGenerator.new())
 	phases.append(RoadRasterizer.new())
-	phases.append(ZoneCalculator.new())
+	phases.append(CivilizationZoneGrower.new())
 	phases.append(ZoneSmoother.new())
 	phases.append(CreatureSpawnerPlacer.new())   # NEW — reads zones, writes spawner specs
-	phases.append(OrganicBlockSubdivider.new())
+	phases.append(PlantPlacer.new())
 	phases.append(POIGenerator.new())
 	phases.append(TileResolvePhase.new())
 	phases.append(TileDecidePhase.new())
@@ -2342,7 +2344,7 @@ static func create_phases() -> Array[PCGPhase]:
 - [ ] **Step 4: Godot parse check (post-registration)**
 
 ```bash
-godot --headless --quit --path . 2>&1 | grep -E "(ERROR|SCRIPT ERROR)" || echo "No parse errors"
+gol test unit --suite pcg
 ```
 
 - [ ] **Step 5: Delegate integration playtest**
