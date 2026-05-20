@@ -176,6 +176,8 @@ Main agents NEVER write tests or playtest directly. Automated test execution is 
 
 Shell hooks enforce tier isolation (wrong base class = blocked).
 
+**Gameplay playtest tooling:** Prefer the dedicated GOL Debug Bridge for live gameplay verification. Launch via `gol run game --detach` (headless by default, `--windowed` when visual framing or screenshots must be inspected), then use `gol debug get`, `gol debug eval`, `gol debug script`, `gol debug input`, `gol debug screenshot`, and `gol debug perf` to inspect and drive the session. Send debug commands serially, not in parallel, so responses cannot race or overwrite each other. Use Computer Use only as a secondary visual fallback when the debug bridge cannot expose the needed observation, and record that fallback in the handoff or final notes.
+
 **Running tests:** Bare `gol test` is invalid. `gol test unit` and `gol test integration` require `--suite <name>` so agents do not accidentally run broad tiers. Use `gol test --all` only when intentionally running the full automated test set. Use `--verbose` for full suite table and slow-test warnings.
 
 Examples:
