@@ -1,5 +1,9 @@
 import assert from 'node:assert/strict';
+import { spawnSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import test from 'node:test';
+import { fileURLToPath } from 'node:url';
 
 import {
   collectChangedGdscriptPaths,
@@ -7,6 +11,37 @@ import {
   formatDiagnosticsReport,
   parseLspMessages,
 } from '../gdscript-lsp-check.mjs';
+
+const HOOK_DIR = dirname(fileURLToPath(new URL('../gdscript-lsp-check.mjs', import.meta.url)));
+const REPO_ROOT = join(HOOK_DIR, '..', '..');
+
+test('codex registration calls the shell wrapper instead of node directly', () => {
+  const hooks = JSON.parse(readFileSync(join(REPO_ROOT, '.codex/hooks.json'), 'utf8'));
+  const postHooks = hooks.hooks.PostToolUse.flatMap((entry) => entry.hooks);
+  const lspHook = postHooks.find((hook) => hook.statusMessage === 'Checking GDScript diagnostics');
+
+  assert.ok(lspHook, 'expected GDScript LSP hook registration');
+  assert.match(lspHook.command, /gdscript-lsp-check\.sh/);
+  assert.doesNotMatch(lspHook.command, /^node\b/);
+});
+
+test('shell wrapper starts when Codex GUI PATH cannot find Homebrew node', () => {
+  const result = spawnSync(join(HOOK_DIR, 'gdscript-lsp-check.sh'), {
+    cwd: REPO_ROOT,
+    input: JSON.stringify({
+      tool_name: 'Write',
+      tool_input: { file_path: 'README.md' },
+    }),
+    encoding: 'utf8',
+    env: {
+      CODEX_PROJECT_DIR: REPO_ROOT,
+      PATH: '/usr/bin:/bin:/usr/sbin:/sbin',
+    },
+  });
+
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.equal(result.stdout, '');
+});
 
 test('collects changed gdscript paths from a Codex apply_patch payload', () => {
   const input = {

@@ -63,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$(git rev-parse --show-toplevel)/.agents/hooks/gdscript-lsp-check.mjs\"",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/gdscript-lsp-check.sh\"",
             "statusMessage": "Checking GDScript diagnostics",
             "timeout": 10
           }
