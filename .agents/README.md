@@ -6,8 +6,9 @@ This directory is the canonical source for project-scoped agent assets that shou
 - `hooks/` is the only hand-edited source for GOL project hook scripts.
 - `.claude/skills` is a symlink to `../.agents/skills`.
 - `.codex/skills` is a symlink to `../.agents/skills`.
-- OpenCode/OMO should continue using its Claude compatibility layer and project `.opencode/oh-my-openagent.json` settings.
-- `.claude/settings.json` and `.codex/hooks.json` only register hooks and should point at `.agents/hooks`.
+- `.codex/hooks.json` is the primary hook registration surface.
+- `.claude/settings.json` and OpenCode/OMO compatibility may keep lightweight hook registrations, but should not contain hook implementation logic.
+- Client-specific hook config files should only register hooks and point at `.agents/hooks`.
 
 When changing a skill, edit files under `.agents/skills/<skill-name>/`.
 When changing a hook, edit files under `.agents/hooks/`.

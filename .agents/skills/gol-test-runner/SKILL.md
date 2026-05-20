@@ -1,6 +1,11 @@
+---
+name: gol-test-runner
+description: "Run GOL test verification through the gol CLI. Use when asked to run unit, integration, targeted suite, all automated tests, or live playtest; unit/integration tier runs require an explicit --suite, while full automated runs require explicit --all."
+---
+
 # gol-test-runner
 
-Coordinator skill for running GOL automated tests and playtesting. Runs unit, integration, and all-test commands directly through the `gol` CLI; routes only live playtesting to a subagent with the playtest prompt template.
+Coordinator skill for running GOL automated tests and playtesting. Runs explicit unit, integration, and all-test commands directly through the `gol` CLI; routes only live playtesting to a subagent with the playtest prompt template.
 
 Triggers: 'run test', 'run all tests', 'test runner', 'playtest', 'verify in game', 'do playtest', 'test in game'.
 
@@ -9,7 +14,7 @@ Triggers: 'run test', 'run all tests', 'test runner', 'playtest', 'verify in gam
 You are the main agent. `gol test` already provides agent-friendly output for unit and integration tests, so run automated tests directly. You still never interact with live Godot gameplay yourself. Your job:
 
 1. Determine whether the request is automated test execution or live playtest
-2. For unit, integration, or all-test requests, run the matching `gol test` command directly
+2. For unit, integration, or all-test requests, run the matching `gol test ... --suite ...` or explicit `gol test --all` command directly
 3. For playtest work, read `references/playtest-prompt.md`
 4. Dispatch a playtest subagent with the template + task-specific context
 5. If FAIL: decide next action (fix code, fix test, re-run, escalate to user)
@@ -18,15 +23,15 @@ You are the main agent. `gol test` already provides agent-friendly output for un
 
 | Need | Tier | Prompt Template | Dispatch |
 |------|------|-----------------|----------|
-| Run unit tests | Direct Unit | none | Main agent runs `gol test unit` directly |
-| Run integration tests | Direct Integration | none | Main agent runs `gol test integration` directly |
+| Run unit tests | Direct Unit | none | Main agent runs `gol test unit --suite <names>` directly |
+| Run integration tests | Direct Integration | none | Main agent runs `gol test integration --suite <names>` directly |
 | Run unit + integration tests | Direct All | none | Main agent runs `gol test --all` directly |
 | Verify a feature in the running game | Playtest | `references/playtest-prompt.md` | Claude Code: haiku; OMO: `category="unspecified-low"`, `load_skills=[]` |
 
 ### Routing rules
 
-- If the user says "run unit tests", "run quick unit tests", or asks for a unit suite via `--suite` -> **Direct Unit**
-- If the user says "run integration tests" or asks for an integration suite via `--suite` -> **Direct Integration**
+- If the user says "run unit tests", "run quick unit tests", or asks for a unit suite via `--suite` -> **Direct Unit**, but choose or ask for a suite before running
+- If the user says "run integration tests" or asks for an integration suite via `--suite` -> **Direct Integration**, but choose or ask for a suite before running
 - If the user says "run all tests", "run unit and integration", or asks to run mixed automated tests -> **Direct All**
 - If the user says "playtest", "verify in game", "test in game", "check if it works", or asks for live rendered/runtime verification -> **Playtest**
 - If the user says "run tests" without a tier, prefer **Direct Unit** for fast feedback unless the request clearly requires integration/all tests
@@ -36,11 +41,11 @@ You are the main agent. `gol test` already provides agent-friendly output for un
 
 ### Direct automated execution
 
-Run automated tests yourself from the project or worktree directory:
+Run automated tests yourself from the project or worktree directory. Tier-specific commands are intentionally suite-gated to prevent accidental broad runs:
 
 ```bash
-gol test unit
-gol test integration
+gol test unit --suite pcg
+gol test integration --suite flow
 gol test --all
 ```
 
@@ -54,6 +59,8 @@ gol test unit --suite ai,system
 ```
 
 Use the command exit code and simplified output as the report. Do not spawn a subagent to run unit, integration, all-test, or suite-filtered automated test commands.
+
+Never run bare `gol test`, `gol test unit`, or `gol test integration`. Use `gol test --all` only when the task truly calls for the full automated test set.
 
 ### Playtest dispatch
 

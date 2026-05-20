@@ -1,3 +1,8 @@
+---
+name: gol-test-writer
+description: "Write GOL unit or integration tests by delegating to the correct test-writing prompt. Use when asked to add, update, or design GOL tests; unit tests use gdUnit4 and integration tests use SceneConfig."
+---
+
 # gol-test-writer
 
 Coordinator skill for writing GOL tests. Routes to the correct tier and dispatches a subagent with the matching prompt template.

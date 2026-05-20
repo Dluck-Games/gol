@@ -105,14 +105,11 @@ If the scenario needs recipe entities or a realized ECS world, report back that 
 ## Execution Command (for self-verification)
 
 ```bash
-# Run all unit tests (simplified output)
-gol test unit
-
-# Run only tests for a specific suite (e.g., pcg)
+# Run only tests for a specific suite (required, e.g., pcg)
 gol test unit --suite pcg
 
 # Run with detailed output (full suite table + raw gdunit4 output)
-gol test unit --verbose
+gol test unit --suite pcg --verbose
 ```
 
 Results are written to `reports/results.xml`.

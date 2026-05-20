@@ -93,11 +93,11 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 | Run game (detached, windowed) | `gol run game --detach --windowed` | `godot --path . --windowed &` |
 | Run editor | `gol run editor` | `godot --editor --path .` |
 | Stop game/editor | `gol stop` | `pkill godot` / manual kill |
-| Run unit tests | `gol test unit` | `godot --headless -s addons/gdUnit4/bin/GdUnitCmdTool.gd ...` |
-| Run integration tests | `gol test integration` | `godot --headless --path . --scene scenes/tests/test_main.tscn ...` |
-| Run all tests | `gol test --all` | Both unit + integration |
-| Run specific suites | `gol test unit --suite pcg,ai` | Run only pcg + ai unit tests |
-| Run tests with detail | `gol test unit --verbose` | Full parsed suite table without raw Godot noise |
+| Run unit tests | `gol test unit --suite system` | Run a named gdUnit4 suite |
+| Run integration tests | `gol test integration --suite flow` | Run a named SceneConfig suite |
+| Run all tests | `gol test --all` | Explicit full unit + integration run |
+| Run specific suites | `gol test unit --suite pcg,ai` | Run only pcg + ai unit suites |
+| Run tests with detail | `gol test unit --suite system --verbose` | Full parsed suite table without raw Godot noise |
 | Run suites verbosely | `gol test unit --suite system -v` | Detailed output for system tests only |
 | Reimport assets | `gol reimport` | `godot --headless --import --path .` |
 | Debug commands | `gol debug <cmd>` | `node ai-debug/ai-debug.mjs <cmd>` |
@@ -105,7 +105,7 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 | Debug eval | `gol debug eval <expr>` | `node ai-debug/ai-debug.mjs eval <expr>` |
 | Debug script | `gol debug script <file>` | `node ai-debug/ai-debug.mjs script <file>` |
 | Debug input injection | `gol debug input <op> [action]` | Temporary debug scripts for basic player input |
-| Error/parse check | `gol test unit` | `godot --headless --quit --path . 2>&1 \| grep ...` |
+| Error/parse check | `gol test unit --suite system` | `godot --headless --quit --path . 2>&1 \| grep ...` |
 
 ### Argument Pass-Through
 
@@ -119,7 +119,7 @@ Arguments after `--` are forwarded directly to Godot. The game reads them via `O
 |----------------|--------------------------------------------|
 | `--skip-menu`  | Skip title screen, go directly to gameplay |
 
-All test commands (`gol test unit`, `gol test integration`, `gol test`) automatically inject `--skip-menu`. No manual action needed.
+All test commands (`gol test unit --suite ...`, `gol test integration --suite ...`, `gol test --all`) automatically inject `--skip-menu`. No manual action needed.
 
 ### Detached Mode
 
@@ -158,11 +158,11 @@ Three-tier test architecture (unit / integration / playtest). See `gol-project/t
 
 **v4 Test Harness — direct automated tests + delegated playtest (two skills):**
 
-Main agents NEVER write tests or playtest directly. Automated test execution is direct through `gol test`; only live playtesting dispatches a subagent:
+Main agents NEVER write tests or playtest directly. Automated test execution is direct through explicit `gol test ... --suite ...` or `gol test --all` commands; only live playtesting dispatches a subagent:
 
 1. Load the appropriate skill
 2. Determine tier from decision matrix
-3. For unit, integration, or all-test execution, run the matching `gol test ...` command directly
+3. For unit or integration execution, run the matching `gol test ... --suite ...` command directly; use `gol test --all` only when the task explicitly needs the full automated set
 4. For playtest, dispatch a subagent with the playtest prompt template
 5. Receive report, decide next action
 
@@ -170,18 +170,18 @@ Main agents NEVER write tests or playtest directly. Automated test execution is 
 |------|-------|---------------|-------|
 | Write unit test | gol-test-writer | unit → unit-prompt.md | sonnet |
 | Write integration test | gol-test-writer | integration → integration-prompt.md | sonnet |
-| Run unit tests | gol-test-runner | direct `gol test unit` | main agent |
-| Run integration/all tests | gol-test-runner | direct `gol test integration` / `gol test --all` | main agent |
+| Run unit tests | gol-test-runner | direct `gol test unit --suite <name>` | main agent |
+| Run integration/all tests | gol-test-runner | direct `gol test integration --suite <name>` / explicit `gol test --all` | main agent |
 | Verify feature in game (playtest) | gol-test-runner | playtest → playtest-prompt.md | haiku / OMO unspecified-low |
 
 Shell hooks enforce tier isolation (wrong base class = blocked).
 
-**Running tests:** `gol test` requires an explicit tier (`unit` or `integration`) or `--all`. Use `--verbose` for full suite table and slow-test warnings. Use `--suite pcg,ai` to run only specific test suites.
+**Running tests:** Bare `gol test` is invalid. `gol test unit` and `gol test integration` require `--suite <name>` so agents do not accidentally run broad tiers. Use `gol test --all` only when intentionally running the full automated test set. Use `--verbose` for full suite table and slow-test warnings.
 
 Examples:
-- `gol test unit` — run unit tests only
-- `gol test integration` — run integration tests only
-- `gol test --all` — run both unit and integration
+- `gol test unit --suite system` — run the system unit suite
+- `gol test integration --suite flow` — run the flow integration suite
+- `gol test --all` — explicitly run both unit and integration
 - `gol test unit --suite ai,system -v` — verbose, filtered to ai + system suites
 
 ### CI/CD
