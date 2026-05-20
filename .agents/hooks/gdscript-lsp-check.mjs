@@ -4,7 +4,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-const DEFAULT_TIMEOUT_MS = 8000;
+const DEFAULT_TIMEOUT_MS = 4500;
 const DIAGNOSTIC_REQUEST_ID = 2;
 const INITIALIZE_REQUEST_ID = 1;
 const SEVERITY_LABELS = {

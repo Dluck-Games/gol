@@ -65,7 +65,7 @@
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/.agents/hooks/gdscript-lsp-check.mjs\"",
             "statusMessage": "Checking GDScript diagnostics",
-            "timeout": 15
+            "timeout": 10
           }
         ]
       },
