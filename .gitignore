@@ -14,6 +14,8 @@ external/
 
 # AI tool local state
 .agents/*
+!.agents/hooks/
+!.agents/hooks/**
 !.agents/skills/
 !.agents/skills/**
 !.agents/README.md
@@ -21,7 +23,6 @@ external/
 !.claude/agents/
 !.claude/skills/
 !.claude/skills
-!.claude/hooks/
 !.claude/settings.json
 !.claude/.gitignore
 .codex/*
@@ -39,7 +40,7 @@ external/
 # AI image generation scratch output
 /generated-images/
 
-# Environment variables (secrets)
+# Environment variables (secrets; configure API keys in the system environment)
 .env
 
 # AI debug sandbox

@@ -6,7 +6,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-gdunit-in-integration.sh"
+                        "command": "\"$CLAUDE_PROJECT_DIR\"/.agents/hooks/block-gdunit-in-integration.sh"
                     }
                 ]
             },
@@ -15,7 +15,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-sceneconfig-in-unit.sh"
+                        "command": "\"$CLAUDE_PROJECT_DIR\"/.agents/hooks/block-sceneconfig-in-unit.sh"
                     }
                 ]
             },
@@ -24,7 +24,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-pull-submodule-code-in-parent.sh"
+                        "command": "\"$CLAUDE_PROJECT_DIR\"/.agents/hooks/block-pull-submodule-code-in-parent.sh"
                     }
                 ]
             },
@@ -33,16 +33,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-original-png-in-gol-project.sh"
-                    }
-                ]
-            },
-            {
-                "matcher": "Write|Edit|Bash",
-                "hooks": [
-                    {
-                        "type": "command",
-                        "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-env-commit.sh"
+                        "command": "\"$CLAUDE_PROJECT_DIR\"/.agents/hooks/block-original-png-in-gol-project.sh"
                     }
                 ]
             },
@@ -51,7 +42,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/validate-art-placement.sh"
+                        "command": "\"$CLAUDE_PROJECT_DIR\"/.agents/hooks/validate-art-placement.sh"
                     }
                 ]
             }
@@ -62,7 +53,7 @@
                 "hooks": [
                     {
                         "type": "command",
-                        "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/godot-auto-uid.sh"
+                        "command": "\"$CLAUDE_PROJECT_DIR\"/.agents/hooks/godot-auto-uid.sh"
                     }
                 ]
             }

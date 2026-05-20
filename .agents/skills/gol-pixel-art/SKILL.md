@@ -5,7 +5,7 @@ description: "Production pixel art asset creation pipeline for God of Lego. Use 
 
 # gol-pixel-art
 
-AI-driven pipeline that generates concept art (CodeBuddy ImageGen / GPT semi-manual / GPT assisted by Playwright / Gemini Nano Banana / ComfyUI) and produces production-ready pixel art through a normalize-first workflow. The default path is CodeBuddy ImageGen because it is low-cost and quota-friendly: the agent runs the local CodeBuddy CLI with Gemini 3 Pro as the agent model and Gemini 3.1 Flash Image as the text-to-image model, then continues with normalization. GPT semi-manual, Gemini, and ComfyUI paths remain available when requested.
+AI-driven pipeline that prepares concept art through GPT semi-manual handoff or local ComfyUI, then produces production-ready pixel art through a normalize-first workflow. CodeBuddy ImageGen and direct Gemini backend implementations remain in the tool code for future re-enable work, but they are disabled and must not be offered as active concept paths.
 
 ## When to Use
 
@@ -17,7 +17,7 @@ AI-driven pipeline that generates concept art (CodeBuddy ImageGen / GPT semi-man
 ## Pipeline Overview
 
 ```
-1. CHOOSE CONCEPT PATH — default CodeBuddy ImageGen; optional GPT semi-manual, Gemini, or ComfyUI
+1. CHOOSE CONCEPT PATH — default GPT semi-manual; optional local ComfyUI
 2. CONCEPT — image saved to gol-arts/artworks/<name>.original.png
 3. NORMALIZE — Downscale + either source colors or indexed palette → gol-arts/assets/<name>.aseprite
 4. EVALUATE — Automated structural checks + visual QC against the concept
@@ -27,26 +27,16 @@ AI-driven pipeline that generates concept art (CodeBuddy ImageGen / GPT semi-man
 
 ## Concept Path Choice
 
-When this skill is triggered for art creation, ask the user which concept-generation path to use unless they already specified one. Use the interactive question tool when available. Present these choices in this order, with CodeBuddy ImageGen as the default/recommended option:
+When this skill is triggered for art creation, ask the user which concept-generation path to use unless they already specified one. Use the interactive question tool when available. Present these active choices in this order, with GPT semi-manual as the default/recommended option:
 
-1. **CodeBuddy ImageGen (default)** — Agent runs the local CodeBuddy CLI through `--backend codebuddy`. It uses `gemini-3.1-pro` as the CodeBuddy agent model and `gemini-3.1-flash-image` as the text-to-image model by default. Use this first because it is low-cost and quota-friendly.
-2. **GPT semi-manual** — Agent prints an optimized prompt and ChatGPT link. When the user asks to open or submit ChatGPT prompts, use the `playwright` skill to open ChatGPT, verify login state, and submit the prompt; stop for user login if ChatGPT requires authentication. The user downloads the image and saves it to the target `gol-arts/artworks/<name>.original.png` path. This avoids API costs while still allowing browser-assisted prompting.
-3. **Gemini Nano Banana automatic** — Agent runs the Gemini backend (`--backend gemini`) using `GEMINI_API_KEY`. Use when the user wants a fully automatic cloud path.
-4. **ComfyUI automatic** — Agent runs local ComfyUI (`--backend comfyui`) with the Sprites_64 LoRA. Use when the local server and model stack are ready.
+1. **GPT semi-manual** — Agent prints an optimized prompt and ChatGPT link. When the user asks to open or submit ChatGPT prompts, use the browser automation skill to open ChatGPT, verify login state, and submit the prompt; stop for user login if ChatGPT requires authentication. The user downloads the image and saves it to the target `gol-arts/artworks/<name>.original.png` path. This avoids project-managed API keys while still allowing browser-assisted prompting.
+2. **ComfyUI automatic** — Agent runs local ComfyUI (`--backend comfyui`) with the Sprites_64 LoRA. Use when the local server and model stack are ready.
 
-If the user gives no preference, use CodeBuddy ImageGen. If the user says CodeBuddy, CB, ImageGen, or low-cost generation, use `--backend codebuddy`. If the user says GPT, ChatGPT, browser-assisted, or manual handoff, use `--backend gpt`. If the user says Gemini, Nano Banana, 纳米香蕉, 纳米橡胶, or automatic cloud generation, use `--backend gemini`. If the user says ComfyUI or local generation, use `--backend comfyui`.
+If the user gives no preference, use `--backend gpt`. If the user says GPT, ChatGPT, browser-assisted, or manual handoff, use `--backend gpt`. If the user says ComfyUI or local generation, use `--backend comfyui`. If the user asks for CodeBuddy, CB, ImageGen, Gemini, Nano Banana, 纳米香蕉, 纳米橡胶, or automatic cloud generation through Gemini, explain that those tool backends are currently disabled and are not valid `--backend` choices.
 
-## CodeBuddy ImageGen Flow
+## Disabled Backend Policy
 
-Use this default flow when no other concept source is requested:
-
-1. Run `concept NAME --type TYPE --backend codebuddy --prompt "..."`. The backend writes the prompt to `gol-arts/artworks/<name>.prompt`, runs local CodeBuddy ImageGen, and saves the generated image as `gol-arts/artworks/<name>.original.png`.
-2. Default models are `GOL_CODEBUDDY_MAIN_MODEL=gemini-3.1-pro` and `GOL_CODEBUDDY_IMAGE_MODEL=gemini-3.1-flash-image`. Override only when the user asks or the default model is unavailable.
-3. The backend uses `--allowedTools ImageGen`; do not replace it with `--tools ImageGen`, because `ImageGen` is a deferred CodeBuddy tool that must remain discoverable.
-4. Continue with `normalize NAME --type TYPE` after the `.original.png` file exists.
-5. Before finishing, verify scratch directories such as `generated-images/` and `.playwright-mcp/` are ignored and not staged. Only commit deliverables under `gol-arts/artworks/` and `gol-arts/assets/`.
-
-Reference: `docs/reports/2026-05-03-codebuddy-image-generation-cli.md`.
+The pixel-art tool still contains `codebuddy_backend.py` and `gemini_backend.py`, but the public CLI does not expose `codebuddy` or `gemini` as `--backend` choices. Do not call those backends from this skill, do not ask the user for project `.env` files, and do not document them as active options. Future re-enable work should update both the CLI and this skill in the same commit.
 
 ## GPT + Playwright Assisted Flow
 
@@ -79,22 +69,19 @@ Art source files are version-controlled in `gol-arts/` (Git LFS). Production PNG
 ## Prerequisites
 
 - **Aseprite**: `/Applications/Aseprite.app/Contents/MacOS/aseprite` (installed via DMG)
-- **CodeBuddy backend**: local `codebuddy` or `cbc` CLI authenticated and able to run `ImageGen`. Optional overrides: `CODEBUDDY_BIN`, `GOL_CODEBUDDY_MAIN_MODEL`, `GOL_CODEBUDDY_IMAGE_MODEL`.
 - **ComfyUI**: `/Applications/ComfyUI.app/` with Sprites_64.safetensors LoRA
 - **GPT semi-manual backend**: GPT Pro subscription in ChatGPT; no API key required because the user generates/downloads the image manually
-- **Gemini backend**: `GEMINI_API_KEY` env var (set in `.env` at project root). Get key: https://aistudio.google.com/apikey
 - **ComfyUI backend**: Local ComfyUI server running at `http://127.0.0.1:8188` with SD 1.5 + Sprites_64 LoRA. Set `COMFYUI_URL` env var for custom address.
+- API keys and provider credentials must be configured in the user's system environment, not in repo-local `.env` files.
 
 ## Quick Start
 
 ```bash
-# Step 1: Generate concept with CodeBuddy ImageGen (default backend)
+# Step 1: Prepare concept with GPT semi-manual handoff (default backend)
 node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate"
 # → saves gol-arts/artworks/wood_box.original.png + wood_box.prompt
 
-# Alternatives, only when requested:
-node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate" --backend gpt
-node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate" --backend gemini
+# Alternative, only when local ComfyUI is ready:
 node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate" --backend comfyui
 
 # Step 2: Normalize (source colors by default for material fidelity)
@@ -246,11 +233,11 @@ Requires ComfyUI server running locally. Workflow template at `gol-tools/pixel-a
 For animated sprites:
 ```bash
 # Generate individual frames
-node gol-tools/pixel-art/pixel-art.mjs concept characters/walk_01 --type character --prompt "Walking character frame 1" --backend gemini
+node gol-tools/pixel-art/pixel-art.mjs concept characters/walk_01 --type character --prompt "Walking character frame 1" --backend gpt
 node gol-tools/pixel-art/pixel-art.mjs normalize characters/walk_01 --type character
 node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/characters/walk_01.aseprite
 
-node gol-tools/pixel-art/pixel-art.mjs concept characters/walk_02 --type character --prompt "Walking character frame 2" --backend gemini
+node gol-tools/pixel-art/pixel-art.mjs concept characters/walk_02 --type character --prompt "Walking character frame 2" --backend gpt
 node gol-tools/pixel-art/pixel-art.mjs normalize characters/walk_02 --type character
 node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/characters/walk_02.aseprite
 # ... repeat for all frames

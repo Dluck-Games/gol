@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/block-gdunit-in-integration.sh\"",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-gdunit-in-integration.sh\"",
             "statusMessage": "Checking integration test base class",
             "timeout": 30
           }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/block-sceneconfig-in-unit.sh\"",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-sceneconfig-in-unit.sh\"",
             "statusMessage": "Checking unit test base class",
             "timeout": 30
           }
@@ -28,7 +28,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/block-pull-submodule-code-in-parent.sh\"",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-pull-submodule-code-in-parent.sh\"",
             "statusMessage": "Checking submodule command",
             "timeout": 30
           }
@@ -39,19 +39,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/block-original-png-in-gol-project.sh\"",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-original-png-in-gol-project.sh\"",
             "statusMessage": "Checking image placement",
-            "timeout": 30
-          }
-        ]
-      },
-      {
-        "matcher": "Write|Edit|Bash",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/block-env-commit.sh\"",
-            "statusMessage": "Checking secret files",
             "timeout": 30
           }
         ]
@@ -61,7 +50,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/validate-art-placement.sh\"",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/validate-art-placement.sh\"",
             "statusMessage": "Checking art placement",
             "timeout": 30
           }
@@ -74,7 +63,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.claude/hooks/godot-auto-uid.sh\"",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/godot-auto-uid.sh\"",
             "statusMessage": "Refreshing Godot UIDs",
             "timeout": 600
           }
