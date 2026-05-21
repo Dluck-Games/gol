@@ -286,7 +286,8 @@ docs/
 ### Workspace hygiene
 
 - **NEVER** leave uncommitted doc files in `docs/` after a task completes — always commit with the work.
-- **NEVER** create files outside the five defined subdirectories.
+- **NEVER** create files outside the defined docs subdirectories.
 - **NEVER** create temporary or scratch files in `docs/` — use the agent's own local scratch space (`.sisyphus/`, `.claude/`, etc.).
 - **NEVER** modify handoff notes after creation — they are immutable snapshots.
-- Clean up stale handoff notes older than 7 days during any docs-related task.
+- **NEVER** delete date-prefixed handoff notes or other date-prefixed docs just because they are old. Dated docs record facts/history and are not stale by age.
+- Only clean docs that are explicitly marked as scratch/stale, are untracked temporary artifacts, or are requested for deletion by the user.
