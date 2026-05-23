@@ -129,7 +129,7 @@ Delegate only. Do not invent new test prompts.
 6. If FAIL, fix implementation or test mismatch and retry up to 2 times
 7. If still failing after 2 retries, escalate with the full failure report
 
-Use playtest only when the feature needs live rendered verification.
+Use automated playtest (`gol test playtest --suite <name>`) when the feature has a committed `AutomationPlayTestSuite`. Use interactive live playtest subagent dispatch only when the feature needs exploratory rendered/debug-bridge verification.
 
 ## Commit + Push Protocol
 

@@ -95,6 +95,8 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 | Stop game/editor | `gol stop` | `pkill godot` / manual kill |
 | Run unit tests | `gol test unit --suite system` | Run a named gdUnit4 suite |
 | Run integration tests | `gol test integration --suite flow` | Run a named SceneConfig suite |
+| Run automated playtest | `gol test playtest --suite night_raid` | Run a named AutomationPlayTestSuite |
+| Record automated playtest | `gol test playtest --suite night_raid --record` | Write `logs/playtest/night_raid/recording.mp4` |
 | Run all tests | `gol test --all` | Explicit full unit + integration run |
 | Run specific suites | `gol test unit --suite pcg,ai` | Run only pcg + ai unit suites |
 | Run tests with detail | `gol test unit --suite system --verbose` | Full parsed suite table without raw Godot noise |
@@ -118,8 +120,9 @@ Arguments after `--` are forwarded directly to Godot. The game reads them via `O
 | Game Argument  | Description                                |
 |----------------|--------------------------------------------|
 | `--skip-menu`  | Skip title screen, go directly to gameplay |
+| `--playtest=<name>` | Load `tests/playtest/playtest_<name>.gd` and run it through the real startup path |
 
-All test commands (`gol test unit --suite ...`, `gol test integration --suite ...`, `gol test --all`) automatically inject `--skip-menu`. No manual action needed.
+All test commands (`gol test unit --suite ...`, `gol test integration --suite ...`, `gol test playtest --suite ...`, `gol test --all`) automatically inject `--skip-menu`. No manual action needed.
 
 ### Detached Mode
 
@@ -156,14 +159,14 @@ The `gol` CLI resolves paths automatically — no manual path construction neede
 
 Three-tier test architecture (unit / integration / playtest). See `gol-project/tests/AGENTS.md` for full tier definitions and decision matrix.
 
-**v4 Test Harness — direct automated tests + delegated playtest (two skills):**
+**v5 Test Harness — direct automated tests + automated playtest + delegated live playtest:**
 
-Main agents NEVER write tests or playtest directly. Automated test execution is direct through explicit `gol test ... --suite ...` or `gol test --all` commands; only live playtesting dispatches a subagent:
+Main agents NEVER write tests directly. Automated unit, integration, and playtest execution is direct through explicit `gol test ... --suite ...` or `gol test --all` commands; interactive live gameplay verification still dispatches a subagent:
 
 1. Load the appropriate skill
 2. Determine tier from decision matrix
-3. For unit or integration execution, run the matching `gol test ... --suite ...` command directly; use `gol test --all` only when the task explicitly needs the full automated set
-4. For playtest, dispatch a subagent with the playtest prompt template
+3. For unit, integration, or automated playtest execution, run the matching `gol test ... --suite ...` command directly; use `gol test --all` only when the task explicitly needs the full unit+integration set
+4. For interactive live gameplay verification, dispatch a subagent with the playtest prompt template
 5. Receive report, decide next action
 
 | Need | Skill | Tier → Prompt | Model |
@@ -172,17 +175,20 @@ Main agents NEVER write tests or playtest directly. Automated test execution is 
 | Write integration test | gol-test-writer | integration → integration-prompt.md | sonnet |
 | Run unit tests | gol-test-runner | direct `gol test unit --suite <name>` | main agent |
 | Run integration/all tests | gol-test-runner | direct `gol test integration --suite <name>` / explicit `gol test --all` | main agent |
-| Verify feature in game (playtest) | gol-test-runner | playtest → playtest-prompt.md | haiku / OMO unspecified-low |
+| Run automated playtest | gol-test-runner | direct `gol test playtest --suite <name>` | main agent |
+| Verify feature in live game | gol-test-runner | interactive playtest → playtest-prompt.md | haiku / OMO unspecified-low |
 
 Shell hooks enforce tier isolation (wrong base class = blocked).
 
 **Gameplay playtest tooling:** Prefer the dedicated GOL Debug Bridge for live gameplay verification. Launch via `gol run game --detach` (headless by default, `--windowed` when visual framing must be inspected), then use `gol debug pos`, `gol debug eval`, `gol debug script`, `gol debug input`, `gol debug screenshot`, `gol debug record`, and `gol debug perf` to inspect, drive, capture, and record the session. For Telegram gameplay videos, keep `gol debug record --width 1920 --height 1080` so the output is landscape 16:9. Send debug commands serially, not in parallel, so responses cannot race or overwrite each other. Use Computer Use only as a secondary visual fallback when the debug bridge cannot expose the needed observation, and record that fallback in the handoff or final notes.
 
-**Running tests:** Bare `gol test` is invalid. `gol test unit` and `gol test integration` require `--suite <name>` so agents do not accidentally run broad tiers. Use `gol test --all` only when intentionally running the full automated test set. Use `--verbose` for full suite table and slow-test warnings.
+**Running tests:** Bare `gol test` is invalid. `gol test unit`, `gol test integration`, and `gol test playtest` require `--suite <name>` so agents do not accidentally run broad tiers. Use `gol test --all` only when intentionally running the full unit+integration set. Use `--verbose` for full suite table and slow-test warnings.
 
 Examples:
 - `gol test unit --suite system` — run the system unit suite
 - `gol test integration --suite flow` — run the flow integration suite
+- `gol test playtest --suite night_raid` — run the automated night raid gameplay suite
+- `gol test playtest --suite night_raid --record` — also write `logs/playtest/night_raid/recording.mp4`
 - `gol test --all` — explicitly run both unit and integration
 - `gol test unit --suite ai,system -v` — verbose, filtered to ai + system suites
 

@@ -140,10 +140,11 @@ Delegate through existing GOL test skills. Do not write or run tests directly.
 | Needs `World` or `ECS.world`? | Integration | Unit |
 | Tests multiple systems together? | Integration | Unit |
 | Uses `GOL.setup()` / services? | Integration | Unit |
+| Uses committed `tests/playtest/` / `AutomationPlayTestSuite`? | Automated playtest | Integration |
 
-3. Dispatch the writer skill for test coverage of the fix
+3. Dispatch the writer skill for unit/integration test coverage of the fix; automated playtest suites require a dedicated implementation task
 4. Load `gol-test-runner` skill
-5. Dispatch the runner skill to execute tests
+5. Run unit, integration, and automated playtest suites directly through the runner skill; dispatch only interactive live playtest verification
 6. On FAIL: fix the implementation (not the test), retry up to 2 times
 7. After 2 retries still failing: report the failure with full context and stop
 

@@ -28,7 +28,7 @@ New playtest runner in `gol-tools/cli/internal/testrunner/playtest.go`:
 2. **Suite matching**: `--suite night_raid` matches `playtest_night_raid.gd` (strip `playtest_` prefix, match remainder)
 3. **Execution**: launches Godot in windowed mode:
    ```
-   godot --path <projectDir> scenes/main.tscn -- --skip-menu --test=night_raid [--record]
+   godot --path <projectDir> scenes/main.tscn -- --skip-menu --playtest=night_raid [--record]
    ```
 4. **Post-processing**: if `--record`, runs `encode-frames.swift` to produce mp4 after Godot exits
 5. **Report**: parses exit code + report file from `user://playtest_results/`

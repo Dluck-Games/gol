@@ -19,13 +19,18 @@ INPUT=$(cat)
 FILE_PATH=$(hook_file_path "$INPUT")
 CONTENT=$(hook_json "$INPUT" '.tool_input.content // ""')
 
-if [[ "$FILE_PATH" == *tests/integration/* ]] && echo "$CONTENT" | grep -q "extends GdUnitTestSuite"; then
-  echo "BLOCKED: GdUnitTestSuite not allowed in tests/integration/ (use SceneConfig instead)" >&2
+if [[ "$FILE_PATH" == *tests/integration/* || "$FILE_PATH" == *tests/playtest/* ]] && echo "$CONTENT" | grep -q "extends GdUnitTestSuite"; then
+  echo "BLOCKED: GdUnitTestSuite not allowed in tests/integration/ or tests/playtest/ (use SceneConfig or AutomationPlayTestSuite instead)" >&2
   exit 2
 fi
 
 if hook_patch_adds_text_in_path "$INPUT" "tests/integration/" "extends GdUnitTestSuite"; then
   echo "BLOCKED: GdUnitTestSuite not allowed in tests/integration/ (use SceneConfig instead)" >&2
+  exit 2
+fi
+
+if hook_patch_adds_text_in_path "$INPUT" "tests/playtest/" "extends GdUnitTestSuite"; then
+  echo "BLOCKED: GdUnitTestSuite not allowed in tests/playtest/ (use AutomationPlayTestSuite instead)" >&2
   exit 2
 fi
 

@@ -22,13 +22,18 @@ rm -f "$TMP"
 FILE_PATH=$(hook_file_path "$INPUT")
 CONTENT=$(hook_json "$INPUT" '.tool_input.content // ""')
 
-if [[ "$FILE_PATH" == *tests/unit/* ]] && echo "$CONTENT" | grep -q "extends SceneConfig"; then
-  echo "BLOCKED: SceneConfig not allowed in tests/unit/ (use GdUnitTestSuite instead)" >&2
+if [[ "$FILE_PATH" == *tests/unit/* ]] && echo "$CONTENT" | grep -Eq "extends (SceneConfig|AutomationPlayTestSuite)"; then
+  echo "BLOCKED: SceneConfig/AutomationPlayTestSuite not allowed in tests/unit/ (use GdUnitTestSuite instead)" >&2
   exit 2
 fi
 
 if hook_patch_adds_text_in_path "$INPUT" "tests/unit/" "extends SceneConfig"; then
   echo "BLOCKED: SceneConfig not allowed in tests/unit/ (use GdUnitTestSuite instead)" >&2
+  exit 2
+fi
+
+if hook_patch_adds_text_in_path "$INPUT" "tests/unit/" "extends AutomationPlayTestSuite"; then
+  echo "BLOCKED: AutomationPlayTestSuite not allowed in tests/unit/ (use GdUnitTestSuite instead)" >&2
   exit 2
 fi
 

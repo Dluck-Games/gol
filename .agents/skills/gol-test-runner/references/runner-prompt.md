@@ -22,6 +22,7 @@ Read the test file and inspect the `extends` clause:
 |---|---|
 | `extends GdUnitTestSuite` | Unit |
 | `extends SceneConfig` | Integration |
+| `extends AutomationPlayTestSuite` | Automated Playtest |
 
 If neither matches, report the file as unsupported.
 
@@ -36,7 +37,11 @@ gol test unit --suite system
 # Integration (SceneConfig, suite required)
 gol test integration --suite flow
 
-# Full automated set (explicit)
+# Automated playtest (AutomationPlayTestSuite, suite required)
+gol test playtest --suite night_raid
+gol test playtest --suite night_raid --record
+
+# Full unit+integration set (explicit)
 gol test --all
 ```
 
@@ -58,7 +63,7 @@ gol test integration --suite pcg
 gol test --all --suite pcg
 ```
 
-Suite names map to subdirectories under `tests/unit/` and `tests/integration/`:
+Suite names map to subdirectories under `tests/unit/` and `tests/integration/`, and to `playtest_<suite>.gd` under `tests/playtest/`:
 `ai`, `debug`, `pcg`, `service`, `system`, `flow`, `creatures`
 
 Root-level `.gd` test files are NOT matched by suite filters — they only run when `--suite` is empty (full run).
@@ -93,7 +98,7 @@ If a single file extends `GdUnitTestSuite`, report that pure unit tests are hand
 
 ### Batch
 
-1. Discover tests under `tests/unit/**/*.gd` and `tests/integration/**/*.gd`
+1. Discover tests under `tests/unit/**/*.gd`, `tests/integration/**/*.gd`, and `tests/playtest/**/*.gd`
 2. Detect each file's tier
 3. Execute integration or all-test commands as requested
 4. Aggregate into one summary
@@ -125,13 +130,27 @@ Parse stdout and exit code:
 
 Also handle harness-level failures:
 ```text
-[FAIL] Missing --config= argument
+[FAIL] Missing --integration= argument
 [FAIL] Config script not found: ...
 [FAIL] Config script does not extend SceneConfig: ...
 [FAIL] PCG generation failed
 ```
 
 Extract: info line, [PASS]/[FAIL] lines, summary line, exit code (0=pass, 1=fail).
+
+### Automated Playtest — AutomationPlayTestSuite
+
+Parse `logs/playtest/<suite>/report.txt` and the process exit code:
+
+```text
+=== PLAYTEST: night_raid ===
+Status: PASSED
+
+Checkpoints:
+  [PASS]  dusk_warning_triggered        (2.1s)
+```
+
+Exit codes: `0` all checkpoints passed, `1` checkpoint failure, `2` test error such as timeout/crash/missing report.
 
 ## Failure Diagnosis
 

@@ -1,6 +1,6 @@
 ---
 name: gol-test-writer
-description: "Write GOL unit or integration tests by delegating to the correct test-writing prompt. Use when asked to add, update, or design GOL tests; unit tests use gdUnit4 and integration tests use SceneConfig."
+description: "Write GOL unit or integration tests by delegating to the correct test-writing prompt. Use when asked to add, update, or design GOL tests; unit tests use gdUnit4 and integration tests use SceneConfig. Automated playtest suites are currently out of scope unless a dedicated prompt is added."
 ---
 
 # gol-test-writer
@@ -25,11 +25,13 @@ You are the main agent. You **never** write test files yourself. Your job:
 |------|------|-----------------|-------|
 | Pure function / single component / single class | Unit | `references/unit-prompt.md` | sonnet |
 | Multi-system ECS / needs World / recipe spawning | Integration | `references/integration-prompt.md` | sonnet |
+| Full gameplay startup / video / long checkpoint flow | Automated Playtest | out of scope; ask coordinator for a dedicated implementation task | n/a |
 
 ### Routing rules
 
 - If the scenario needs a `World`, `ECS.world`, `GOLWorld`, or recipe spawning → **Integration**
 - If the scenario tests a single class, component, or pure function in isolation → **Unit**
+- If the scenario needs committed `tests/playtest/` coverage, `AutomationPlayTestSuite`, video, or the real `GOL.start_game()` path → **Out of scope for this writer skill**
 - If unclear, ask the user before dispatching
 
 ## Dispatch Protocol
