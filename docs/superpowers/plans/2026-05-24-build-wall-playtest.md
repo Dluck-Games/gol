@@ -189,6 +189,8 @@ git commit -m "feat(playtest): add build_wall playtest skeleton"
 **Files:**
 - Modify: `gol-project/tests/playtest/playtest_build_wall.gd` — append helper methods
 
+> **2026-05-24 errata:** The direct `ghost_building` construction below was the wrong pattern. The implemented playtest should reuse the production `SBuildOperation._place_ghost()` path instead: get the system from the real world, set `_selected_building_id = "wall"`, call `_place_ghost(_grid_to_world(BUILD_SITE_CELL))`, then discover the created build site for checkpoint tracking. This preserves BuildingTable lookup, `CSprite` texture/offset initialization, placeholder texture fallback, `PLACED_GHOST_MODULATE`, and `BuildTask` submission. Do not copy the manual `CBuildSite` setup except for a test that explicitly validates recipe construction.
+
 - [ ] **Step 1: Add all checkpoint check methods and helpers**
 
 Append these methods to the `PlaytestBuildWall` class:

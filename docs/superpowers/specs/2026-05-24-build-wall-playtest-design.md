@@ -16,7 +16,7 @@ Automated playtest that verifies the end-to-end building construction flow: a wo
 | Player | Center of map, normal HP |
 | Stockpile | Within 2 tiles of player, contains 3 wood |
 | Worker | 1 worker NPC near stockpile |
-| BuildSite | Directly spawned Wall BuildSite entity at worker-reachable position |
+| BuildSite | Wall ghost placed at worker-reachable position through `SBuildOperation._place_ghost()` |
 | Timeout | 90 seconds |
 
 No time compression — Wall builds in 4 seconds and worker paths are short.
@@ -40,10 +40,17 @@ No time compression — Wall builds in 4 seconds and worker paths are short.
 
 1. `_setup()` — spawn map, player, stockpile (3 wood), worker
 2. **Wait 3 seconds** — let scene stabilize, recording captures empty ground
-3. Spawn Wall BuildSite entity
+3. Place Wall ghost through the production `SBuildOperation._place_ghost()` path
 4. `check_next_checkpoint()` validates 8 checkpoints sequentially
 5. All passed — **wait 3 seconds** — recording captures completed building
 6. State PASSED, test ends
+
+## Implementation Lessons
+
+- Reuse the production placement path. The playtest should get the world `SBuildOperation`, set `_selected_building_id = "wall"`, and call `_place_ghost(position)`, then track the resulting ghost/build site. Hand-creating `ghost_building`, filling `CBuildSite`, and submitting `BuildTask` duplicates production logic and skips visual setup.
+- `ghost_building.tres` is only a generic recipe template. The production path looks up `building_id` in `BuildingTable`, copies the target building recipe texture and sprite offset into `CSprite`, creates a placeholder texture when needed, applies `PLACED_GHOST_MODULATE`, and queues the build task.
+- Recipe spawn does not guarantee visibility. `camp_stockpile.tres` also depends on production setup (`StockpileSpriteFactory.get_texture()` in `GOLWorld._spawn_camp_stockpile_and_worker()`) for its texture.
+- If a playtest entity is invisible, inspect the production spawn/initialization path before changing the recipe or adding test-only rendering code.
 
 ## Failure Handling
 

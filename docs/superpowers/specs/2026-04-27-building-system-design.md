@@ -105,6 +105,7 @@ Minimal marker. Future extensions (durability, upgrade level) add fields here.
 **Ghost (generic template):** `ghost_building.tres`
 - Components: CTransform + CSprite + CBuildSite
 - On spawn, SBuildOperation populates CBuildSite fields from BuildingTable and sets CSprite texture from building data
+- Tests and playtests that validate player-visible construction should call the same `SBuildOperation._place_ghost()` path instead of manually spawning `ghost_building` and filling `CBuildSite`. The generic recipe alone can be invisible because texture, sprite offset, fallback placeholder, modulate, and task submission are production-side initialization.
 
 **Campfire:** `campfire.tres` (existing, modify to add CBuilding + CCollision)
 - Components: CTransform + CSprite + CCampfire + CCollision + CBuilding

@@ -48,13 +48,14 @@ gol/                               # Management repo (YOU ARE HERE)
 ### GOL - God of Lego
 
 - **ECS:** Data-driven design with GECS addon. Components are pure data, systems contain logic. Authoring via gameplay scripts that spawn entities with components.
+- **Production-path tests:** Playtests and integration tests should enter gameplay through the same production systems the player uses. Do not reimplement production setup by manually assembling components when a system entrypoint exists; this is especially important for ECS entities whose visuals or runtime fields are completed after recipe spawn.
 - **MVVM UI:** Model-View-ViewModel pattern for UI, separating data, presentation, and logic.
 - **GOAP AI:** Goal-Oriented Action Planning for NPC behavior, with a custom implementation in `gameplay/` scripts.
 - **PCG Map Generation:** Procedural generation pipeline for maps, defined in `pcg/` scripts.
 
 ### GOL Tools -
 
-- **Foreman:** AI agent that automates GitHub issue triage and PR creation based on task delegation.
+- **Foreman:** AI agent that automates GitHub issue triage and PR creation based on task delegation. Task templates own client choice; prefer creating or updating a task type with the right client over hand-passing ad hoc `--client` values.
 - **GDS LSP Bridge:** Node.js tool that provides a TCP bridge for GDS Language Server Protocol, enabling AI agents to perform code analysis and refactoring.
 - **AI Debug Bridge:** Runtime tool that allows AI agents to capture screenshots, execute commands, and inject scripts for debugging purposes.
 - **Pixel Art Pipeline:** AI-driven asset creation tool that prepares concept art through GPT handoff or ComfyUI, normalizes production pixel art, and evaluates quality. CodeBuddy/Gemini image-generation implementations are retained but disabled. See `gol-pixel-art` skill.
@@ -182,6 +183,8 @@ Shell hooks enforce tier isolation (wrong base class = blocked).
 
 **Gameplay playtest tooling:** Prefer the dedicated GOL Debug Bridge for live gameplay verification. Launch via `gol run game --detach` (headless by default, `--windowed` when visual framing must be inspected), then use `gol debug pos`, `gol debug eval`, `gol debug script`, `gol debug input`, `gol debug screenshot`, `gol debug record`, and `gol debug perf` to inspect, drive, capture, and record the session. For Telegram gameplay videos, keep `gol debug record --width 1920 --height 1080` so the output is landscape 16:9. Send debug commands serially, not in parallel, so responses cannot race or overwrite each other. Use Computer Use only as a secondary visual fallback when the debug bridge cannot expose the needed observation, and record that fallback in the handoff or final notes.
 
+**Playtest authoring:** Automated playtests should reuse production gameplay entrypoints instead of reconstructing production side effects. For building placement, get `SBuildOperation`, set `_selected_building_id`, and call `_place_ghost(position)` so BuildingTable lookup, ghost `CSprite.texture`, sprite offset, placeholder fallback, `PLACED_GHOST_MODULATE`, and `BuildTask` submission stay identical to the player path. Avoid creating `ghost_building` directly and manually filling `CBuildSite` unless the test explicitly covers recipe construction.
+
 **Running tests:** Bare `gol test` is invalid. `gol test unit`, `gol test integration`, and `gol test playtest` require `--suite <name>` so agents do not accidentally run broad tiers. Use `gol test --all` only when intentionally running the full unit+integration set. Use `--verbose` for full suite table and slow-test warnings.
 
 Examples:
@@ -227,7 +230,7 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 
 - Delegate implementation tasks to subagents (via `task()`) rather than direct file editing
 - Prefer Foreman for independent, deterministic coding tasks in this project. When work has clear acceptance criteria and can be handed off cleanly, dispatch it with `foreman run task generic --prompt "..."` or the appropriate Foreman task template instead of keeping all execution in the main agent thread.
-- Use Foreman client selection intentionally: `cc-glm` is the default Claude-family client for concrete implementation, bug fixes, refactors, brainstorming, and validation passes when the task is well scoped; Codex remains suitable for general implementation, review, and coordination-heavy work.
+- Use Foreman client selection intentionally through task templates. `generic` defaults to Codex, `play-verify` is fixed to `codex-spark` because it needs sandbox and media handling, and higher-capability needs should usually become a new task type rather than a one-off manual `--client` override.
 - Main agent focuses on acceptance, global decisions, and task coordination
 - Execute independent tasks in parallel with multiple subagents for efficiency
 - **Test work ALWAYS delegates** via category+skill delegation. Never write tests directly.
