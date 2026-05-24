@@ -66,6 +66,31 @@ Use the command exit code and simplified output as the report. Do not spawn a su
 
 Never run bare `gol test`, `gol test unit`, `gol test integration`, or `gol test playtest`. Use `gol test --all` only when the task truly calls for the full unit+integration set.
 
+### Recorded playtest video review
+
+When `gol test playtest --suite <name> --record` produces `logs/playtest/<suite>/recording.mp4`, inspect the textual report first, then use video analysis when the failure or acceptance question depends on visuals, UI, motion, or timing.
+
+Standard order:
+
+1. Read `logs/playtest/<suite>/report.txt` and `logs/playtest/<suite>/godot.log`.
+2. If the model/runtime supports native video, send the MP4 directly. Prefer Gemini 2.5 Pro/Flash for low-cost native video review, usually at 1 FPS and 2-5 FPS for fast UI/combat.
+3. For OpenAI GPT-5/GPT-4o/GPT-4.1, Claude, or any image-only vision path, extract frames with `ffmpeg` and send the frames as ordered images.
+4. Ask the vision model for a timeline that includes frame number or timestamp, visible UI state, actor actions, and anomalies.
+5. Reconcile the visual timeline with the playtest report before deciding whether to fix code, adjust the test, or rerun.
+
+Frame extraction command from the management repo root:
+
+```bash
+cd /Users/dluck/Documents/GitHub/gol
+mkdir -p .debug/video-frames/<suite>
+ffmpeg -hide_banner -loglevel error \
+  -i gol-project/logs/playtest/<suite>/recording.mp4 \
+  -vf fps=2 \
+  .debug/video-frames/<suite>/frame_%04d.jpg
+```
+
+Use `fps=1` or `fps=2` for ordinary review. Increase to `fps=3` through `fps=5` for rapid UI changes, short interactions, build placement, projectile/combat timing, or flickering rendering bugs. For long recordings, do a low-FPS pass first and re-extract a narrower window with `-ss` and `-to`.
+
 ### Live playtest dispatch
 
 Spawn a leaf subagent. Do not use `unspecified-high`, GPT 5.5 Fast, Sonnet, or any other high-capability/default coding category for playtest. Playtest is runtime QA, not implementation.

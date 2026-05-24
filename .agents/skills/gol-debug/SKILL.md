@@ -24,6 +24,7 @@ AI debugging toolkit - capture screenshots, execute commands, inject player inpu
 | Reimport | `gol reimport` |
 | Boot Game | `gol run game` |
 | Stop Game | `gol stop` |
+| Record Video | `gol debug record` |
 | Perf Snapshot | `gol debug perf` |
 | Perf Systems | `gol debug perf systems` |
 | Perf Entities | `gol debug perf entities` |
@@ -35,6 +36,43 @@ AI debugging toolkit - capture screenshots, execute commands, inject player inpu
 cd /Users/dluck/Documents/GitHub/gol/gol-project
 gol debug screenshot
 ```
+
+## Playtest Video Analysis
+
+Use this workflow when a recorded playtest video must be understood visually, such as checking player actions, UI text, wall placement, night raid behavior, or unexpected rendering artifacts.
+
+Prefer direct video input only when the chosen model supports it natively. Gemini 2.5 Pro/Flash are the preferred low-cost native-video options; use 1 FPS for normal gameplay review and 2-5 FPS when UI or combat changes quickly. OpenAI GPT-5/GPT-4o/GPT-4.1 and Claude should receive extracted image frames instead of the MP4. Qwen-VL is acceptable for private or local long-video deployments.
+
+### Standard ffmpeg Frame Extraction
+
+Keep extracted frames under the management repo debug sandbox so they are project-scoped and gitignored:
+
+```bash
+cd /Users/dluck/Documents/GitHub/gol
+mkdir -p .debug/video-frames/<suite>
+ffmpeg -hide_banner -loglevel error \
+  -i gol-project/logs/playtest/<suite>/recording.mp4 \
+  -vf fps=2 \
+  .debug/video-frames/<suite>/frame_%04d.jpg
+```
+
+Sampling guidance:
+
+- Use `fps=1` or `fps=2` for most playtest recordings.
+- Use `fps=3`, `fps=4`, or `fps=5` when UI state changes, build placement, fast combat, or short-lived visual bugs matter.
+- If the video is long, first inspect low-FPS frames, then re-extract only the suspicious time window at higher FPS.
+
+For a focused window:
+
+```bash
+ffmpeg -hide_banner -loglevel error \
+  -ss 00:00:12 -to 00:00:20 \
+  -i gol-project/logs/playtest/<suite>/recording.mp4 \
+  -vf fps=5 \
+  .debug/video-frames/<suite>/window_%04d.jpg
+```
+
+Attach the extracted JPG/PNG frames to the vision model in chronological order. Ask for a concise timeline with timestamps or frame numbers, visible UI state, player/NPC actions, and any abnormal visuals. Cross-check visual findings against `logs/playtest/<suite>/report.txt` and `logs/playtest/<suite>/godot.log` before calling a behavior a code bug.
 
 ## Debug Commands
 

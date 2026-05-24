@@ -227,6 +227,8 @@ logs/playtest/<suite>/godot.log
 
 The playtest file should not implement MP4 encoding or Telegram compression. For Telegram-ready proof videos, use the `play-verify` Foreman task or compress the generated MP4 outside the test by lowering bitrate/quality while keeping landscape 16:9 and the original frame rate.
 
+When an AI agent needs to understand what happened in the recording, use the canonical frame-review workflow in `gol-debug`: native video input for models that support it, or `ffmpeg` extraction to `.debug/video-frames/<suite>/` at 1-2 FPS by default and 3-5 FPS for fast UI/combat changes. Treat frame analysis as investigation evidence; the playtest should still assert behavior through checkpoints and report files.
+
 ## Quality Rules
 
 - Prefer observable gameplay state over implementation counters.
