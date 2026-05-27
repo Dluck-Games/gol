@@ -232,7 +232,7 @@ All CI/CD workflows are defined in `gol-project/.github/workflows/`.
 
 - Delegate implementation tasks to subagents (via `task()`) rather than direct file editing
 - Prefer Foreman for independent, deterministic coding tasks in this project. When work has clear acceptance criteria and can be handed off cleanly, dispatch it with `foreman run task generic --prompt "..."` or the appropriate Foreman task template instead of keeping all execution in the main agent thread.
-- Use Foreman client selection intentionally through task templates. `generic` defaults to Codex, `play-verify` is fixed to `codex-spark` because it needs sandbox and media handling, and higher-capability needs should usually become a new task type rather than a one-off manual `--client` override.
+- Use Foreman client selection intentionally through task templates. `generic` defaults to Codex, `play-test` is fixed to `codex-spark` because it runs automated gameplay playtests with media handling, and higher-capability needs should usually become a new task type rather than a one-off manual `--client` override.
 - Main agent focuses on acceptance, global decisions, and task coordination
 - Execute independent tasks in parallel with multiple subagents for efficiency
 - **Test work ALWAYS delegates** via category+skill delegation. Never write tests directly.
