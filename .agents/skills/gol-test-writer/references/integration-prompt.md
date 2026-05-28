@@ -43,9 +43,9 @@ Never guess recipe contents, component fields, or system side effects when the c
 `test_main.tscn` loads a suite script that extends `IntegrationTestSuite`.
 `IntegrationTestSuite` extends `AutomationTestSuite`, which owns `test_run()`, helper methods, and `AutomationTestSuite.DelegatedGameExperience`. Scene setup is delegated to `game_experience`, normally created in `_init()` with `AutomationTestSuite.DelegatedGameExperience`.
 
-- `_config_scene_name()` provides the scene name used by the default `scene_path()`
+- `_config_scene_name()` defaults to `"test"`; only override for a custom scene name/path
 - `_config_systems()` returns `Variant`: `null` for default loading or an explicit array of system script paths
-- `_config_enable_pcg()` controls whether PCG runs before the scene loads
+- `_config_enable_pcg()` defaults to `false`; only override when PCG must run before the scene loads
 - `_config_pcg_config()` returns a `PCGConfig` instance
 - `_config_entities()` returns `Variant`: `null` or an array of entity dictionaries
 - Each entity dictionary uses `{ "recipe": String, "name": String, "components": Dictionary }`
@@ -66,9 +66,9 @@ Never guess recipe contents, component fields, or system side effects when the c
 
 | Method | Purpose | Rule |
 |---|---|---|
-| `func _config_scene_name() -> String` | Scene name | Return `"test"` |
+| `func _config_scene_name() -> String` | Scene name | Omit for default `"test"` |
 | `func _config_systems() -> Variant` | Explicit system list | Return array of script paths |
-| `func _config_enable_pcg() -> bool` | PCG on/off | Gameplay tests usually return `false` |
+| `func _config_enable_pcg() -> bool` | PCG on/off | Omit for default `false`; only override for PCG tests |
 | `func _config_entities() -> Variant` | Recipe entities | Return array of dictionaries |
 | `func test_run(world: GOLWorld) -> Variant` | Assertions | Return `TestResult` |
 
@@ -80,20 +80,12 @@ extends IntegrationTestSuite
 
 func _init() -> void:
 	game_experience = AutomationTestSuite.DelegatedGameExperience.new({
-		"scene_name": Callable(self, "_config_scene_name"),
 		"systems": Callable(self, "_config_systems"),
-		"enable_pcg": Callable(self, "_config_enable_pcg"),
 		"entities": Callable(self, "_config_entities")
 	})
 
-func _config_scene_name() -> String:
-	return "test"
-
 func _config_systems() -> Variant:
 	return []
-
-func _config_enable_pcg() -> bool:
-	return false
 
 func _config_entities() -> Variant:
 	return []

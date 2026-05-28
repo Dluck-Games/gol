@@ -51,7 +51,7 @@ Core overrides:
 |---|---|---|
 | `suite_name()` | CLI suite name | Return the suffix used by `playtest_<suite>.gd` |
 | `timeout_seconds()` | Overall timeout | Keep tight enough to catch stalls, long enough for organic gameplay |
-| `_config_scene_name()` | Scene selection | Usually `"test"` unless reusing a scenario config |
+| `_config_scene_name()` | Scene selection | Omit for default `"test"` unless reusing a scenario config |
 | `_config_systems()` | Optional explicit systems | Return `null` for default game systems or reuse an existing config |
 | `_config_enable_pcg()` | PCG toggle | Return `true` for map/gameplay flows needing real terrain |
 | `_config_pcg_config()` | PCG settings | Use `PCGConfig.Preset.FLAT_GRASS` and a stable grid size for deterministic layout |
