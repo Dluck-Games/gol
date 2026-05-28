@@ -166,7 +166,7 @@ func check_next_checkpoint(world: GOLWorld) -> bool:
 	return false
 ```
 
-Use a custom `test_run(world)` only when you need extra behavior such as a setup delay before starting the flow or a completion delay for video evidence. Copy the base loop shape from `AutomationTestSuite` or `playtest_build_wall.gd` and keep timeout handling intact.
+Use a custom `test_run(world)` only when you need extra behavior such as a setup delay before starting the flow or a completion delay for video evidence. Copy the base loop shape from `AutomationPlayTestSuite` or `playtest_build_wall.gd` and keep timeout handling intact.
 
 ## Production Entrypoint Example: Building Placement
 

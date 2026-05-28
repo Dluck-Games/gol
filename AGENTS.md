@@ -160,6 +160,8 @@ The `gol` CLI resolves paths automatically — no manual path construction neede
 
 Three-tier test architecture (unit / integration / playtest). See `gol-project/tests/AGENTS.md` for full tier definitions and decision matrix.
 
+Current automated test harness shape: `AutomationTestSuite` is the shared RefCounted base for automated harness helpers and `GameExperience` delegation; `IntegrationTestSuite` and `AutomationPlayTestSuite` both extend it. `GameExperience` is only the scene/gameplay configuration object consumed by production loading paths.
+
 **v5 Test Harness — direct automated tests + automated playtest + delegated live playtest:**
 
 Main agents NEVER write tests directly. Automated unit, integration, and playtest execution is direct through explicit `gol test ... --suite ...` or `gol test --all` commands; interactive live gameplay verification still dispatches a subagent:

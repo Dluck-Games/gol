@@ -24,6 +24,8 @@ Read the test file and inspect the `extends` clause:
 | `extends IntegrationTestSuite` | Integration |
 | `extends AutomationPlayTestSuite` | Automated Playtest |
 
+`IntegrationTestSuite` and `AutomationPlayTestSuite` both extend `AutomationTestSuite`; `GameExperience` is their scene setup delegate and is not a test-file discovery target.
+
 If neither matches, report the file as unsupported.
 
 ## Execution Commands

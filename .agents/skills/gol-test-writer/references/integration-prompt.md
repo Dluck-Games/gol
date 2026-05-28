@@ -41,7 +41,7 @@ Never guess recipe contents, component fields, or system side effects when the c
 ## IntegrationTestSuite Architecture
 
 `test_main.tscn` loads a suite script that extends `IntegrationTestSuite`.
-The suite owns `test_run()` and helper methods. Scene setup is delegated to `game_experience`, normally created in `_init()` with `AutomationTestSuite.DelegatedGameExperience`.
+`IntegrationTestSuite` extends `AutomationTestSuite`, which owns `test_run()`, helper methods, and `AutomationTestSuite.DelegatedGameExperience`. Scene setup is delegated to `game_experience`, normally created in `_init()` with `AutomationTestSuite.DelegatedGameExperience`.
 
 - `_config_scene_name()` provides the scene name used by the default `scene_path()`
 - `_config_systems()` returns `Variant`: `null` for default loading or an explicit array of system script paths
@@ -57,10 +57,10 @@ The suite owns `test_run()` and helper methods. Scene setup is delegated to `gam
 | Member | Signature / Type | Notes |
 |---|---|---|
 | `game_experience` | `var game_experience: GameExperience` | Holds scene setup delegate |
-| `test_run` | `func test_run(_world: GOLWorld) -> Variant` | Main test entry point |
-| `_find_entity` | `func _find_entity(world: GOLWorld, entity_name: String) -> Entity` | Helper lookup by name |
-| `_wait_frames` | `func _wait_frames(world: GOLWorld, count: int) -> void` | Helper for frame progression |
-| `_find_by_component` | `func _find_by_component(world: GOLWorld, component_class: GDScript) -> Array[Entity]` | Helper lookup by component |
+| `test_run` | `func test_run(_world: GOLWorld) -> Variant` | Main test entry point inherited from AutomationTestSuite |
+| `_find_entity` | `func _find_entity(world: GOLWorld, entity_name: String) -> Entity` | Helper lookup by name inherited from AutomationTestSuite |
+| `_wait_frames` | `func _wait_frames(world: GOLWorld, count: int) -> void` | Helper for frame progression inherited from AutomationTestSuite |
+| `_find_by_component` | `func _find_by_component(world: GOLWorld, component_class: GDScript) -> Array[Entity]` | Helper lookup by component inherited from AutomationTestSuite |
 
 ### Real tests configure
 
