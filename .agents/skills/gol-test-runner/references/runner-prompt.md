@@ -21,7 +21,7 @@ Read the test file and inspect the `extends` clause:
 | Clause | Tier |
 |---|---|
 | `extends GdUnitTestSuite` | Unit |
-| `extends SceneConfig` | Integration |
+| `extends IntegrationTestSuite` | Integration |
 | `extends AutomationPlayTestSuite` | Automated Playtest |
 
 If neither matches, report the file as unsupported.
@@ -34,7 +34,7 @@ Run from any directory within the project tree.
 # Unit (gdUnit4, suite required)
 gol test unit --suite system
 
-# Integration (SceneConfig, suite required)
+# Integration (IntegrationTestSuite, suite required)
 gol test integration --suite flow
 
 # Automated playtest (AutomationPlayTestSuite, suite required)
@@ -89,7 +89,7 @@ When all tests pass in simplified mode, only the summary line is shown. When any
 ### Single integration test
 
 1. Read the file
-2. Confirm it extends `SceneConfig`
+2. Confirm it extends `IntegrationTestSuite`
 3. Run the integration command
 4. Parse output
 5. Report
@@ -117,12 +117,12 @@ Parse `reports/results.xml`:
 
 Extract: total, pass/fail/error counts, testcase names, failure messages.
 
-### Integration — SceneConfig
+### Integration — IntegrationTestSuite
 
 Parse stdout and exit code:
 
 ```text
-[test_main] Loaded config: res://tests/integration/test_XXX.gd (scene: test)
+[test_main] Loaded integration suite: res://tests/integration/test_XXX.gd (scene: test)
 [PASS] Entity exists after initialization
 [FAIL] Enemy took damage — expected: 80, got: 100
 === 1/2 passed ===
@@ -131,8 +131,8 @@ Parse stdout and exit code:
 Also handle harness-level failures:
 ```text
 [FAIL] Missing --integration= argument
-[FAIL] Config script not found: ...
-[FAIL] Config script does not extend SceneConfig: ...
+[FAIL] Integration suite script not found: ...
+[FAIL] Integration suite script does not extend IntegrationTestSuite: ...
 [FAIL] PCG generation failed
 ```
 

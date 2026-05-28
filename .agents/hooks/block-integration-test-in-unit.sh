@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# PreToolUse hook: Block SceneConfig in tests/unit/
+# PreToolUse hook: Block integration test suites in tests/unit/
 # Exit 0 = allow, exit 2 = deny
 #
 # Claude Code passes stdin as JSON:
@@ -22,13 +22,13 @@ rm -f "$TMP"
 FILE_PATH=$(hook_file_path "$INPUT")
 CONTENT=$(hook_json "$INPUT" '.tool_input.content // ""')
 
-if [[ "$FILE_PATH" == *tests/unit/* ]] && echo "$CONTENT" | grep -Eq "extends (SceneConfig|AutomationPlayTestSuite)"; then
-  echo "BLOCKED: SceneConfig/AutomationPlayTestSuite not allowed in tests/unit/ (use GdUnitTestSuite instead)" >&2
+if [[ "$FILE_PATH" == *tests/unit/* ]] && echo "$CONTENT" | grep -Eq "extends (IntegrationTestSuite|AutomationPlayTestSuite)"; then
+  echo "BLOCKED: IntegrationTestSuite/AutomationPlayTestSuite not allowed in tests/unit/ (use GdUnitTestSuite instead)" >&2
   exit 2
 fi
 
-if hook_patch_adds_text_in_path "$INPUT" "tests/unit/" "extends SceneConfig"; then
-  echo "BLOCKED: SceneConfig not allowed in tests/unit/ (use GdUnitTestSuite instead)" >&2
+if hook_patch_adds_text_in_path "$INPUT" "tests/unit/" "extends IntegrationTestSuite"; then
+  echo "BLOCKED: IntegrationTestSuite not allowed in tests/unit/ (use GdUnitTestSuite instead)" >&2
   exit 2
 fi
 

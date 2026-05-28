@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-sceneconfig-in-unit.sh\"",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/block-integration-test-in-unit.sh\"",
             "statusMessage": "Checking unit test base class",
             "timeout": 30
           }

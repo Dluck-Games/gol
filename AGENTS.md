@@ -95,7 +95,7 @@ All Godot and debug bridge interactions MUST go through the `gol` CLI binary. Th
 | Run editor | `gol run editor` | `godot --editor --path .` |
 | Stop game/editor | `gol stop` | `pkill godot` / manual kill |
 | Run unit tests | `gol test unit --suite system` | Run a named gdUnit4 suite |
-| Run integration tests | `gol test integration --suite flow` | Run a named SceneConfig suite |
+| Run integration tests | `gol test integration --suite flow` | Run a named IntegrationTestSuite suite |
 | Run automated playtest | `gol test playtest --suite night_raid` | Run a named AutomationPlayTestSuite |
 | Record automated playtest | `gol test playtest --suite night_raid --record` | Write `logs/playtest/night_raid/recording.mp4` |
 | Run all tests | `gol test --all` | Explicit full unit + integration run |

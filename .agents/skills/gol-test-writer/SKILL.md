@@ -1,13 +1,13 @@
 ---
 name: gol-test-writer
-description: "Write GOL unit, integration, or automated playtest tests by delegating to the correct test-writing prompt. Use when asked to add, update, or design GOL tests; unit tests use gdUnit4, integration tests use SceneConfig, and automated playtests use AutomationPlayTestSuite."
+description: "Write GOL unit, integration, or automated playtest tests by delegating to the correct test-writing prompt. Use when asked to add, update, or design GOL tests; unit tests use gdUnit4, integration tests use IntegrationTestSuite, and automated playtests use AutomationPlayTestSuite."
 ---
 
 # gol-test-writer
 
 Coordinator skill for writing GOL tests. Routes to the correct tier and dispatches a subagent with the matching prompt template.
 
-Triggers: 'write test', 'unit test', 'integration test', 'playtest', 'automated playtest', 'test component', 'test system', 'gdUnit4 test', 'SceneConfig test', 'AutomationPlayTestSuite'.
+Triggers: 'write test', 'unit test', 'integration test', 'playtest', 'automated playtest', 'test component', 'test system', 'gdUnit4 test', 'IntegrationTestSuite test', 'AutomationPlayTestSuite'.
 
 ## You Are the Coordinator
 

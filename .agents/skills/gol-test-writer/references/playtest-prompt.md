@@ -37,13 +37,13 @@ Never guess lifecycle hooks, recipe fields, system names, or component propertie
 
 ### NOT automated playtests (escalate back to coordinator)
 
-- Fast multi-system state checks that fit SceneConfig -> integration tier
+- Fast multi-system state checks that fit IntegrationTestSuite -> integration tier
 - Isolated component/class checks -> unit tier
 - One-off live QA scripts that should stay in `.debug/scripts/`
 
 ## AutomationPlayTestSuite Architecture
 
-`AutomationPlayTestSuite` extends `SceneConfig`, so playtests use the same scene/config hooks plus checkpoint helpers.
+`AutomationPlayTestSuite` extends `AutomationTestSuite` and delegates scene setup to a `GameExperience`, so playtests use scene/config hooks plus checkpoint helpers without inheriting the game configuration type.
 
 Core overrides:
 
@@ -51,13 +51,13 @@ Core overrides:
 |---|---|---|
 | `suite_name()` | CLI suite name | Return the suffix used by `playtest_<suite>.gd` |
 | `timeout_seconds()` | Overall timeout | Keep tight enough to catch stalls, long enough for organic gameplay |
-| `scene_name()` | Scene selection | Usually `"test"` unless reusing a scenario config |
-| `systems()` | Optional explicit systems | Return `null` for default game systems or reuse an existing config |
-| `enable_pcg()` | PCG toggle | Return `true` for map/gameplay flows needing real terrain |
-| `pcg_config()` | PCG settings | Use `PCGConfig.Preset.FLAT_GRASS` and a stable grid size for deterministic layout |
-| `initial_campfire_position()` | Startup camp origin | Return a deterministic grid-to-world position when camp logic matters |
-| `entities()` | Initial recipe entities | Return entity dictionaries with recipe/name/components |
-| `after_entities_spawned(world)` | Runtime setup | Reset local state, apply test-only cleanup, then call `super` at the point where checkpoints/recording should start |
+| `_config_scene_name()` | Scene selection | Usually `"test"` unless reusing a scenario config |
+| `_config_systems()` | Optional explicit systems | Return `null` for default game systems or reuse an existing config |
+| `_config_enable_pcg()` | PCG toggle | Return `true` for map/gameplay flows needing real terrain |
+| `_config_pcg_config()` | PCG settings | Use `PCGConfig.Preset.FLAT_GRASS` and a stable grid size for deterministic layout |
+| `_config_initial_campfire_position()` | Startup camp origin | Return a deterministic grid-to-world position when camp logic matters |
+| `_config_entities()` | Initial recipe entities | Return entity dictionaries with recipe/name/components |
+| `_config_after_entities_spawned(world)` | Runtime setup | Reset local state, apply test-only cleanup, then call `super` at the point where checkpoints/recording should start |
 | `setup_checkpoints()` | Register checkpoints | Call `register_checkpoint(name)` in intended order |
 | `check_next_checkpoint(world)` | Poll current checkpoint | Return true only when the current checkpoint is satisfied |
 | `test_run(world)` | Main loop | Use base implementation unless you need a completion delay or custom loop |
@@ -69,7 +69,7 @@ Base helpers available:
 - `all_checkpoints_passed()`
 - `current_checkpoint_name()`
 - `_elapsed_seconds()`
-- `_wait_frames(world, count)` from `SceneConfig`
+- `_wait_frames(world, count)` from `AutomationTestSuite`
 - `_mark_error(message)`
 - `_finish(world)`
 - `_to_test_result()`
@@ -86,10 +86,10 @@ Base helpers available:
 
 ## Entity and Map Setup
 
-Use `entities()` for initial fixtures:
+Use `_config_entities()` for initial fixtures:
 
 ```gdscript
-func entities() -> Variant:
+func _config_entities() -> Variant:
 	return [
 		{
 			"recipe": "player",
@@ -108,8 +108,8 @@ Use named constants for layout:
 const GRID_SIZE: int = 20
 const PLAYER_CELL := Vector2i(10, 10)
 
-func pcg_config() -> PCGConfig:
-	var config := super.pcg_config()
+func _config_pcg_config() -> PCGConfig:
+	var config := super._config_pcg_config()
 	config.preset = PCGConfig.Preset.FLAT_GRASS
 	config.preset_grid_size = GRID_SIZE
 	return config
@@ -123,18 +123,18 @@ func _grid_to_world(cell: Vector2i) -> Vector2:
 	return Vector2((float(cell.x) - float(cell.y)) * half_w + half_w, (float(cell.x) + float(cell.y)) * half_h + half_h)
 ```
 
-Use `after_entities_spawned(world)` to reset suite state and do scenario-specific preparation:
+Use `_config_after_entities_spawned(world)` to reset suite state and do scenario-specific preparation:
 
 ```gdscript
-func after_entities_spawned(world: GOLWorld) -> void:
+func _config_after_entities_spawned(world: GOLWorld) -> void:
 	# Configure runtime state that must exist before checkpoints/recording begin.
 	_test_state = false
 	if GOL != null and GOL.Game != null:
-		GOL.Game.campfire_position = initial_campfire_position()
-	super.after_entities_spawned(world)
+		GOL.Game.campfire_position = _config_initial_campfire_position()
+	super._config_after_entities_spawned(world)
 ```
 
-Call `super.after_entities_spawned(world)` after critical pre-recording setup when the recording should begin after setup. Call it first only when you intentionally want setup captured.
+Call `super._config_after_entities_spawned(world)` after critical pre-recording setup when the recording should begin after setup. Call it first only when you intentionally want setup captured.
 
 ## Checkpoint Pattern
 
@@ -166,7 +166,7 @@ func check_next_checkpoint(world: GOLWorld) -> bool:
 	return false
 ```
 
-Use a custom `test_run(world)` only when you need extra behavior such as a setup delay before starting the flow or a completion delay for video evidence. Copy the base loop shape from `AutomationPlayTestSuite` or `playtest_build_wall.gd` and keep timeout handling intact.
+Use a custom `test_run(world)` only when you need extra behavior such as a setup delay before starting the flow or a completion delay for video evidence. Copy the base loop shape from `AutomationTestSuite` or `playtest_build_wall.gd` and keep timeout handling intact.
 
 ## Production Entrypoint Example: Building Placement
 
