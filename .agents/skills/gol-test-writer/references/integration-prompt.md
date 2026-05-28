@@ -43,13 +43,13 @@ Never guess recipe contents, component fields, or system side effects when the c
 `test_main.tscn` loads a suite script that extends `IntegrationTestSuite`.
 `IntegrationTestSuite` extends `AutomationTestSuite`, which owns `test_run()`, helper methods, and `AutomationTestSuite.DelegatedGameExperience`. Scene setup is delegated to `game_experience`, normally created in `_init()` with `AutomationTestSuite.DelegatedGameExperience`.
 
-- `_config_scene_name()` defaults to `"test"`; only override for a custom scene name/path
+- Integration tests always use the default `l_test.tscn` scene. Do not define `_config_scene_name()`, `_config_scene_path()`, or delegate `scene_name` / `scene_path`.
 - `_config_systems()` returns `Variant`: `null` for default loading or an explicit array of system script paths
-- `_config_enable_pcg()` defaults to `false`; only override when PCG must run before the scene loads
-- `_config_pcg_config()` returns a `PCGConfig` instance
+- `enable_pcg` is fixed to `false` for integration tests. Do not define `_config_enable_pcg()` or delegate `enable_pcg`; build deterministic map state through `setup_map` when needed.
+- `_config_pcg_config()` returns a `PCGConfig` instance, but it only matters for playtest/full startup paths; pure PCG checks belong in unit tests.
 - `_config_entities()` returns `Variant`: `null` or an array of entity dictionaries
-- Each entity dictionary uses `{ "recipe": String, "name": String, "components": Dictionary }`
-- The harness creates a realized `GOLWorld`, optionally runs PCG, and spawns those recipe entities
+- Each entity dictionary uses `{ "recipe": String, "name": String, "components": Dictionary }`; omit `components` when there are no overrides.
+- The harness creates a realized `GOLWorld` using the default scene and spawns those recipe entities
 - `test_run(world)` executes the scenario and should return `TestResult`
 
 ## IntegrationTestSuite API
@@ -66,9 +66,7 @@ Never guess recipe contents, component fields, or system side effects when the c
 
 | Method | Purpose | Rule |
 |---|---|---|
-| `func _config_scene_name() -> String` | Scene name | Omit for default `"test"` |
 | `func _config_systems() -> Variant` | Explicit system list | Return array of script paths |
-| `func _config_enable_pcg() -> bool` | PCG on/off | Omit for default `false`; only override for PCG tests |
 | `func _config_entities() -> Variant` | Recipe entities | Return array of dictionaries |
 | `func test_run(world: GOLWorld) -> Variant` | Assertions | Return `TestResult` |
 
@@ -102,6 +100,15 @@ func test_run(world: GOLWorld) -> Variant:
 3. **Guard `_find_entity()` results.** Null guard and fail early.
 4. **Advance frames explicitly.** Use `_wait_frames()` when systems need time to run.
 5. **Use static typing everywhere.**
+6. **Keep entity configs minimal.** Use `recipe`; only declare component overrides that differ from recipe defaults. Omit empty `components` dictionaries.
+
+## Entity Config Rules
+
+- Use the `recipe` field to reference entity recipes such as `"player"`, `"survivor"`, or `"enemy_basic"`.
+- Only declare components and properties that the test needs to override; do not repeat recipe defaults.
+- Adding components absent from the recipe is allowed, for example adding `CPoison` or `CAreaEffect` to a player.
+- Correct: `{ "recipe": "player", "components": { "CTransform": { "position": Vector2.ZERO } } }`
+- Wrong: `{ "recipe": "player", "components": { "CTransform": { "position": Vector2.ZERO }, "CMovement": {} } }` because the empty `CMovement` override is redundant.
 
 ## Assertion Strategy
 
@@ -122,6 +129,8 @@ Strong tests verify all three layers:
 | Using implicit system loading | Return explicit system array |
 | Documenting nonexistent `setup(world)` hook | Put setup in `test_run(world)` |
 | Hardcoded entity indices | Lookup by stable entity name |
+| Empty `components` dictionaries | Omit the `components` field |
+| Empty component overrides already supplied by the recipe | Delete the redundant component entry |
 
 ## Gotchas
 
