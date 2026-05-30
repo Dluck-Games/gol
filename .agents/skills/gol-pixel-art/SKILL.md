@@ -21,7 +21,7 @@ AI-driven pipeline that prepares concept art through GPT semi-manual handoff or 
 2. CONCEPT — image saved to gol-arts/artworks/<name>.original.png
 3. NORMALIZE — Downscale + either source colors or indexed palette → gol-arts/assets/<name>.aseprite
 4. EVALUATE — Automated structural checks + visual QC against the concept
-5. TOUCH-UP (if needed) — source-referenced pixel edits until the preview reads clearly
+5. TOUCH-UP (if needed) — source-referenced pixel edits until the sprite reads clearly
 6. EXPORT (user-invoked) — Export .aseprite to production PNG → gol-project/assets/
 ```
 
@@ -78,15 +78,15 @@ Art source files are version-controlled in `gol-arts/` (Git LFS). Production PNG
 
 ```bash
 # Step 1: Prepare concept with GPT semi-manual handoff (default backend)
-node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate"
-# → saves gol-arts/artworks/wood_box.original.png + wood_box.prompt
+node gol-tools/pixel-art/pixel-art.mjs concept sprites/boxes/wood_box --type box --prompt "A weathered wooden supply crate"
+# → saves gol-arts/artworks/sprites/boxes/wood_box.original.png + wood_box.prompt
 
 # Alternative, only when local ComfyUI is ready:
-node gol-tools/pixel-art/pixel-art.mjs concept wood_box --type box --prompt "A weathered wooden supply crate" --backend comfyui
+node gol-tools/pixel-art/pixel-art.mjs concept sprites/boxes/wood_box --type box --prompt "A weathered wooden supply crate" --backend comfyui
 
 # Step 2: Normalize (source colors by default for material fidelity)
-node gol-tools/pixel-art/pixel-art.mjs normalize wood_box --type box --preserve-colors
-# → saves gol-arts/assets/sprites/boxes/wood_box.aseprite + .preview.png
+node gol-tools/pixel-art/pixel-art.mjs normalize sprites/boxes/wood_box --type box --preserve-colors
+# → saves gol-arts/assets/sprites/boxes/wood_box.aseprite
 
 # Step 3: (Optional) Touch up in Aseprite
 open gol-arts/assets/sprites/boxes/wood_box.aseprite
@@ -102,19 +102,19 @@ node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/sprites/boxes/wood
 
 - **What it does:** Converts concept art into a production-ready sprite, including automatic background removal for common AI-generated white, gray, or checkerboard backgrounds.
 - **Options:** Use `--preserve-colors` to keep source colors; omit it only when exact GOL indexed palette mapping is desired. Use `--resampling nearest` when the concept is already crisp pixel art; use `--resampling box` for smoother downsampling. Use `--no-outline` to skip outline generation.
-- **Output:** Writes `gol-arts/assets/<type>/NAME.aseprite` and `NAME.preview.png`.
+- **Output:** Writes `gol-arts/assets/<path>/NAME.aseprite`.
 - **Background removal:** Detects and removes AI-generated backgrounds automatically via corner-based flood fill before palette mapping.
-- **Quality gate:** The preview must read correctly at target size. If resize/normalize output loses identity, do a source-referenced hand pixel pass instead of accepting the automated result.
+- **Quality gate:** The Aseprite source or explicit exported game PNG must read correctly at target size. If resize/normalize output loses identity, do a source-referenced hand pixel pass instead of accepting the automated result.
 
 ## Visual QC Gate
 
 After every normalize or touch-up pass:
 
-1. Inspect `gol-arts/assets/<path>/<name>.preview.png` with the multimodal looker and compare it to `gol-arts/artworks/<path>/<name>.original.png`.
-2. Accept only if the 32x32 preview has a readable silhouette, clear material identity, clean transparent background, and the same core object as the concept.
+1. Inspect `gol-arts/assets/<path>/<name>.aseprite` in Aseprite or inspect the explicit exported `gol-project/assets/<path>/<name>.png`; compare it to `gol-arts/artworks/<path>/<name>.original.png`.
+2. Accept only if the target-size sprite has a readable silhouette, clear material identity, clean transparent background, and the same core object as the concept.
 3. Treat exact GOL palette compliance and color count as advisory. Preserve source-derived colors when strict mapping harms recognizability.
-4. If the preview is muddy, noisy, cropped badly, or visually unlike the concept, run an `artistry` touch-up pass or hand pixel edit. Do not accept an asset just because `evaluate` passes.
-5. Re-run preview inspection after each touch-up. The manual visual gate is mandatory before export or final delivery.
+4. If the sprite is muddy, noisy, cropped badly, or visually unlike the concept, run an `artistry` touch-up pass or hand pixel edit. Do not accept an asset just because `evaluate` passes.
+5. Re-run visual inspection after each touch-up. The manual visual gate is mandatory before final delivery.
 
 ## Export Command
 
@@ -165,11 +165,11 @@ task(
 ```
 
 The touch-up subagent should:
-1. Inspect the normalized preview and evaluation result
+1. Inspect the normalized Aseprite source or exported PNG and evaluation result
 2. Identify only the failing or weak areas that need adjustment
 3. Write targeted JSON drawing instructions against the normalized `.aseprite` file
-4. Apply via `draw apply`, preview via `look_at`, iterate until satisfied
-5. Export final PNG via `draw export`
+4. Apply via `apply`, inspect the sprite, iterate until satisfied
+5. Export final PNG via `export`
 
 Touch-ups use the existing JSON ops workflow on top of normalized output rather than redrawing from scratch.
 
@@ -177,11 +177,11 @@ Touch-ups use the existing JSON ops workflow on top of normalized output rather 
 
 This is the legacy approach for drawing from scratch in Aseprite. Keep it for cases where full manual creation is preferred, but use `normalize` by default.
 
-For pixel-level control, use the `draw` commands:
+For pixel-level control, use the legacy drawing commands:
 
 ```bash
 # 1. Create a new sprite
-node gol-tools/pixel-art/pixel-art.mjs create my_box --type box
+node gol-tools/pixel-art/pixel-art.mjs create sprites/boxes/my_box --type box
 
 # 2. Write JSON instructions (agent generates this)
 cat > /tmp/ops.json << 'EOF'
@@ -195,9 +195,9 @@ cat > /tmp/ops.json << 'EOF'
 EOF
 
 # 3. Apply instructions
-node gol-tools/pixel-art/pixel-art.mjs apply my_box --instructions /tmp/ops.json
+node gol-tools/pixel-art/pixel-art.mjs apply sprites/boxes/my_box --instructions /tmp/ops.json
 
-# 4. Inspect preview (agent uses look_at on .preview.png)
+# 4. Inspect the sprite in Aseprite or an explicit exported PNG
 # 5. Iterate: write new ops.json, apply again
 # 6. Export final
 node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/sprites/boxes/my_box.aseprite

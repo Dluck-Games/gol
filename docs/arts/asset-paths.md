@@ -63,12 +63,12 @@ Normalize writes source files to `gol-arts/`. Production PNGs are exported separ
 
 ```bash
 # 1. Generate concept
-node gol-tools/pixel-art/pixel-art.mjs concept potion --type item --prompt 'A healing potion bottle'
-# → defaults to CodeBuddy ImageGen and saves gol-arts/artworks/potion.original.png + potion.prompt
+node gol-tools/pixel-art/pixel-art.mjs concept sprites/items/potion --type item --prompt 'A healing potion bottle'
+# → defaults to GPT semi-manual and saves gol-arts/artworks/sprites/items/potion.original.png + potion.prompt
 
 # 2. Normalize (produces .aseprite source file)
-node gol-tools/pixel-art/pixel-art.mjs normalize potion --type item
-# → saves gol-arts/assets/sprites/items/potion.aseprite + .preview.png
+node gol-tools/pixel-art/pixel-art.mjs normalize sprites/items/potion --type item
+# → saves gol-arts/assets/sprites/items/potion.aseprite
 
 # 3. Export to game project (when ready)
 node gol-tools/pixel-art/pixel-art.mjs export gol-arts/assets/sprites/items/potion.aseprite

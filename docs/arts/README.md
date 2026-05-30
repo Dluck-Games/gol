@@ -23,9 +23,9 @@ Each file in `prompts/` is a self-contained template for generating assets of th
 
 1. Choose the asset category → read the matching `prompts/*.md`
 2. Craft a prompt using the template
-3. Generate a concept via `node gol-tools/pixel-art/pixel-art.mjs concept` (default: CodeBuddy ImageGen; alternatives: GPT semi-manual, Gemini, ComfyUI)
+3. Generate a concept via `node gol-tools/pixel-art/pixel-art.mjs concept` (default: GPT semi-manual; local ComfyUI is the automated alternative)
 4. Normalize via `node gol-tools/pixel-art/pixel-art.mjs normalize`
-5. Inspect the `.preview.png` at target size with multimodal review; compare it against the `.original.png`
+5. Inspect the `.aseprite` at target size or the explicit exported game PNG; compare it against the `.original.png`
 6. If identity, silhouette, or material readability is weak, do a source-referenced hand pixel touch-up before accepting
 7. Artworks go to `gol-arts/artworks/`, Aseprite sources to `gol-arts/assets/`
 8. Review and accept → export explicitly to `gol-project/assets/`
@@ -33,7 +33,6 @@ Each file in `prompts/` is a self-contained template for generating assets of th
 
 ## Relationship to Skill
 
-The `gol-pixel-art` skill (`.claude/skills/gol-pixel-art/SKILL.md`) references this directory for art standards. To update art conventions:
+The `gol-pixel-art` skill (`.agents/skills/gol-pixel-art/SKILL.md`) references this directory for art standards. To update art conventions:
 - Edit files here in `docs/arts/`
-- The skill automatically picks up changes on next load
-- No need to modify SKILL.md for standard updates
+- Update the skill too when workflow commands or required artifacts change
