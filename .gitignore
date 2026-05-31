@@ -44,7 +44,6 @@ external/
 .env
 
 # AI debug sandbox
-.debug/
 
 # Editor settings
 .vscode/
