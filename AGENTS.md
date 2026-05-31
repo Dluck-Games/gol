@@ -152,7 +152,6 @@ When detached, the command prints the PID and log file path, then exits:
 
 The `gol` CLI resolves paths automatically — no manual path construction needed:
 - **Godot binary**: `GODOT_PATH` env → platform defaults → `godot` on PATH
-- **Project path**: `--path` flag → `GOL_PROJECT_PATH` env → auto-detect from CWD
 
 ## Development
 
